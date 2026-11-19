@@ -132,6 +132,12 @@ export const ManifestSchema = z.object({
         index: z.number().int(),
         mlkem: z.string().regex(/^[0-9a-f]+$/),
         x25519: z.string().regex(/^[0-9a-f]{64}$/),
+        /** The pass this key belongs to (spec 5.12). */
+        passId: z.string().regex(/^[A-Za-z0-9_-]{6,40}$/).optional(),
+        /** Items dated in [from, until) are sealed to this key too; kinds limit which items. */
+        from: z.iso.datetime().optional(),
+        until: z.iso.datetime().optional(),
+        kinds: z.array(z.enum(["messages", "payments", "forms", "invoices"])).max(4).optional(),
       }),
     )
     .max(16)

@@ -81,6 +81,10 @@ function Frame({ children }: { children: ReactNode }) {
         { href: "/app/proof", label: "Proofs", icon: "check" },
       ],
     },
+    {
+      title: "Access",
+      items: [{ href: "/app/passes", label: "Passes", icon: "pass" }],
+    },
   ];
   const checklist = owner.draft ? checklistState(owner.draft, owner.stats) : null;
   const next = checklist?.items.find((i) => i.state === "todo");

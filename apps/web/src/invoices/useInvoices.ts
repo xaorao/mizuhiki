@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { encryptFile, fromBase64Url, toBase64Url, type FileFacts } from "@mizuhiki/core";
 import type { Account } from "@/account/AccountProvider";
 import { api, ApiFailure } from "@/lib/api";
+import { copyInvoiceToPasses } from "@/passes/engine";
 import { sendSealed } from "@/lib/send";
 import {
   dueDate,
@@ -101,6 +102,12 @@ export async function sendInvoice(
     },
     { token },
   );
+  // A copy for each active period pass covering invoices (spec 5.12). Best effort: "Bring up to date" repeats it.
+  try {
+    await copyInvoiceToPasses({ ...account, token }, copy.doc, new Date().toISOString());
+  } catch {
+    // The invoice is sent; the pass catches up from the owner's device later.
+  }
   return { link: invoiceLink(copy.doc.id, copy.doc.number, sealed.linkSeed), readers: sealed.readers };
 }
 

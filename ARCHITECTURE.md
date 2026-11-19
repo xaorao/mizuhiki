@@ -230,6 +230,17 @@ Read from the spec (5.11, section 11 decisions 1 and 2), `research/gumroad/UX_SP
 - **Refunds** are a seller promise: the seller sends the money back from their wallet with memo `mzk:ord:<ref>-r`, and the server marks the order refunded only after reading that transfer on chain.
 - **Reviews** are verified purchases: the buyer's device keeps a review secret whose hash is stored with the order.
 
+## 8c. Passes protocol (spec 5.12)
+
+Read from the spec (5.12, 5.8 "Add a reader", 5.6 auditor key, 5.10 Payroll), `research/access/UX_SPEC.md` (Bitwarden invite, accept, confirm with a fingerprint phrase; QuickBooks accountant invite and status; Google's per-person scope), `packages/core/src/account.ts` (scoped seal keys by index) and the manifest's `periodKeys`.
+
+- **One key per pass, never shared:** a period pass gets its own scoped seal key, `deriveSealKeys(phrase, 2_000_000 + n)`, so two accountants with different scopes never hold the same key. The holder receives only that key's seed, sealed to their card (purpose `mzk:pass:<id>`).
+- **New items:** the pass key is listed in the signed manifest's `periodKeys` with its window (from, until) and kinds (messages, payment notes, form answers, invoices). Every sender's browser (message drop, pay note, form answer) and the owner's own invoices add it as a reader when the item falls inside the window and kind. A revoked or expired pass leaves the manifest, so nothing new is sealed to it.
+- **Older items:** the owner's device opens each item in scope with the owner's key and re-seals it to the pass key; the server keeps the re-sealed copies as the pass's items and says how many the pass covers. "Add a reader" on one inbox item does the same for that item.
+- **Rooms, forms, products:** a room pass makes the holder a read-only member admitted with past messages (no send or file rights; removing them changes the room key); a form pass adds them as a form reader and re-seals earlier answers; a product pass seals the product key to them.
+- **Handshake (Bitwarden):** the owner's signed invite states the boundary in plain words; the holder accepts with a signature from their own key; the owner confirms after comparing six safety words read from the holder's on-chain key, and only then is anything sealed. Statuses: Invited, Needs confirmation, Active, Expired, Revoked.
+- **Honest limit, said at revoke:** a holder keeps what they already opened and keeps the key to items already sealed to it; revoking stops future items only.
+
 ## 9. Sources behind the facts used here
 
 - QoreSign 0.2.0 source: `repos/qoresign/packages/ts/src` (`sign.ts`, `message.ts`, `network.ts`, `siwq.ts`).

@@ -23,7 +23,8 @@ import { explorerTx } from "@mizuhiki/chain";
 import type { Account } from "@/account/AccountProvider";
 import { api } from "@/lib/api";
 import { SITE_URL } from "@/lib/site";
-import { TYPE_LABEL, openRow, type InboxRow, type Opened } from "./model";
+import { TYPE_LABEL, openRow, purposeFor, type InboxRow, type Opened } from "./model";
+import { AddReaderSheet } from "@/passes/AddReaderSheet";
 import { readSummaries } from "@/rooms/engine";
 import type { Box, OpenState, SenderCheck } from "./useInbox";
 import { TYPE_TONE, amountLabel, shortAddr, when, whoLabel } from "./Inbox";
@@ -144,7 +145,7 @@ function SenderPanel({
   );
 }
 
-function FileItem({ f, onProve }: { f: FileFacts; onProve: () => void }) {
+export function FileItem({ f, onProve }: { f: FileFacts; onProve?: (() => void) | undefined }) {
   const [state, setState] = useState<
     { s: "idle" } | { s: "busy"; p: number } | { s: "ready"; url: string } | { s: "failed"; why: string }
   >({ s: "idle" });
@@ -204,9 +205,11 @@ function FileItem({ f, onProve }: { f: FileFacts; onProve: () => void }) {
       <Button variant="cord" size="sm" icon="download" onClick={() => void save()} disabled={state.s === "busy"}>
         Save
       </Button>
-      <button type="button" className={s.proveLink} onClick={onProve}>
-        <Icon name="check" size={13} /> Prove it existed
-      </button>
+      {onProve ? (
+        <button type="button" className={s.proveLink} onClick={onProve}>
+          <Icon name="check" size={13} /> Prove it existed
+        </button>
+      ) : null}
       {state.s === "ready" && isImage ? (
         <img className={s.preview} src={state.url} alt={`Preview of ${f.name}`} />
       ) : null}
@@ -216,20 +219,27 @@ function FileItem({ f, onProve }: { f: FileFacts; onProve: () => void }) {
 }
 
 /** A form answer opened here, labelled with the form's published questions. */
-function FormAnswer({
+export function FormAnswer({
   answer,
   token,
   onProve,
+  loadDef,
 }: {
   answer: Extract<Opened, { kind: "form" }>;
   token: () => Promise<string>;
-  onProve: (f: FileFacts) => void;
+  onProve?: ((f: FileFacts) => void) | undefined;
+  /** For someone other than the owner (a pass holder): where the form's questions come from. */
+  loadDef?: (() => Promise<FormDef>) | undefined;
 }) {
   const [def, setDef] = useState<FormDef | null | "missing">(null);
   const acct = useAccount();
   useEffect(() => {
     void (async () => {
       try {
+        if (loadDef) {
+          setDef(await loadDef());
+          return;
+        }
         const t = await token();
         const { forms } = await api.get<{ forms: { id: string; slug: string }[] }>("/owner/forms", { token: t });
         const f = forms.find((x) => x.id === answer.formId);
@@ -243,7 +253,7 @@ function FormAnswer({
         setDef("missing");
       }
     })();
-  }, [acct.account, answer.formId, token]);
+  }, [acct.account, answer.formId, token, loadDef]);
   if (def === null) return <Skeleton lines={3} />;
   const qs = def === "missing" ? [] : def.blocks.filter(isQuestion);
   const label = (q: Question | undefined, v: AnswerValue | undefined): string => {
@@ -277,7 +287,7 @@ function FormAnswer({
                 {files.length ? (
                   <ul className={s.files}>
                     {files.map((f) => (
-                      <FileItem key={f.fileId} f={f} onProve={() => onProve(f)} />
+                      <FileItem key={f.fileId} f={f} onProve={onProve ? () => onProve(f) : undefined} />
                     ))}
                   </ul>
                 ) : (
@@ -288,9 +298,11 @@ function FormAnswer({
           );
         })}
       </dl>
-      <ButtonLink href={`/app/forms/${answer.formId}?tab=results`} variant="line" icon="chart" className={s.openLink}>
-        See all answers to this form
-      </ButtonLink>
+      {loadDef ? null : (
+        <ButtonLink href={`/app/forms/${answer.formId}?tab=results`} variant="line" icon="chart" className={s.openLink}>
+          See all answers to this form
+        </ButtonLink>
+      )}
     </div>
   );
 }
@@ -407,6 +419,7 @@ function ItemDetail({
   const toast = useToast();
   const [compose, setCompose] = useState<ComposeMode | null>(null);
   const [proving, setProving] = useState<Hashed | null>(null);
+  const [addingReader, setAddingReader] = useState(false);
   const opened = state.state === "open" ? state.item : undefined;
   const msg = opened?.kind === "message" ? opened : undefined;
   const replyTo =
@@ -587,6 +600,11 @@ function ItemDetail({
             Mark unread
           </Button>
         ) : null}
+        {box !== "sent" && opened && row.envelope && purposeFor(row) ? (
+          <Button variant="ghost" icon="pass" onClick={() => setAddingReader(true)}>
+            Add a reader
+          </Button>
+        ) : null}
         {opened || row.payment ? (
           <Button variant="ghost" icon="download" onClick={exportItem}>
             Export
@@ -605,6 +623,9 @@ function ItemDetail({
         ) : null}
       </footer>
 
+      {addingReader ? (
+        <AddReaderSheet row={row} tokened={async () => ({ ...account, token: await token() })} onClose={() => setAddingReader(false)} />
+      ) : null}
       {proving ? (
         <ProveSheet account={account} target={proving} defaultKind="file" onClose={() => setProving(null)} />
       ) : null}

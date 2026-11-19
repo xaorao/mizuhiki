@@ -5,7 +5,8 @@
  * member list with role tags, and removed people with Unblock.
  */
 import { useMemo, useState, type CSSProperties } from "react";
-import { Button, ChoiceCard, Icon, Sheet, StatusChip, TextField, useToast } from "@mizuhiki/ui";
+import { Button, ButtonLink, ChoiceCard, Icon, Sheet, StatusChip, TextField, useToast } from "@mizuhiki/ui";
+import { ROOM_TEMPLATES } from "@mizuhiki/core";
 import { can } from "../derive";
 import { changeMembers, declineRequest, unblock, type JoinRequest, type MemberRow } from "../engine";
 import { PersonAvatar, label } from "../people";
@@ -189,6 +190,11 @@ export function MembersTab({
           <Button variant="line" icon="link" full onClick={onOpenInvites}>
             Invite via link or QR code
           </Button>
+        ) : null}
+        {me.role === "owner" && ROOM_TEMPLATES[room.derived?.info.type ?? "team"].auditor ? (
+          <ButtonLink variant="line" icon="pass" full href={`/app/passes?new=room&id=${encodeURIComponent(detail.id)}`}>
+            Give an accountant a pass
+          </ButtonLink>
         ) : null}
       </div>
 

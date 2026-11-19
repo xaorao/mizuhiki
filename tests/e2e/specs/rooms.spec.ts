@@ -102,8 +102,8 @@ test("a deal room: create, chat, invite with approval, remove, all checked again
   expect(chain.epoch).toBe(1n);
   expect(chain.membershipHash).toBe(
     membershipHash(roomId, 1n, [
-      { address: ana.address, role: "owner" },
-      { address: ben.address, role: "member" },
+      { address: ana.address },
+      { address: ben.address },
     ]),
   );
 
@@ -218,8 +218,8 @@ test("a deal room: create, chat, invite with approval, remove, all checked again
   expect(chain.epoch).toBe(3n);
   expect(chain.membershipHash).toBe(
     membershipHash(roomId, 3n, [
-      { address: ana.address, role: "owner" },
-      { address: cai.address, role: "member" },
+      { address: ana.address },
+      { address: cai.address },
     ]),
   );
 

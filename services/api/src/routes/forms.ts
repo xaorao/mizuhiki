@@ -241,6 +241,16 @@ export const formRoutes =
       };
     });
 
+    /** The owner's own published record (to change readers without touching unpublished edits). */
+    app.get("/owner/forms/:id/record", async (req, reply) => {
+      const owner = await sessionAddress(db, req);
+      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      const { id } = req.params as { id: string };
+      const [f] = await db.select().from(forms).where(and(eq(forms.id, id), eq(forms.owner, owner)));
+      if (!f) return fail(reply, 404, "NOT_FOUND", "No such form.");
+      return { record: f.record ?? null, version: f.version, slug: f.slug, draftEnvelope: f.draftEnvelope };
+    });
+
     app.patch("/owner/forms/:id", async (req, reply) => {
       const owner = await sessionAddress(db, req);
       if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
@@ -287,6 +297,15 @@ export const formRoutes =
     });
 
     /** What a respondent's browser needs: the signed definition. */
+    /** A form's signed definition by id: the question labels for a reader opening answers (a pass holder). */
+    app.get("/forms/id/:id", async (req, reply) => {
+      const { id } = req.params as { id: string };
+      if (!ID.test(id)) return fail(reply, 404, "NOT_FOUND", "No such form.");
+      const [f] = await db.select({ record: forms.record }).from(forms).where(eq(forms.id, id));
+      if (!f?.record) return fail(reply, 404, "NOT_FOUND", "No such form.");
+      return { record: f.record };
+    });
+
     app.get("/forms/:name/:slug", async (req, reply) => {
       const { name, slug } = req.params as { name: string; slug: string };
       const [n] = await db

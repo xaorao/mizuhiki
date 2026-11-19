@@ -21,7 +21,7 @@ export type RoomType = (typeof ROOM_TYPES)[number];
 /** Template defaults (spec: Deal = approval required, hidden history; Payroll = auditor key on). */
 export const ROOM_TEMPLATES: Record<RoomType, { label: string; approval: boolean; history: "share" | "hide"; auditor: boolean; blurb: string }> = {
   deal: { label: "Deal", approval: true, history: "hide", auditor: false, blurb: "For a deal with a client or partner. New people need approval and don't see earlier messages." },
-  payroll: { label: "Payroll", approval: true, history: "hide", auditor: true, blurb: "For pay runs and payslips. New people need approval and don't see earlier messages." },
+  payroll: { label: "Payroll", approval: true, history: "hide", auditor: true, blurb: "For pay runs and payslips. New people need approval and don't see earlier messages. An accountant can be given a pass to read it." },
   team: { label: "Team", approval: true, history: "share", auditor: false, blurb: "For a small team. New members can be shown the history." },
   family: { label: "Family", approval: false, history: "share", auditor: false, blurb: "For family. Invites join without waiting for approval." },
 };

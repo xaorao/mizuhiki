@@ -566,7 +566,6 @@ const buyerKeyHash = (mlkem: string, x25519: string) => sha256Hex(utf8(canonical
 
 function Opened({ o, p }: { o: OrderView; p: OpenedPurchase }) {
   const [pi, setPi] = useState(0);
-  const [page, setPage] = useState(0);
   const prod = p.products[Math.min(pi, p.products.length - 1)];
   if (!prod)
     return (
@@ -577,8 +576,7 @@ function Opened({ o, p }: { o: OrderView; p: OpenedPurchase }) {
       </div>
     );
   const content: Content | null = prod.content;
-  const pages = content?.pages ?? [];
-  const cur = pages[Math.min(page, pages.length - 1)];
+  const hasPages = (content?.pages.length ?? 0) > 0;
   const line = o.request.lines.find((l) => l.productId === prod.def.id);
   return (
     <div className={[s.card, s.opened].join(" ")}>
@@ -590,7 +588,7 @@ function Opened({ o, p }: { o: OrderView; p: OpenedPurchase }) {
       {p.products.length > 1 ? (
         <div className={s.quick} role="tablist" aria-label="Products in this order">
           {p.products.map((x, i) => (
-            <button key={x.def.id} type="button" role="tab" aria-selected={i === pi} onClick={() => (setPi(i), setPage(0))}>
+            <button key={x.def.id} type="button" role="tab" aria-selected={i === pi} onClick={() => setPi(i)}>
               {x.def.title}
             </button>
           ))}
@@ -605,43 +603,8 @@ function Opened({ o, p }: { o: OrderView; p: OpenedPurchase }) {
           </span>
         </p>
       ) : null}
-      {pages.length > 1 ? (
-        <nav className={s.pageNav} aria-label="Pages">
-          {pages.map((pg, i) => (
-            <button key={pg.id} type="button" aria-current={i === page ? "page" : undefined} onClick={() => setPage(i)}>
-              <span>{i + 1}</span>
-              {pg.title || `Page ${i + 1}`}
-            </button>
-          ))}
-        </nav>
-      ) : null}
-      {cur ? (
-        <article className={s.contentPage} key={cur.id}>
-          {cur.title && pages.length > 1 ? <h2>{cur.title}</h2> : null}
-          {cur.blocks.map((b, i) =>
-            b.t === "text" ? (
-              <RichText key={i} text={b.text} />
-            ) : b.t === "heading" ? (
-              <h3 key={i}>{b.text}</h3>
-            ) : b.t === "link" ? (
-              <ButtonLink key={i} variant="line" iconRight="share" href={b.url} target="_blank" rel="noopener noreferrer nofollow">
-                {b.label || new URL(b.url).host}
-              </ButtonLink>
-            ) : (
-              <FileCard key={i} f={b.file as unknown as FileFacts} />
-            ),
-          )}
-          {pages.length > 1 ? (
-            <div className={s.pagePager}>
-              <Button variant="ghost" icon="back" disabled={page === 0} onClick={() => setPage((x) => x - 1)}>
-                Previous
-              </Button>
-              <Button variant="line" iconRight="arrow" disabled={page >= pages.length - 1} onClick={() => setPage((x) => x + 1)}>
-                Next
-              </Button>
-            </div>
-          ) : null}
-        </article>
+      {hasPages ? (
+        <ContentReader key={prod.def.id} content={content} />
       ) : (
         <p className={s.fine}>
           {prod.def.kind === "tip"
@@ -652,6 +615,54 @@ function Opened({ o, p }: { o: OrderView; p: OpenedPurchase }) {
         </p>
       )}
     </div>
+  );
+}
+
+/** A content page set, with page navigation (purchases, and product passes). */
+export function ContentReader({ content }: { content: Content | null }) {
+  const [page, setPage] = useState(0);
+  const pages = content?.pages ?? [];
+  const cur = pages[Math.min(page, pages.length - 1)];
+  if (!cur) return null;
+  return (
+    <>
+      {pages.length > 1 ? (
+        <nav className={s.pageNav} aria-label="Pages">
+          {pages.map((pg, i) => (
+            <button key={pg.id} type="button" aria-current={i === page ? "page" : undefined} onClick={() => setPage(i)}>
+              <span>{i + 1}</span>
+              {pg.title || `Page ${i + 1}`}
+            </button>
+          ))}
+        </nav>
+      ) : null}
+      <article className={s.contentPage} key={cur.id}>
+        {cur.title && pages.length > 1 ? <h2>{cur.title}</h2> : null}
+        {cur.blocks.map((b, i) =>
+          b.t === "text" ? (
+            <RichText key={i} text={b.text} />
+          ) : b.t === "heading" ? (
+            <h3 key={i}>{b.text}</h3>
+          ) : b.t === "link" ? (
+            <ButtonLink key={i} variant="line" iconRight="share" href={b.url} target="_blank" rel="noopener noreferrer nofollow">
+              {b.label || new URL(b.url).host}
+            </ButtonLink>
+          ) : (
+            <FileCard key={i} f={b.file as unknown as FileFacts} />
+          ),
+        )}
+        {pages.length > 1 ? (
+          <div className={s.pagePager}>
+            <Button variant="ghost" icon="back" disabled={page === 0} onClick={() => setPage((x) => x - 1)}>
+              Previous
+            </Button>
+            <Button variant="line" iconRight="arrow" disabled={page >= pages.length - 1} onClick={() => setPage((x) => x + 1)}>
+              Next
+            </Button>
+          </div>
+        ) : null}
+      </article>
+    </>
   );
 }
 

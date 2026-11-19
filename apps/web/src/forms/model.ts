@@ -18,6 +18,7 @@ import {
   type FormDef,
   type Question,
   type QuestionKind,
+  type Signed,
 } from "@mizuhiki/core";
 import type { IconName } from "@mizuhiki/ui";
 import type { Account } from "@/account/AccountProvider";
@@ -405,3 +406,43 @@ export interface FormRow {
 }
 
 export const questionsOf = (def: Pick<FormDef, "blocks">): Question[] => def.blocks.filter(isQuestion);
+
+/**
+ * Add or remove one reader (a pass holder, spec 5.12) on the working copy and,
+ * when the form is live, on the published form, without publishing any other
+ * unfinished edit.
+ */
+export async function setFormReader(
+  account: Account,
+  token: string,
+  formId: string,
+  reader: { address: string; name: string; note: string },
+  on: boolean,
+): Promise<void> {
+  const r = await api.get<{ record: Signed<FormDef> | null; version: number; slug: string; draftEnvelope: string | null }>(
+    `/owner/forms/${encodeURIComponent(formId)}/record`,
+    { token },
+  );
+  const change = (readers: FormDef["readers"]) => {
+    const rest = readers.filter((x) => x.address !== reader.address);
+    if (on && rest.length >= 10) throw new Error("This form already has 10 readers. Remove one first.");
+    return on ? [...rest, reader] : rest;
+  };
+  const draft = r.draftEnvelope ? openDraft(account, formId, await api.bytes(`/blobs/${r.draftEnvelope}`)) : r.record?.body;
+  if (!draft) throw new Error("This form could not be opened on this device.");
+  const nextDraft: FormDef = { ...draft, readers: change(draft.readers) };
+  const d = sealDraft(account, nextDraft);
+  await api.put("/blobs", d.envelope);
+  if (!r.record) {
+    await api.put("/forms", { id: formId, slug: r.slug, draftEnvelope: d.hash }, { token });
+    return;
+  }
+  const body: FormDef = FormDefSchema.parse({
+    ...r.record.body,
+    readers: change(r.record.body.readers),
+    version: r.version + 1,
+    updatedAt: new Date().toISOString(),
+  });
+  const record = signRecord({ kind: "form", body, signer: account.owner.address, classical: account.keys.classical, pq: account.keys.pq });
+  await api.put("/forms", { id: formId, slug: r.slug, draftEnvelope: d.hash, publish: record }, { token });
+}

@@ -508,3 +508,49 @@ export const reviews = pgTable(
   },
   (t) => [primaryKey({ columns: [t.orderRef, t.productId] }), index("reviews_product").on(t.productId)],
 );
+
+/**
+ * Passes (spec 5.12, ARCHITECTURE 8c). The invite is signed by the owner and
+ * the acceptance by the holder; keys travel only as sealed envelopes.
+ */
+export const passes = pgTable(
+  "passes",
+  {
+    id: text("id").primaryKey(),
+    owner: text("owner").notNull(),
+    holder: text("holder").notNull(),
+    /** The signed invite (scope, boundary, expiry). */
+    invite: jsonb("invite").notNull(),
+    /** The holder's signed acceptance. */
+    accept: jsonb("accept"),
+    /** invited | accepted | active | revoked (expiry is worked out from expiresAt) */
+    status: text("status").notNull().default("invited"),
+    /** For a period pass: the scoped key's index (unique per owner). */
+    keyIndex: integer("key_index"),
+    /** Blob hash: the period key's seed, or a product's key, sealed to the holder. */
+    keyEnvelope: text("key_envelope"),
+    expiresAt: ts("expires_at"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    acceptedAt: ts("accepted_at"),
+    confirmedAt: ts("confirmed_at"),
+    revokedAt: ts("revoked_at"),
+  },
+  (t) => [index("passes_owner").on(t.owner), index("passes_holder").on(t.holder), uniqueIndex("passes_owner_key").on(t.owner, t.keyIndex)],
+);
+
+/** Items re-sealed to a pass by the owner's device (older items, or "Add a reader"). */
+export const passItems = pgTable(
+  "pass_items",
+  {
+    passId: text("pass_id").notNull(),
+    /** What was re-sealed: an envelope hash, or "invoice:<id>". */
+    source: text("source").notNull(),
+    kind: text("kind").notNull(),
+    /** Blob hash of the copy sealed to the pass key. */
+    envelope: text("envelope").notNull(),
+    /** When the original item was sent (what decides the period). */
+    itemAt: ts("item_at").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.passId, t.source] })],
+);

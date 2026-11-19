@@ -21,6 +21,7 @@ import {
 } from "@mizuhiki/core";
 import { resolveOwner } from "@mizuhiki/chain";
 import { api, ApiFailure } from "@/lib/api";
+import { passRecipients } from "@/lib/passKeys";
 
 export function formEvent(
   id: string,
@@ -57,6 +58,7 @@ export async function submitAnswers(args: {
     args.onStep("keys", 0.05);
     const readers = [await recipient(def.owner, args.ownerCard)];
     for (const r of def.readers) readers.push(await recipient(r.address));
+    readers.push(...(await passRecipients(def.owner, "forms")));
 
     const files: Record<string, FileFacts[]> = {};
     const chunks: string[] = [];

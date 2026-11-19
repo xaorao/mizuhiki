@@ -30,7 +30,14 @@ if (have < 2_000_000n) {
     console.error(`The helper needs about 2 test QOR for key registration fees. Send some to ${signer.address} and run setup again.`);
     process.exit(1);
   }
-  const m = /^QORE_MNEMONIC="?([^"\n]+)"?/m.exec(readFileSync(devFile, "utf8"))?.[1];
+  // KEY=value lines; the dev wallet's phrase is read here and never printed.
+  const env = Object.fromEntries(
+    readFileSync(devFile, "utf8")
+      .split("\n")
+      .filter((l) => l.includes("=") && !l.startsWith("#"))
+      .map((l) => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1).replace(/^"|"$/g, "")]),
+  ) as Record<string, string | undefined>;
+  const m = env["QORE_MNEMONIC"];
   if (!m) throw new Error("QORE_MNEMONIC missing from the testnet wallet file");
   const dev = deriveAccount(m);
   await sendTx({ address: dev.address.bech32, classical: dev.classical, pq: dev.pq }, [msgSend(dev.address.bech32, signer.address, DENOMS.QOR.denom, 3_000_000n)], "mzk:test-fund:delivery-helper");

@@ -40,6 +40,7 @@ import {
 import { getQorexNative, type QorexNativeProvider } from "@qorechain/qorex-types";
 import type { Account } from "@/account/AccountProvider";
 import { api, ApiFailure } from "@/lib/api";
+import { passRecipients } from "@/lib/passKeys";
 import { idb } from "@/lib/idb";
 
 export type PayToken = "fUSD" | "QOR";
@@ -113,6 +114,7 @@ export async function preparePayment(args: {
     const readers = [await ownerRecipient(args.owner.address, args.owner.card)];
     if (args.payer && args.payer.owner.address !== args.owner.address)
       readers.push(publicRecipient(args.payer.keys.seal));
+    readers.push(...(await passRecipients(args.owner.address, "payments")));
     const payload: PayNotePayload = {
       v: 1,
       kind: "paynote",

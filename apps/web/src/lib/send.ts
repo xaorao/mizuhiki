@@ -26,6 +26,7 @@ import {
 import { resolveOwner } from "@mizuhiki/chain";
 import type { Account } from "@/account/AccountProvider";
 import { api, ApiFailure } from "@/lib/api";
+import { passRecipients } from "@/lib/passKeys";
 
 export interface MessagePayload {
   v: 1;
@@ -177,6 +178,8 @@ export async function sendSealed(args: {
       args.signer && args.signer.owner.address !== to.address
         ? [recipient, publicRecipient(args.signer.keys.seal)]
         : [recipient];
+    // An accountant's pass on the recipient's side reads messages of its period too (spec 5.12).
+    if ((args.kind ?? "message") !== "invoice") readers.push(...(await passRecipients(to.address, "messages")));
     const sealed = sealItem({
       purpose: Purpose.message,
       readers,

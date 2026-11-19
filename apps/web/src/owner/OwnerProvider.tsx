@@ -6,11 +6,13 @@
  * last change; Publish signs the manifest and bumps its version.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { signRecord, type Manifest } from "@mizuhiki/core";
+import { parseManifest, signRecord, type Manifest } from "@mizuhiki/core";
 import { useAccount, type Account } from "@/account/AccountProvider";
 import { api, ApiFailure } from "@/lib/api";
 import { draftFromManifest, differsFromPublished, loadDraft, publishable, saveDraft, type Draft } from "@/editor/state";
 import { blockProblem } from "@/editor/blocks";
+import { ownedPasses, periodKeysOf } from "@/passes/engine";
+import { forgetPassKeys } from "@/lib/passKeys";
 
 export type SaveState = "idle" | "saving" | "saved" | "offline" | "error";
 
@@ -36,6 +38,8 @@ interface OwnerCtx {
   dirty: boolean;
   save: SaveState;
   publish: () => Promise<void>;
+  /** Re-sign the live page with the live passes' keys (spec 5.12). */
+  publishPassKeys: () => Promise<void>;
   publishing: boolean;
   stats: Stats | null;
   refreshStats: () => void;
@@ -201,6 +205,14 @@ export function OwnerProvider({ account, children }: { account: Account; childre
     return () => removeEventListener("keydown", key);
   }, [undo, redo]);
 
+  const livePeriodKeys = useCallback(
+    async (t: string) => {
+      forgetPassKeys(account.owner.address);
+      return periodKeysOf(account, (await ownedPasses({ ...account, token: t })).passes);
+    },
+    [account],
+  );
+
   const publishOnce = useCallback(async () => {
     const d = latest.current;
     if (!d) return;
@@ -210,6 +222,8 @@ export function OwnerProvider({ account, children }: { account: Account; childre
       const body: Manifest = publishable(
         {
           ...d.manifest,
+          // Always the live passes' keys, so a page publish never brings back a revoked one.
+          periodKeys: await livePeriodKeys(t),
           version: Math.max(d.manifest.version, publishedRef.current?.version ?? 0) + 1,
           updatedAt: new Date().toISOString(),
         },
@@ -225,7 +239,7 @@ export function OwnerProvider({ account, children }: { account: Account; childre
       await api.put("/pages", { record }, { token: t });
       setPublished(body);
       // Keep unfinished blocks in the draft; only the version moves.
-      const next = { ...d, manifest: { ...d.manifest, version: body.version, updatedAt: body.updatedAt } };
+      const next = { ...d, manifest: { ...d.manifest, periodKeys: body.periodKeys, version: body.version, updatedAt: body.updatedAt } };
       setDraft(next);
       latest.current = next;
       await saveDraft(account, t, next);
@@ -233,18 +247,44 @@ export function OwnerProvider({ account, children }: { account: Account; childre
     } finally {
       setPublishing(false);
     }
-  }, [account, token, setPublished]);
+  }, [account, token, setPublished, livePeriodKeys]);
 
-  const publish = useCallback(async () => {
+  /** Re-sign the live page with the current pass keys only; unpublished page edits stay in the draft. */
+  const publishKeysOnce = useCallback(async () => {
+    const live = publishedRef.current;
+    if (!live) return;
+    const t = await token();
+    const d = latest.current;
+    const body: Manifest = parseManifest({
+      ...live,
+      periodKeys: await livePeriodKeys(t),
+      version: Math.max(live.version, d?.manifest.version ?? 0) + 1,
+      updatedAt: new Date().toISOString(),
+    });
+    const record = signRecord({ kind: "manifest", body, signer: account.owner.address, classical: account.keys.classical, pq: account.keys.pq });
+    await api.put("/pages", { record }, { token: t });
+    setPublished(body);
+    if (d) {
+      const next = { ...d, manifest: { ...d.manifest, periodKeys: body.periodKeys, version: body.version, updatedAt: body.updatedAt } };
+      setDraft(next);
+      latest.current = next;
+      await saveDraft(account, t, next);
+    }
+  }, [account, token, setPublished, livePeriodKeys]);
+
+  // Page publishes and pass-key publishes run one at a time, in order.
+  const serial = useCallback(async (job: () => Promise<void>) => {
     const before = publishing$.current;
-    const run = (before ?? Promise.resolve()).catch(() => undefined).then(publishOnce);
+    const run = (before ?? Promise.resolve()).catch(() => undefined).then(job);
     publishing$.current = run;
     try {
       await run;
     } finally {
       if (publishing$.current === run) publishing$.current = null;
     }
-  }, [publishOnce]);
+  }, []);
+  const publish = useCallback(() => serial(publishOnce), [serial, publishOnce]);
+  const publishPassKeys = useCallback(() => serial(publishKeysOnce), [serial, publishKeysOnce]);
 
   const value = useMemo<OwnerCtx>(
     () => ({
@@ -261,6 +301,7 @@ export function OwnerProvider({ account, children }: { account: Account; childre
       dirty: draft ? differsFromPublished(draft, published, blockProblem) : false,
       save,
       publish,
+      publishPassKeys,
       publishing,
       stats,
       refreshStats,
@@ -278,6 +319,7 @@ export function OwnerProvider({ account, children }: { account: Account; childre
       redo,
       save,
       publish,
+      publishPassKeys,
       publishing,
       stats,
       refreshStats,

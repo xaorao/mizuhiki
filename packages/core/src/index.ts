@@ -17,3 +17,4 @@ export * from "./memo";
 export * from "./forms";
 export * from "./rooms";
 export * from "./shop";
+export * from "./passes";

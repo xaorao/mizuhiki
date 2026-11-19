@@ -5,6 +5,7 @@
  * plaintext is unreadable without the unlocked account.
  */
 import { Purpose, ab, fromUtf8, openItem, randomBytes, utf8, type AnswerValue, type FileFacts } from "@mizuhiki/core";
+import type { SealKeyPair } from "@qorechain/qoreseal";
 import type { Account } from "@/account/AccountProvider";
 import { api } from "@/lib/api";
 import { idb } from "@/lib/idb";
@@ -70,7 +71,7 @@ const PURPOSE_BY_KIND: Record<string, string> = {
   payment: Purpose.payNote,
 };
 
-export function purposeFor(row: InboxRow): string | undefined {
+export function purposeFor(row: Pick<InboxRow, "kind" | "ref">): string | undefined {
   if (row.kind === "form") {
     const id = /^form:([A-Za-z0-9_-]{1,40})$/.exec(row.ref ?? "")?.[1];
     return id ? Purpose.form(id) : undefined;
@@ -82,11 +83,20 @@ const str = (v: unknown): string => (typeof v === "string" ? v : "");
 
 /** Fetch an envelope and open it here. Throws MizuhikiError with a plain message on failure. */
 export async function openRow(account: Account, row: InboxRow): Promise<Opened> {
+  return openRowWith(account.keys.seal, row);
+}
+
+/** Open with any key the item was sealed to (the owner's, or a pass key). */
+export async function openRowWith(keys: SealKeyPair, row: Pick<InboxRow, "kind" | "ref" | "envelope" | "at">): Promise<Opened> {
   if (!row.envelope) throw new Error("This item has no sealed part.");
   const purpose = purposeFor(row);
   if (!purpose) throw new Error("This kind of item opens in its own section.");
   const bytes = await api.bytes(`/blobs/${row.envelope}`);
-  const plain = openItem({ purpose, envelope: bytes, keys: account.keys.seal });
+  return parseOpened(row, purpose, openItem({ purpose, envelope: bytes, keys }));
+}
+
+/** Read an opened item's plaintext into its shape. */
+export function parseOpened(row: Pick<InboxRow, "kind" | "ref" | "at">, purpose: string, plain: Uint8Array): Opened {
   const json = JSON.parse(fromUtf8(plain)) as Record<string, unknown>;
   if (row.kind === "form") {
     const formId = /^form:([A-Za-z0-9_-]{1,40})$/.exec(row.ref ?? "")?.[1] ?? "";

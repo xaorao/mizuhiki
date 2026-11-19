@@ -88,7 +88,8 @@ export function differsFromPublished(
   if (!published) return true;
   // Compare what Publish would send with what is live, in canonical form, so key
   // order and schema defaults never make an unchanged page look changed.
-  const norm = (m: Manifest) => canonicalJson({ ...m, version: 0, updatedAt: "" });
+  // Pass keys are kept in step by the Passes screen, not by page edits.
+  const norm = (m: Manifest) => canonicalJson({ ...m, version: 0, updatedAt: "", periodKeys: [] });
   try {
     return norm(publishable(d.manifest, isProblem)) !== norm(parseManifest(published));
   } catch {

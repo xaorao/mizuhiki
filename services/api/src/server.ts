@@ -23,6 +23,7 @@ import { formRoutes } from "./routes/forms";
 import { snapshotRoutes } from "./routes/snapshots";
 import { roomRoutes } from "./routes/rooms";
 import { shopRoutes } from "./routes/shop";
+import { passRoutes } from "./routes/passes";
 
 export interface Ctx {
   cfg: Config;
@@ -102,6 +103,7 @@ export async function buildServer(
   await app.register(snapshotRoutes(ctx));
   await app.register(roomRoutes(ctx));
   await app.register(shopRoutes(ctx));
+  await app.register(passRoutes(ctx));
   return {
     app,
     ctx,
