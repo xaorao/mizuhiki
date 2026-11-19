@@ -52,7 +52,9 @@ export const blobRoutes =
       return { hash: r.hash, size: r.size };
     });
 
-    app.get("/blobs/:hash", async (req, reply) => {
+    // Content-addressed ciphertext, immutable and cacheable like a static file: a new device opening its
+    // rooms and inbox reads many of these at once, so they have their own, higher limit.
+    app.get("/blobs/:hash", { config: { rateLimit: { max: 3000, timeWindow: "1 minute" } } }, async (req, reply) => {
       const { hash } = req.params as { hash: string };
       if (!isHash(hash)) return fail(reply, 400, "BAD_HASH", "Not a blob id.");
       const b = await ctx.blobs.get(hash);

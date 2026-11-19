@@ -11,7 +11,7 @@ import { idb } from "@/lib/idb";
 
 export interface InboxRow {
   id: string;
-  type: "envelope" | "payment";
+  type: "envelope" | "payment" | "request";
   kind: string;
   envelope: string | null;
   size: number;
@@ -20,7 +20,7 @@ export interface InboxRow {
   read: boolean;
   archived: boolean;
   ref: string | null;
-  sender: { address: string; name: string | null; how: "signed" | "payment" } | null;
+  sender: { address: string; name: string | null; how: "signed" | "payment" | "request" } | null;
   /** The sender's signature record; checked again on this device against QoreChain. */
   senderSig: unknown;
   /** For sent items: who it went to. */

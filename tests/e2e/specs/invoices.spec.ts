@@ -284,7 +284,9 @@ test("invoices on a phone: list and payer page fit", async ({ page }, info) => {
   test.skip(info.project.name !== "phone", "phone");
   const owner = await ensureOwner("e2e-editor", OWNER);
   await restoreInBrowser(page, owner.phrase);
-  await page.getByRole("navigation", { name: "Owner sections" }).last().getByRole("link", { name: "Invoices" }).click();
+  // phones reach Invoices through More (the tab bar holds My page, Inbox, Rooms, Forms)
+  await page.getByRole("navigation", { name: "Owner sections" }).last().getByRole("button", { name: "More" }).click();
+  await page.getByRole("dialog", { name: "Everything" }).getByRole("link", { name: "Invoices" }).click();
   await expect(page.getByRole("heading", { name: "Invoices" })).toBeVisible();
   const [sw, iw] = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
   expect(sw).toBeLessThanOrEqual(iw);

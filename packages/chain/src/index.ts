@@ -10,3 +10,4 @@ export * from "./deployment";
 export * from "./registry";
 export * from "./recipients";
 export * from "./proof";
+export * from "./rooms";

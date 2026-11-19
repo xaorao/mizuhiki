@@ -1,0 +1,1 @@
+ALTER TABLE "room_members" ADD COLUMN "first_epoch" integer DEFAULT 1 NOT NULL;

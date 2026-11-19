@@ -30,7 +30,8 @@ export const proofRoutes =
     const db = ctx.db;
 
     /** The account's Mizuhiki name (primary first). Clients confirm it on chain with `resolve`. */
-    app.get("/names/of/:address", async (req, reply) => {
+    // Public directory lookups; a room or inbox resolves many names at once.
+    app.get("/names/of/:address", { config: { rateLimit: { max: 1200, timeWindow: "1 minute" } } }, async (req, reply) => {
       const { address } = req.params as { address: string };
       if (!isAddress(address)) return fail(reply, 400, "BAD_ADDRESS", "That is not a QoreChain address.");
       const rows = await db

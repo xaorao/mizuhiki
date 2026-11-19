@@ -8,6 +8,47 @@ import { useEffect, useId, useRef, type ReactNode } from "react";
 import { IconButton } from "./Button";
 import s from "./Sheet.module.css";
 
+/*
+ * Sheets and the browser's back button. Opening a sheet adds a history entry
+ * (keeping the router's own state on it), so back closes the sheet. Closing a
+ * sheet in code must never go back itself: that back lands later, and if the
+ * app navigates in the same moment (leave a room, then go to the list) it would
+ * undo the navigation. So a sheet closed in code leaves its entry in place as a
+ * "leftover": the next sheet reuses it, and a back press from it skips it.
+ */
+type HistoryState = Record<string, unknown> & { mzSheet?: string };
+const state = (): HistoryState => (window.history.state as HistoryState | null) ?? {};
+let onLeftover = false;
+let skipping = false;
+let lastPopWasOurs = false;
+if (typeof window !== "undefined") {
+  window.addEventListener("popstate", () => {
+    lastPopWasOurs = skipping;
+    if (skipping) {
+      skipping = false;
+      return;
+    }
+    if (onLeftover) {
+      // Back from a leftover lands on the same page; take the step the person meant.
+      onLeftover = false;
+      skipping = true;
+      lastPopWasOurs = true;
+      window.history.back();
+    }
+  });
+}
+function markOpen(id: string) {
+  if (onLeftover) window.history.replaceState({ ...state(), mzSheet: id }, "");
+  else window.history.pushState({ ...state(), mzSheet: id }, "");
+  onLeftover = false;
+}
+function markClosedInCode(id: string) {
+  if (state().mzSheet !== id) return;
+  const { mzSheet: _gone, ...rest } = state();
+  window.history.replaceState(rest, "");
+  onLeftover = true;
+}
+
 export function Sheet({
   open,
   onClose,
@@ -41,14 +82,14 @@ export function Sheet({
     if (open && !d.open) {
       d.showModal();
       if (history) {
-        window.history.pushState({ mzSheet: titleId }, "");
         pushed.current = true;
+        markOpen(titleId);
       }
     } else if (!open && d.open) {
       d.close();
       if (pushed.current) {
         pushed.current = false;
-        window.history.back();
+        markClosedInCode(titleId);
       }
     }
   }, [open, history, titleId]);
@@ -56,10 +97,16 @@ export function Sheet({
   useEffect(() => {
     if (!history) return;
     const pop = () => {
+      // A back this module took (skipping a leftover) is not the person closing this sheet.
+      if (lastPopWasOurs) return;
       if (pushed.current) {
-        pushed.current = false;
-        if (dismissRef.current) onCloseRef.current();
-        else window.history.pushState({ mzSheet: titleId }, "");
+        if (dismissRef.current) {
+          pushed.current = false;
+          onCloseRef.current();
+        } else {
+          // Work that must not be interrupted is running: stay open and put the entry back.
+          window.history.pushState({ ...state(), mzSheet: titleId }, "");
+        }
       }
     };
     addEventListener("popstate", pop);

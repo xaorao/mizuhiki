@@ -122,6 +122,12 @@ test("owner builds, publishes and shares a form; a respondent answers through th
   // ---- a respondent answers
   const rctx = await browser.newContext();
   const r = await rctx.newPage();
+  // As a visitor would: open the public page and tap the form's button (it opens the form, Back returns).
+  await r.goto(`/@${NAME}`);
+  await r.getByRole("button", { name: title }).click();
+  await r.waitForURL(`**/f/${slug}`);
+  await r.goBack();
+  await r.waitForURL(`**/@${NAME}`);
   await r.goto(link);
   await r.getByRole("button", { name: "Start" }).click();
   await r.getByRole("textbox", { name: "What's your name?" }).fill("Aiko");

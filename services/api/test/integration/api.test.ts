@@ -22,7 +22,9 @@ import {
   type Manifest,
   type Signed,
 } from "@mizuhiki/core";
-import { NETWORK } from "@mizuhiki/chain";
+import { NETWORK, createRoomOnChain, rotateRoomOnChain } from "@mizuhiki/chain";
+import { EpochKeyManager, sealBatch } from "@qorechain/qoreseal";
+import { distributionHash, membershipHash, roomContext, roomIdBytes32, sha256Hex, CHAIN_ID } from "@mizuhiki/core";
 import { ensurePersona, type ReadyPersona } from "@mizuhiki/testnet";
 import type { FastifyInstance } from "fastify";
 import { loadConfig } from "../../src/config";
@@ -79,7 +81,7 @@ beforeAll(async () => {
   await runMigrations(DB);
   const postgres = (await import("postgres")).default;
   const sql = postgres(DB);
-  await sql`truncate accounts, auth_nonces, sessions, names, cards, pages, drafts, blobs, envelopes, payments, counters, index_checkpoints, reports, push_subscriptions, notify_prefs, media, chain_events, invoices, forms, snapshots`;
+  await sql`truncate accounts, auth_nonces, sessions, names, cards, pages, drafts, blobs, envelopes, payments, counters, index_checkpoints, reports, push_subscriptions, notify_prefs, media, chain_events, invoices, forms, snapshots, rooms, room_members, room_epochs, room_batches, room_history, room_invites, room_requests`;
   await sql.end();
   const cfg = loadConfig({
     ...process.env,
@@ -984,6 +986,135 @@ describe("snapshots", () => {
     expect(expiry).toBeInstanceOf(Date);
     expect((expiry as Date).getTime()).toBeLessThanOrEqual(Date.now());
   });
+});
+
+describe("rooms", () => {
+  // A real room on testnet: owner + stranger, then the stranger is removed.
+  const id = `rmapi${Date.now().toString(36)}`;
+  let ownerToken = "";
+  let strangerToken = "";
+  const auth = (t: string) => ({ authorization: `Bearer ${t}` });
+  const put = async (bytes: Uint8Array, t: string) =>
+    (await app.inject({ method: "PUT", url: "/blobs", headers: { ...auth(t), "content-type": "application/octet-stream" }, payload: Buffer.from(bytes) })).json<{ hash: string }>().hash;
+  let manager: EpochKeyManager;
+  const members = () => [
+    { address: owner.address, role: "owner" as const },
+    { address: stranger.address, role: "member" as const },
+  ];
+  const post = (t: string, epoch: bigint, context = roomContext(id)) =>
+    put(sealBatch({ epochKey: { epoch, key: manager.keyFor(epoch) ?? new Uint8Array(32) }, context, batchIndex: Date.now(), data: utf8("x") }).blob, t);
+
+  beforeAll(async () => {
+    ownerToken = await signIn(owner);
+    strangerToken = await signIn(stranger);
+    for (const [p, t] of [[owner, ownerToken], [stranger, strangerToken]] as const)
+      await app.inject({ method: "PUT", url: "/cards", headers: auth(t), payload: { card: p.card } });
+    manager = new EpochKeyManager({
+      chainId: CHAIN_ID,
+      purpose: Purpose.room(id),
+      members: { [owner.address]: recipientOf(owner.seal), [stranger.address]: recipientOf(stranger.seal) },
+    });
+  }, 120_000);
+
+  it("refuses a room QoreChain has no record of, then accepts the real one", async () => {
+    const env = manager.distribution();
+    const distribution = await put(env, ownerToken);
+    const body = { id, txHash: "0".repeat(64), members: members(), distribution, approval: true, autoDeleteSeconds: 0 };
+    const early = await app.inject({ method: "POST", url: "/rooms", headers: auth(ownerToken), payload: body });
+    expect(early.json<{ error: { code: string } }>().error.code).toBe("NOT_ON_CHAIN");
+    const txHash = await createRoomOnChain(owner, roomIdBytes32(id), membershipHash(id, 1n, members()), distributionHash(env));
+    const wrong = await app.inject({
+      method: "POST",
+      url: "/rooms",
+      headers: auth(ownerToken),
+      payload: { ...body, txHash, members: [members()[0]] },
+    });
+    expect(wrong.json<{ error: { code: string } }>().error.code).toBe("CHAIN_MISMATCH");
+    const ok = await app.inject({ method: "POST", url: "/rooms", headers: auth(ownerToken), payload: { ...body, txHash } });
+    expect(ok.statusCode).toBe(201);
+    const list = await app.inject({ url: "/rooms", headers: auth(strangerToken) });
+    expect(list.json<{ rooms: { id: string; role: string }[] }>().rooms.find((r) => r.id === id)?.role).toBe("member");
+    const keys = await app.inject({ url: `/rooms/${id}/keys`, headers: auth(strangerToken) });
+    expect(keys.json<{ epochs: { epoch: number; hash: string }[] }>().epochs).toEqual([{ epoch: 1, hash: distribution }]);
+  }, 180_000);
+
+  it("relays sealed batches only from members, for this room and the current key", async () => {
+    const good = await post(strangerToken, 1n);
+    const r = await app.inject({ method: "POST", url: `/rooms/${id}/batches`, headers: auth(strangerToken), payload: { hash: good, deleteHash: sha256Hex(utf8("7".repeat(64))) } });
+    expect(r.statusCode).toBe(201);
+    const other = await post(strangerToken, 1n, roomContext("someotherroom"));
+    expect((await app.inject({ method: "POST", url: `/rooms/${id}/batches`, headers: auth(strangerToken), payload: { hash: other, deleteHash: "a".repeat(64) } })).json<{ error: { code: string } }>().error.code).toBe("WRONG_ROOM");
+    const notBatch = await put(utf8("plain words, not a batch"), strangerToken);
+    expect((await app.inject({ method: "POST", url: `/rooms/${id}/batches`, headers: auth(strangerToken), payload: { hash: notBatch, deleteHash: "a".repeat(64) } })).json<{ error: { code: string } }>().error.code).toBe("NOT_A_BATCH");
+    const outsider = await ensurePersona("api-room-outsider");
+    const outsiderToken = await signIn(outsider);
+    expect((await app.inject({ method: "POST", url: `/rooms/${id}/batches`, headers: auth(outsiderToken), payload: { hash: good, deleteHash: "a".repeat(64) } })).statusCode).toBe(403);
+    expect((await app.inject({ url: `/rooms/${id}/batches`, headers: auth(outsiderToken) })).statusCode).toBe(404);
+    const feed = await app.inject({ url: `/rooms/${id}/batches`, headers: auth(ownerToken) });
+    expect(feed.json<{ batches: { hash: string }[] }>().batches.map((b) => b.hash)).toEqual([good]);
+    // Delete for everyone: a wrong token from a non-admin is refused; the author's token works.
+    expect((await app.inject({ method: "POST", url: `/rooms/${id}/batches/${good}/delete`, headers: auth(strangerToken), payload: { token: "b".repeat(64) } })).statusCode).toBe(403);
+    expect((await app.inject({ method: "POST", url: `/rooms/${id}/batches/${good}/delete`, headers: auth(strangerToken), payload: { token: "7".repeat(64) } })).json<{ deleted: boolean }>().deleted).toBe(true);
+  }, 120_000);
+
+  it("invite links: wrong secret refused, right secret queues a request, revoked links stop", async () => {
+    const card = await put(utf8("sealed card stand-in"), ownerToken);
+    const secret = sha256Hex(utf8("invite secret"));
+    const inv = `inv${Date.now().toString(36)}abc`;
+    expect((await app.inject({ method: "POST", url: `/rooms/${id}/invites`, headers: auth(ownerToken), payload: { id: inv, secretHash: sha256Hex(utf8(secret)), card, primary: true, expiresAt: null, maxUses: 1 } })).statusCode).toBe(201);
+    const outsider = await ensurePersona("api-room-outsider");
+    const outsiderToken = await signIn(outsider);
+    await app.inject({ method: "PUT", url: "/cards", headers: auth(outsiderToken), payload: { card: outsider.card } });
+    expect((await app.inject({ url: `/invites/${inv}` })).json<{ state: string; members: number }>()).toMatchObject({ state: "ok", members: 2 });
+    expect((await app.inject({ method: "POST", url: `/invites/${inv}/join`, headers: auth(outsiderToken), payload: { secret: "c".repeat(64) } })).statusCode).toBe(404);
+    expect((await app.inject({ method: "POST", url: `/invites/${inv}/join`, headers: auth(outsiderToken), payload: { secret } })).json<{ status: string }>().status).toBe("pending");
+    expect((await app.inject({ url: `/rooms/${id}/requests`, headers: auth(ownerToken) })).json<{ requests: { address: string }[] }>().requests.map((q) => q.address)).toEqual([outsider.address]);
+    expect((await app.inject({ url: `/invites/${inv}` })).json<{ state: string }>().state).toBe("used-up");
+    await app.inject({ method: "PATCH", url: `/rooms/${id}/invites/${inv}`, headers: auth(ownerToken), payload: { revoked: true } });
+    expect((await app.inject({ url: `/invites/${inv}` })).json<{ state: string }>().state).toBe("revoked");
+    // Members with the add right can see the queue, but only an admin can decline.
+    expect((await app.inject({ method: "PATCH", url: `/rooms/${id}/requests/${outsider.address}`, headers: auth(strangerToken), payload: { status: "declined" } })).statusCode).toBe(403);
+  }, 120_000);
+
+  it("removing a member changes the key on chain; they get nothing new and cannot post", async () => {
+    const rotation = manager.removeMember(stranger.address);
+    expect(rotation.epoch).toBe(2n);
+    const env = rotation.envelope as Uint8Array;
+    const distribution = await put(env, ownerToken);
+    const next = [members()[0] as { address: string; role: "owner" }];
+    const payload = { epoch: 2, txHash: "", reason: "removed", members: next, distribution, admitted: [], removed: [{ address: stranger.address, blocked: false }] };
+    expect((await app.inject({ method: "POST", url: `/rooms/${id}/epochs`, headers: auth(strangerToken), payload: { ...payload, txHash: "0".repeat(64) } })).statusCode).toBe(403);
+    const txHash = await rotateRoomOnChain(owner, roomIdBytes32(id), 2n, membershipHash(id, 2n, next), distributionHash(env), "removed");
+    const ok = await app.inject({ method: "POST", url: `/rooms/${id}/epochs`, headers: auth(ownerToken), payload: { ...payload, txHash } });
+    expect(ok.statusCode).toBe(201);
+    const late = await post(ownerToken, 2n);
+    expect((await app.inject({ method: "POST", url: `/rooms/${id}/batches`, headers: auth(ownerToken), payload: { hash: late, deleteHash: "d".repeat(64) } })).statusCode).toBe(201);
+    const stale = await post(ownerToken, 1n);
+    expect((await app.inject({ method: "POST", url: `/rooms/${id}/batches`, headers: auth(ownerToken), payload: { hash: stale, deleteHash: "e".repeat(64) } })).json<{ error: { code: string } }>().error.code).toBe("STALE_EPOCH");
+    expect((await app.inject({ method: "POST", url: `/rooms/${id}/batches`, headers: auth(strangerToken), payload: { hash: late, deleteHash: "f".repeat(64) } })).statusCode).toBe(403);
+    const theirs = await app.inject({ url: `/rooms/${id}/batches`, headers: auth(strangerToken) });
+    expect(theirs.json<{ batches: { epoch: number }[] }>().batches.every((b) => b.epoch === 1)).toBe(true);
+    const theirKeys = await app.inject({ url: `/rooms/${id}/keys`, headers: auth(strangerToken) });
+    expect(theirKeys.json<{ epochs: { epoch: number }[] }>().epochs.map((e) => e.epoch)).toEqual([1]);
+    // One-request refresh: the removed member sees their own epochs only, no member list, no requests.
+    const sync = (await app.inject({ url: `/rooms/${id}/sync?after=0`, headers: auth(strangerToken) })).json<{
+      room: { epoch: number; members: unknown[]; epochs: { epoch: number }[]; me: { status: string } };
+      batches: { epoch: number }[];
+      keys: { epochs: { epoch: number }[] };
+      requests: unknown[];
+    }>();
+    expect(sync.room.me.status).toBe("removed");
+    expect(sync.room.epoch).toBe(1);
+    expect(sync.room.members).toEqual([]);
+    expect(sync.room.epochs.map((e) => e.epoch)).toEqual([1]);
+    expect(sync.batches.every((b) => b.epoch === 1)).toBe(true);
+    expect(sync.keys.epochs.map((e) => e.epoch)).toEqual([1]);
+    expect(sync.requests).toEqual([]);
+    const ownerSync = (await app.inject({ url: `/rooms/${id}/sync?after=0`, headers: auth(ownerToken) })).json<{ room: { epoch: number }; batches: unknown[]; requests: unknown[] }>();
+    expect(ownerSync.room.epoch).toBe(2);
+    expect(ownerSync.batches.length).toBeGreaterThan(0);
+    expect(ownerSync.requests.length).toBe(1); // the outsider's request from the invite test is still pending
+  }, 180_000);
 });
 
 describe("sign-in limits", () => {

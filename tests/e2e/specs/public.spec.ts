@@ -159,3 +159,25 @@ test("visitor: a manifest changed on the server is refused; unpublished pages va
   await page.goto(`/@${NAME}`);
   await expect(page.getByText(/checked on QoreChain/)).toBeVisible();
 });
+
+test("browser back and sheets: back closes an open sheet; after closing one in place, one back leaves the page", async ({ page }) => {
+  await ensureOwner("e2e-editor", NAME);
+  await page.goto("/proof");
+  await page.goto(`/@${NAME}`);
+  await expect(page.getByRole("heading", { name: "Kinari Studio" })).toBeVisible();
+  // back closes the sheet and stays on the page
+  await page.getByRole("button", { name: "Share or show QR code" }).click();
+  await expect(page.getByRole("dialog", { name: `Share @${NAME}` })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("dialog", { name: `Share @${NAME}` })).toBeHidden();
+  await expect(page).toHaveURL(new RegExp(`/@${NAME}$`));
+  // a sheet closed in place (Escape), then a second sheet opened from the same entry, then closed in place:
+  // one back press still leaves the page, as the person expects
+  await page.getByRole("button", { name: "Share or show QR code" }).click();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: /Anything you send is sealed to Kinari/ }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/proof$/, { timeout: 20_000 });
+});

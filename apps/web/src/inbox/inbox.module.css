@@ -495,3 +495,19 @@
     opacity: 1;
   }
 }
+
+/* a room join request */
+.request {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding: 18px;
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-lg);
+  background: var(--butter);
+  color: var(--butter-ink);
+}
+.request p {
+  margin: 0;
+  line-height: 1.5;
+}

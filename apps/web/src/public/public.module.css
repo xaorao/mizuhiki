@@ -516,3 +516,31 @@
     opacity: 1;
   }
 }
+
+/* room card (a "Join my room" block) */
+.roomCard {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+  animation: mz-pop-in 0.28s var(--ease-pop) both;
+}
+.roomCard b {
+  font-family: var(--font-round);
+  font-size: 22px;
+}
+.roomCard small {
+  color: var(--ink-muted);
+}
+.roomCard p {
+  margin: 0;
+}
+.roomNote {
+  color: var(--ink-muted);
+  line-height: 1.5;
+}
+@media (prefers-reduced-motion: reduce) {
+  .roomCard {
+    animation: none;
+  }
+}

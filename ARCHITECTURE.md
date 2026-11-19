@@ -197,6 +197,25 @@ tools                   repo audit, dev orchestration
 | Opened inbox items cached in IndexedDB, AES-GCM, key by HKDF from the seal seed | Search runs on the device over what was opened, reopening is instant, and the cache is unreadable without the unlocked account.                                                                                                       |
 | Sender signatures re-checked in the owner's browser                             | The server verified at drop time, but the owner's device checks again against QoreChain and against the sender named inside, so a lying server cannot fake "Verified".                                                                |
 
+## 8a. Rooms protocol (spec 5.10)
+
+Read from `repos/qoreseal/packages/ts/src/group.ts` and `batch.ts` and `contracts/src/MizuhikiRegistry.sol`.
+
+- **One AES-256 key per epoch, shared by the members** (`EpochKeyManager`, memory-only). Every membership change starts a new epoch whose key is sealed (QoreSeal hybrid) to the current members' cards. The admin making the change runs the manager in their browser with the members' recipients and the epoch history they hold.
+- **On chain** (`MizuhikiRegistry`): `createRoom` and `rotateRoom` record, per epoch, `membershipHash` = SHA-256 of the canonical sorted member list with roles, and `distributionHash` = SHA-256 of the sealed epoch-key envelope; `setRole` records admins; `transferRoom` and `closeRoom` as named. `rotateRoom` requires `newEpoch = epoch + 1` and an admin, so two admins changing membership at once cannot both win: the loser gets `StaleEpoch`, refetches and retries.
+- **Messages** are `PrivateBatchCodec` blobs (context `mzk:room:<id>`, batch index = sender's millisecond clock × 1000 + random, unique per sender). Because every member holds the epoch key, the AES layer proves only "a member wrote this". So every message carries, **inside** the encrypted payload, the author's QoreSign hybrid signature (kind `room`) over {roomId, epoch, body hash, sentAt}; readers verify it against the author's ML-DSA key read from chain, and the author must have been a member of that epoch. The server checks at upload that the poster is a current member but stores no author; a delete token's hash lets the author delete for everyone without the server recording authorship.
+- **What the server knows:** room ids, member addresses and roles, epochs, and the order and size of sealed batches. It does not know names of rooms, message content, authors or attachments. Room name, photo and description travel as signed system messages inside the room.
+- **History for new members is decided per admission:** "Share past messages" seals the older epoch keys the admitting admin holds (a list sealed to the newcomer only); "Only new messages" seals nothing. It cannot be undone, and the UI says so.
+- **Keys survive devices without extra storage:** every distribution stays in the blob store, so any member rebuilds every epoch key they were a member of by opening those envelopes with their own keys, plus any shared-history envelope sealed to them. Admins share history from exactly what they hold.
+- **Invites without an online admin:** a join request (invite link with a secret in the fragment, hashed on the server) waits in a queue. With approval on, an admin approves it; with approval off, the next admin client that opens the room admits it automatically. Either way the key is only ever sealed by an admin's browser.
+- **Leaving:** a member can leave at once (the server stops serving them new batches); the key rotates the next time an admin's client is open, and a pill says so until then.
+- **Auto-delete** sets an expiry on new batches only; it deletes ciphertext from storage, not copies members already opened.
+- **Verify keys:** a short safety phrase derived from SHA-256 of the member's on-chain ML-DSA key and signed card, compared out of band.
+
+- **Rate limits count accounts, not addresses.** Signed-in calls are limited per account (looked up from the real session), anonymous calls per IP, because people behind one network share an IP. Immutable ciphertext reads (`GET /blobs/:hash`) and public name lookups have their own higher limits, like static files. Found when three people on one machine hit the shared 300-a-minute budget.
+- **An open room refreshes with one request** (`GET /rooms/:id/sync`: room, new batches, keys, join requests). One live socket per tab; bursts of events are folded into one refresh; blobs are cached per tab; the room list never reopens the room already on screen.
+- **Someone who left or was removed** still gets the record of the epochs they belonged to (so their device can check who wrote what they saw), and nothing after.
+
 ## 9. Sources behind the facts used here
 
 - QoreSign 0.2.0 source: `repos/qoresign/packages/ts/src` (`sign.ts`, `message.ts`, `network.ts`, `siwq.ts`).

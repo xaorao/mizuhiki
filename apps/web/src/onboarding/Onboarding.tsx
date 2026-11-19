@@ -81,7 +81,8 @@ interface Availability {
   suggestions?: string[];
 }
 
-export function Onboarding({ initialName }: { initialName: string }) {
+/** `next`: where "Done" goes instead of the dashboard (an invite link the person came from). */
+export function Onboarding({ initialName, next: after }: { initialName: string; next?: string | undefined }) {
   const router = useRouter();
   const toast = useToast();
   const acct = useAccount();
@@ -231,7 +232,13 @@ export function Onboarding({ initialName }: { initialName: string }) {
               }}
             />
           )}
-          {step === "done" && <DoneStep name={draft.name} onOpen={() => router.push("/app")} />}
+          {step === "done" && (
+            <DoneStep
+              name={draft.name}
+              onOpen={() => router.push(after ?? "/app")}
+              openLabel={after?.startsWith("/join/") ? "Back to the invite" : "Open dashboard"}
+            />
+          )}
           {SKIPPABLE.includes(step) ? (
             <button type="button" className={s.skip} onClick={next}>
               Skip
@@ -1114,7 +1121,7 @@ function UnlockInline({ onUnlocked }: { onUnlocked: () => void }) {
   );
 }
 
-function DoneStep({ name, onOpen }: { name: string; onOpen: () => void }) {
+function DoneStep({ name, onOpen, openLabel }: { name: string; onOpen: () => void; openLabel: string }) {
   const toast = useToast();
   const acct = useAccount();
   const mm = useRef<HTMLDivElement>(null);
@@ -1154,7 +1161,7 @@ function DoneStep({ name, onOpen }: { name: string; onOpen: () => void }) {
           Share
         </Button>
         <Button variant="cord" iconRight="arrow" onClick={onOpen}>
-          Open dashboard
+          {openLabel}
         </Button>
       </div>
       {passkeysPossible() && !acct.vault?.wraps.some((w) => w.kind === "passkey") ? (

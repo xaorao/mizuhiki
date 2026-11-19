@@ -54,6 +54,7 @@ export function when(iso: string): string {
 }
 
 function preview(row: InboxRow, opened: Opened | undefined): string {
+  if (row.type === "request") return "Asked to join one of your rooms · tap to review";
   if (row.payment) {
     const note =
       opened?.kind === "paynote" && opened.note

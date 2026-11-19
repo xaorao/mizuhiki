@@ -33,6 +33,7 @@ Can: read and change everything in the database and blob store, serve modified J
 - Payment address swap: the pay sheet takes the address from the verified manifest and shows it in full on the review screen. **Stopped.**
 - Serving malicious JavaScript: this is the limit of every web-delivered encryption product. Mitigations: strict Content-Security-Policy, Subresource Integrity on every script, no third-party scripts, a published build hash per release, the PWA caches a known version, and the security page states this limit plainly. **Reduced, stated.**
 - Dropping or delaying items: the sender keeps a receipt with the envelope hash; the owner can see gaps against receipts. Denial of service is not prevented. **Stated.**
+- Rooms: messages are sealed under the room's epoch key and signed by their author; members' devices check each signature against the author's on-chain key, hide a message whose author was not in the room during that key period, and count a re-uploaded copy once. The member list we serve is checked on the member's device against the membership hash recorded on QoreChain for the current key, and a mismatch is shown as a warning. We cannot read rooms; we can withhold or delay messages, and we could misstate *past* membership to a device (only the current list is checkable against the chain). The relay checks at upload that the poster is a member but keeps no record of who posted. **Contents stopped; forged membership detected; withholding and past-membership claims stated.**
 - Metadata (who sent to whom, when, sizes): visible to us; envelopes to owners use the anonymous flag; senders are anonymous unless they choose to sign. **Stated at the point of action.**
 
 ### A2. A visitor or any outsider
@@ -48,6 +49,7 @@ Can: send anything to any page, read public pages and the chain, probe the API.
 
 ### A3. A removed room member, pass holder or guardian
 
+- Posting after removal: the relay refuses it, and even if it accepted one, members' devices hide a message sealed after the author's last key period. **Stopped.**
 - Reading new room messages: every removal rotates the epoch; the new epoch key is sealed only to remaining members (verified: `UNKNOWN_EPOCH`). **Stopped.** Old messages they already held remain readable to them. **Stated (promise 5).**
 - A revoked pass: future items are no longer sealed to that period key; items already sealed to it remain readable by whoever holds it. **Stated.**
 - A removed guardian: their share is invalidated by re-splitting the capsule key and re-sealing shares to the current guardians. **Stopped going forward.**

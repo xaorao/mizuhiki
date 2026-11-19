@@ -7,7 +7,7 @@
 import type { FastifyPluginCallback } from "fastify";
 import { and, desc, eq, inArray, isNull, lt, notInArray, sql } from "drizzle-orm";
 import { z } from "zod";
-import { envelopes, names, payments, sessions } from "@mizuhiki/db";
+import { envelopes, names, payments, roomMembers, roomRequests, sessions } from "@mizuhiki/db";
 import type { Ctx } from "../server";
 import { sessionAddress } from "../lib/auth";
 import { SELF_KINDS } from "./drop";
@@ -16,7 +16,8 @@ import { createHash } from "node:crypto";
 
 export interface InboxRow {
   id: string;
-  type: "envelope" | "payment";
+  /** "request": someone asked to join a room this account administers (spec: the inbox "Room request" type). */
+  type: "envelope" | "payment" | "request";
   kind: string;
   envelope: string | null;
   size: number;
@@ -25,7 +26,7 @@ export interface InboxRow {
   read: boolean;
   archived: boolean;
   ref: string | null;
-  sender: { address: string; name: string | null; how: "signed" | "payment" } | null;
+  sender: { address: string; name: string | null; how: "signed" | "payment" | "request" } | null;
   /** The sender's signature record, so the owner's device can check it again itself. */
   senderSig: unknown;
   /** For sent items: who it was sent to. */
@@ -85,8 +86,29 @@ export const inboxRoutes =
               .orderBy(desc(payments.time))
               .limit(q.data.limit);
 
+      // Join requests for rooms this account owns or administers; they leave the inbox once handled.
+      const reqs =
+        box !== "inbox"
+          ? []
+          : await db
+              .select({ roomId: roomRequests.roomId, address: roomRequests.address, at: roomRequests.at })
+              .from(roomRequests)
+              .innerJoin(
+                roomMembers,
+                and(
+                  eq(roomMembers.roomId, roomRequests.roomId),
+                  eq(roomMembers.address, owner),
+                  eq(roomMembers.status, "active"),
+                  inArray(roomMembers.role, ["owner", "admin"]),
+                ),
+              )
+              .where(and(eq(roomRequests.status, "pending"), lt(roomRequests.at, before)))
+              .orderBy(desc(roomRequests.at))
+              .limit(q.data.limit);
+
       const signers = [
         ...new Set([
+          ...reqs.map((r) => r.address),
           ...env.map((e) => (e.senderSig as { signer?: string } | null)?.signer).filter((x): x is string => !!x),
           ...env.map((e) => e.owner),
           ...pays.map((p) => p.fromAddr),
@@ -168,6 +190,25 @@ export const inboxRoutes =
             expiresAt: note?.expiresAt?.toISOString() ?? null,
           };
         }),
+        ...reqs.map(
+          (r): InboxRow => ({
+            id: `room:${r.roomId}:${r.address}`,
+            type: "request",
+            kind: "request",
+            envelope: null,
+            size: 0,
+            readers: 0,
+            at: r.at.toISOString(),
+            read: false,
+            archived: false,
+            ref: `room:${r.roomId}`,
+            sender: { address: r.address, name: nameOf(r.address), how: "request" },
+            senderSig: null,
+            to: null,
+            payment: null,
+            expiresAt: null,
+          }),
+        ),
       ].sort((a, b) => b.at.localeCompare(a.at));
       return { rows: rows.slice(0, q.data.limit), unread: rows.filter((r) => !r.read).length };
     });
@@ -213,7 +254,20 @@ export const inboxRoutes =
         .select({ n: sql<number>`count(*)::int` })
         .from(envelopes)
         .where(and(eq(envelopes.owner, owner), eq(envelopes.archived, false), isNull(envelopes.readAt)));
-      return { unread: r?.n ?? 0 };
+      const [q] = await db
+        .select({ n: sql<number>`count(*)::int` })
+        .from(roomRequests)
+        .innerJoin(
+          roomMembers,
+          and(
+            eq(roomMembers.roomId, roomRequests.roomId),
+            eq(roomMembers.address, owner),
+            eq(roomMembers.status, "active"),
+            inArray(roomMembers.role, ["owner", "admin"]),
+          ),
+        )
+        .where(eq(roomRequests.status, "pending"));
+      return { unread: (r?.n ?? 0) + (q?.n ?? 0) };
     });
 
     /**

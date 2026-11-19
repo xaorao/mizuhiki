@@ -60,7 +60,8 @@ export const BlockSchema = z.discriminatedUnion("type", [
   z.object({ ...base, type: z.literal("form"), formId: id, slug: z.string().regex(/^[a-z0-9-]{1,48}$/) }),
   z.object({ ...base, type: z.literal("product"), productId: id }),
   z.object({ ...base, type: z.literal("shopSection"), productIds: z.array(id).max(48) }),
-  z.object({ ...base, type: z.literal("room"), roomId: id }),
+  /** A room invite on the page: the join path with its link key (anyone who sees the page can ask to join). */
+  z.object({ ...base, type: z.literal("room"), roomId: id, invite: z.string().regex(/^\/join\/[a-z0-9]{12,32}#k=[A-Za-z0-9_-]{43}$/) }),
   z.object({ ...base, type: z.literal("capsule") }),
   z.object({ ...base, type: z.literal("social") }),
 ]);

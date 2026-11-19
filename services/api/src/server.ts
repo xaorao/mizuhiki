@@ -1,6 +1,8 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
+import { createHash } from "node:crypto";
+import { sessionAddress } from "./lib/auth";
 import websocket from "@fastify/websocket";
 import type { Config } from "./config";
 import { makeDb, type Db } from "@mizuhiki/db";
@@ -18,6 +20,7 @@ import { payRoutes } from "./routes/pay";
 import { invoiceRoutes } from "./routes/invoices";
 import { formRoutes } from "./routes/forms";
 import { snapshotRoutes } from "./routes/snapshots";
+import { roomRoutes } from "./routes/rooms";
 
 export interface Ctx {
   cfg: Config;
@@ -46,7 +49,27 @@ export async function buildServer(
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["content-type", "authorization", "x-pow"],
   });
-  await app.register(rateLimit, { global: true, max: 300, timeWindow: "1 minute" });
+  // Signed-in calls are counted per account, anonymous ones per IP address: people behind one network
+  // (an office, a family's Wi-Fi) must not share one budget. Only a real, unexpired session counts as
+  // signed in, so a made-up token falls back to the IP. Sign-in itself is limited per account (auth.ts).
+  const accountOf = new Map<string, { address: string | undefined; at: number }>();
+  await app.register(rateLimit, {
+    global: true,
+    max: 300,
+    timeWindow: "1 minute",
+    keyGenerator: async (req) => {
+      const auth = req.headers.authorization;
+      if (!auth?.startsWith("Bearer ")) return `ip:${req.ip}`;
+      const k = createHash("sha256").update(auth).digest("hex");
+      let hit = accountOf.get(k);
+      if (!hit || Date.now() - hit.at > 30_000) {
+        hit = { address: await sessionAddress(ctx.db, req), at: Date.now() };
+        accountOf.set(k, hit);
+        if (accountOf.size > 10_000) accountOf.clear();
+      }
+      return hit.address ? `a:${hit.address}` : `ip:${req.ip}`;
+    },
+  });
   await app.register(websocket, { options: { maxPayload: 64 * 1024 } });
   app.addContentTypeParser("application/octet-stream", { parseAs: "buffer" }, (_req, body, done) => done(null, body));
   app.get("/health", () => ({ ok: true }));
@@ -62,6 +85,7 @@ export async function buildServer(
   await app.register(invoiceRoutes(ctx));
   await app.register(formRoutes(ctx));
   await app.register(snapshotRoutes(ctx));
+  await app.register(roomRoutes(ctx));
   return {
     app,
     ctx,

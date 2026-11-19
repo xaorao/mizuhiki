@@ -14,7 +14,7 @@ import { checklistState } from "@/editor/checklist";
 import { useOnline } from "@/lib/useOnline";
 import s from "./owner.module.css";
 
-const PHONE_TABS = ["/app", "/app/inbox", "/app/forms", "/app/invoices"];
+const PHONE_TABS = ["/app", "/app/inbox", "/app/rooms", "/app/forms"];
 
 interface NavItem {
   href: string;
@@ -74,6 +74,7 @@ function Frame({ children }: { children: ReactNode }) {
       title: "Make",
       items: [
         { href: "/app/forms", label: "Forms", icon: "form" },
+        { href: "/app/rooms", label: "Rooms", icon: "users" },
         { href: "/app/invoices", label: "Invoices", icon: "invoice" },
         { href: "/app/proof", label: "Proofs", icon: "check" },
       ],

@@ -26,7 +26,7 @@ export function Login({ next }: { next: string }) {
     <div className={s.shell}>
       <header className={s.bar}>
         <Wordmark size={20} href="/" />
-        <a className={s.link} href="/signup">
+        <a className={s.link} href={next === "/app" ? "/signup" : `/signup?next=${encodeURIComponent(next)}`}>
           Sign up free
         </a>
       </header>

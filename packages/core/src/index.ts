@@ -15,3 +15,4 @@ export * from "./names";
 export * from "./manifest";
 export * from "./memo";
 export * from "./forms";
+export * from "./rooms";

@@ -24,6 +24,7 @@ import type { Account } from "@/account/AccountProvider";
 import { api } from "@/lib/api";
 import { SITE_URL } from "@/lib/site";
 import { TYPE_LABEL, openRow, type InboxRow, type Opened } from "./model";
+import { readSummaries } from "@/rooms/engine";
 import type { Box, OpenState, SenderCheck } from "./useInbox";
 import { TYPE_TONE, amountLabel, shortAddr, when, whoLabel } from "./Inbox";
 import { ComposeSheet, type ComposeMode } from "./ComposeSheet";
@@ -314,6 +315,71 @@ function SentReply({ row, account }: { row: InboxRow; account: Account }) {
 }
 
 export function Detail({
+  row,
+  box,
+  state,
+  check,
+  account,
+  token,
+  sent,
+  onBack,
+  onRetry,
+  onFlag,
+  onSent,
+}: {
+  row: InboxRow;
+  box: Box;
+  state: OpenState;
+  check: SenderCheck;
+  account: Account;
+  token: () => Promise<string>;
+  sent: InboxRow[];
+  onBack: () => void;
+  onRetry: () => void;
+  onFlag: (f: { read?: boolean; archived?: boolean }) => Promise<void>;
+  onSent: () => void;
+}) {
+  if (row.type === "request") return <RoomRequestDetail row={row} onBack={onBack} />;
+  return <ItemDetail row={row} box={box} state={state} check={check} account={account} token={token} sent={sent} onBack={onBack} onRetry={onRetry} onFlag={onFlag} onSent={onSent} />;
+}
+
+/** A join request for a room: who asked, which room (its name is sealed in the room, read from this device's copy), and the way to review. */
+function RoomRequestDetail({ row, onBack }: { row: InboxRow; onBack: () => void }) {
+  const acct = useAccount();
+  const [room, setRoom] = useState<string | null>(null);
+  const roomId = row.ref?.replace(/^room:/, "") ?? "";
+  useEffect(() => {
+    if (!acct.account) return;
+    void readSummaries(acct.account).then((all) => setRoom(all[roomId]?.name ?? null), () => undefined);
+  }, [acct.account, roomId]);
+  const who = row.sender?.name ? `@${row.sender.name}` : `${row.sender?.address.slice(0, 12) ?? "Someone"}…`;
+  return (
+    <article className={s.detail}>
+      <header className={s.dHead}>
+        <IconButton icon="back" label="Back to the list" onClick={onBack} className={s.back} />
+        <TypeChip tone={TYPE_TONE.request ?? "butter"}>{TYPE_LABEL.request ?? "Room request"}</TypeChip>
+        <h2>{who}</h2>
+        <time dateTime={row.at}>
+          {new Date(row.at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+        </time>
+      </header>
+      <div className={s.request}>
+        <p>
+          <b>{who}</b> asked to join {room ? <b>“{room}”</b> : "one of your rooms"}.
+        </p>
+        <p>
+          Nothing is shared with them yet. When you let them in, your device seals the room key to them and you choose
+          whether they can read past messages.
+        </p>
+        <ButtonLink href={`/app/rooms/${roomId}`} variant="cord" icon="users">
+          Review in the room
+        </ButtonLink>
+      </div>
+    </article>
+  );
+}
+
+function ItemDetail({
   row,
   box,
   state,

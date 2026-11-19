@@ -2,6 +2,7 @@
  * Postgres schema. Every row is public data or metadata about ciphertext; the
  * server never stores a phrase, a key or plaintext (ARCHITECTURE.md section 4).
  */
+import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
@@ -275,4 +276,120 @@ export const snapshots = pgTable(
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [index("snapshots_owner_form").on(t.owner, t.formId, t.createdAt)],
+);
+
+/**
+ * Rooms (spec 5.10, ARCHITECTURE 8a). The server knows ids, member addresses,
+ * roles, epochs and the order of sealed batches; never names, content or authors.
+ */
+export const rooms = pgTable("rooms", {
+  id: text("id").primaryKey(),
+  chainId: text("chain_id").notNull(),
+  owner: text("owner").notNull(),
+  epoch: integer("epoch").notNull(),
+  approval: boolean("approval").notNull().default(true),
+  autoDeleteSeconds: integer("auto_delete_seconds").notNull().default(0),
+  closed: boolean("closed").notNull().default(false),
+  createdAt: ts("created_at").notNull().defaultNow(),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
+});
+
+export const roomMembers = pgTable(
+  "room_members",
+  {
+    roomId: text("room_id").notNull(),
+    address: text("address").notNull(),
+    role: text("role").notNull().default("member"),
+    permissions: jsonb("permissions").$type<string[]>().notNull().default(["send", "files", "add", "info", "pin"]),
+    /** active | left | removed | blocked */
+    status: text("status").notNull().default("active"),
+    joinedEpoch: integer("joined_epoch").notNull(),
+    /** The epoch of this person's first admission; kept when they leave and rejoin. */
+    firstEpoch: integer("first_epoch").notNull().default(1),
+    /** Last epoch this person was a member of (set when they leave or are removed). */
+    lastEpoch: integer("last_epoch"),
+    lastReadSeq: bigint("last_read_seq", { mode: "bigint" }).notNull().default(sql`0`),
+    muted: boolean("muted").notNull().default(false),
+    joinedAt: ts("joined_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.roomId, t.address] }), index("room_members_address").on(t.address)],
+);
+
+export const roomEpochs = pgTable(
+  "room_epochs",
+  {
+    roomId: text("room_id").notNull(),
+    epoch: integer("epoch").notNull(),
+    distribution: text("distribution").notNull(),
+    membershipHash: text("membership_hash").notNull(),
+    txHash: text("tx_hash").notNull(),
+    by: text("by").notNull(),
+    reason: text("reason").notNull(),
+    at: ts("at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.roomId, t.epoch] })],
+);
+
+export const roomBatches = pgTable(
+  "room_batches",
+  {
+    seq: bigint("seq", { mode: "bigint" }).generatedAlwaysAsIdentity().primaryKey(),
+    roomId: text("room_id").notNull(),
+    hash: text("hash").notNull(),
+    epoch: integer("epoch").notNull(),
+    size: integer("size").notNull(),
+    /** SHA-256 of the author's delete token; the server never stores who posted. */
+    deleteHash: text("delete_hash").notNull(),
+    at: ts("at").notNull().defaultNow(),
+    expiresAt: ts("expires_at"),
+  },
+  (t) => [index("room_batches_room").on(t.roomId, t.seq), uniqueIndex("room_batches_hash").on(t.roomId, t.hash)],
+);
+
+/** Older epoch keys sealed to someone admitted with "Share past messages". */
+export const roomHistory = pgTable(
+  "room_history",
+  {
+    roomId: text("room_id").notNull(),
+    member: text("member").notNull(),
+    envelope: text("envelope").notNull(),
+    by: text("by").notNull(),
+    at: ts("at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.roomId, t.member, t.envelope] })],
+);
+
+export const roomInvites = pgTable(
+  "room_invites",
+  {
+    id: text("id").primaryKey(),
+    roomId: text("room_id").notNull(),
+    /** SHA-256 of the secret carried in the link's fragment. */
+    secretHash: text("secret_hash").notNull(),
+    /** Blob hash of the invite card (room name, photo, who invited) sealed to the link key in the fragment. */
+    card: text("card").notNull(),
+    createdBy: text("created_by").notNull(),
+    primary: boolean("primary").notNull().default(false),
+    expiresAt: ts("expires_at"),
+    maxUses: integer("max_uses"),
+    uses: integer("uses").notNull().default(0),
+    revoked: boolean("revoked").notNull().default(false),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("room_invites_room").on(t.roomId)],
+);
+
+export const roomRequests = pgTable(
+  "room_requests",
+  {
+    roomId: text("room_id").notNull(),
+    address: text("address").notNull(),
+    /** The invite link used, or "add:<address>" when a member with the add right suggested them. */
+    inviteId: text("invite_id").notNull(),
+    /** pending | approved | declined */
+    status: text("status").notNull().default("pending"),
+    at: ts("at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.roomId, t.address] })],
 );

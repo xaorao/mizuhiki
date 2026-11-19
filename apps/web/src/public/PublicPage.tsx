@@ -32,6 +32,8 @@ import { pageUrl } from "@/lib/site";
 import { deepLinkPath, type DeepLink } from "./deeplink";
 import { MessageSheet } from "./MessageSheet";
 import { PaySheet } from "./PaySheet";
+import { RoomSheet } from "./RoomSheet";
+import { useRouter } from "next/navigation";
 import { pendingNotesFor, retryPending } from "@/lib/pay";
 import s from "./public.module.css";
 
@@ -52,9 +54,11 @@ type Open =
   | { kind: "report" }
   | { kind: "text"; block: Extract<Block, { type: "text" }> }
   | { kind: "message" }
-  | { kind: "pay"; amount?: string | undefined; blockId?: string | undefined };
+  | { kind: "pay"; amount?: string | undefined; blockId?: string | undefined }
+  | { kind: "room"; block: Extract<Block, { type: "room" }> };
 
 export function PublicPage({ name, record, card, registry, deepLink }: PublicPageProps) {
+  const router = useRouter();
   const m = record.body;
   const [verify, setVerify] = useState<Verify>({ state: "checking" });
   const firstName = (m.displayName || m.name).split(" ")[0] ?? m.name;
@@ -107,6 +111,7 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
       if (b?.type === "message") return { kind: "message" };
       if (b?.type === "pay") return { kind: "pay", blockId: b.id };
       if (b?.type === "text") return { kind: "text", block: b };
+      if (b?.type === "room") return { kind: "room", block: b };
     }
     return { kind: "none" };
   }, [deepLink, blocks, messageBlock, payBlock]);
@@ -133,6 +138,9 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
     else if (b.type === "text") openSheet({ kind: "text", block: b }, deepLinkPath(name, { kind: "block", id: b.id }));
     else if (b.type === "pay")
       openSheet({ kind: "pay", blockId: b.id }, deepLinkPath(name, { kind: "block", id: b.id }));
+    else if (b.type === "room") openSheet({ kind: "room", block: b }, deepLinkPath(name, { kind: "block", id: b.id }));
+    // A form is a one-question-per-screen flow, so it opens as its own page (Back returns here).
+    else if (b.type === "form") router.push(deepLinkPath(name, { kind: "form", slug: b.slug }));
   };
 
   // A sealed payment note that did not reach the owner earlier is kept on this device; offer it again.
@@ -278,6 +286,7 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
           }
         />
       ) : null}
+      <RoomSheet block={open.kind === "room" ? open.block : null} ownerName={name} open={open.kind === "room"} onClose={close} />
       {messageBlock ? (
         <MessageSheet
           open={open.kind === "message" && ready}

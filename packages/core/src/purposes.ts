@@ -27,6 +27,8 @@ export const Purpose = {
   invoice: (id: string) => scoped("inv", id),
   room: (id: string) => scoped("room", id),
   roomHistory: (id: string) => scoped("roomhist", id),
+  /** A room invite card, sealed to the key in the invite link's fragment. */
+  roomInvite: (id: string) => scoped("invite", id),
   pass: (id: string) => scoped("pass", id),
   capsule: (id: string) => scoped("capsule", id),
   capsuleShare: (id: string) => scoped("capshare", id),
