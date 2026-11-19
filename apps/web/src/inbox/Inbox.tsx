@@ -65,6 +65,10 @@ function preview(row: InboxRow, opened: Opened | undefined): string {
   }
   if (!opened) return "Sealed · tap to open on this device";
   if (opened.kind === "paynote") return opened.note;
+  if (opened.kind === "form") {
+    const n = Object.keys(opened.answers).filter((k) => !k.includes(":")).length;
+    return `${n} answer${n === 1 ? "" : "s"} · opened on this device`;
+  }
   const files = opened.files.length
     ? `${opened.files[0]?.name ?? "file"}${opened.files.length > 1 ? ` and ${opened.files.length - 1} more` : ""}`
     : "";
@@ -76,6 +80,7 @@ function preview(row: InboxRow, opened: Opened | undefined): string {
 }
 
 function hasFiles(o: Opened | undefined): boolean {
+  if (o?.kind === "form") return Object.values(o.files).some((f) => f.length > 0);
   return o?.kind === "message" && o.files.length > 0;
 }
 

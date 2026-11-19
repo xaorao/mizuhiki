@@ -1,0 +1,689 @@
+/* Logic tab (spec 5.9): rule cards beside a sticky flow map; one column on phones. */
+.wrap {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 20px;
+  flex-wrap: wrap;
+}
+.kicker {
+  font-family: var(--font-jp);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  color: var(--cord-text);
+  margin: 0;
+}
+.h {
+  font-family: var(--font-round);
+  font-weight: 900;
+  font-size: 30px;
+  line-height: 1.15;
+  margin: 2px 0 6px;
+}
+.lede {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--ink-muted);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* problems */
+.problems {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.problems li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 2px dashed #f3e2e8;
+  font-size: 14px;
+}
+.problems li span {
+  min-width: 0;
+  flex: 1 1 220px;
+}
+
+/* columns */
+.cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+  gap: 24px;
+  align-items: start;
+}
+.list {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.side {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 2px 4px 10px 2px;
+}
+
+/* question card */
+.card {
+  background: var(--white);
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: 0 4px 0 var(--ink);
+  padding: 18px 18px 14px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  scroll-margin-top: 16px;
+  transition:
+    box-shadow var(--t-toggle) var(--ease-out),
+    transform var(--t-toggle) var(--ease-out);
+}
+.card:focus {
+  outline: none;
+}
+.card:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+.cardOn {
+  background: var(--paper);
+}
+.flash {
+  animation: flash 1.2s var(--ease-out);
+}
+@keyframes flash {
+  0%,
+  40% {
+    box-shadow:
+      0 0 0 5px var(--sakura-wave),
+      0 4px 0 var(--ink);
+    transform: translateY(-2px);
+  }
+}
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--sakura);
+  color: var(--sakura-ink);
+  font-family: var(--font-round);
+  font-weight: 900;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.cardTitle {
+  min-width: 0;
+  flex: 1;
+}
+.cardTitle h3 {
+  margin: 0;
+  font-family: var(--font-round);
+  font-weight: 800;
+  font-size: 16.5px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.cardTitle small {
+  color: var(--ink-subtle);
+  font-size: 13px;
+}
+.setChip {
+  flex: none;
+  animation: mz-pop-in 0.32s var(--ease-pop);
+}
+.hint,
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-muted);
+}
+.hint svg,
+.note svg {
+  margin-top: 2px;
+}
+.empty {
+  margin: 0;
+  font-size: 14.5px;
+  color: var(--ink-muted);
+}
+.muted {
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+}
+
+/* rules */
+.rules {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.rule {
+  border: 2px solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--white);
+  padding: 12px 14px;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  animation: mz-rise 0.24s var(--ease-out);
+}
+.ruleBad {
+  border-color: var(--danger);
+  box-shadow: 0 3px 0 var(--danger);
+}
+.ruleHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ruleNo {
+  font-family: var(--font-round);
+  font-weight: 800;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  color: var(--cord-text);
+}
+.ruleTools {
+  display: inline-flex;
+  gap: 6px;
+}
+.up svg {
+  transform: rotate(-90deg);
+}
+.down svg {
+  transform: rotate(90deg);
+}
+.cond,
+.goRow,
+.otherwise {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.cond + .cond {
+  padding-top: 8px;
+  border-top: 2px dashed #f3e2e8;
+}
+.word {
+  font-family: var(--font-round);
+  font-weight: 800;
+  font-size: 14px;
+  min-width: 3.2em;
+}
+.condX {
+  margin-left: auto;
+}
+.condHint {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 13px;
+  color: var(--danger);
+}
+.ruleRow {
+  display: flex;
+}
+.ruleProblems {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  color: var(--danger);
+  font-size: 13.5px;
+}
+.ruleProblems li {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+.ruleProblems svg {
+  margin-top: 2px;
+  flex: none;
+}
+.ruleFoot {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 2px dashed #f3e2e8;
+  padding-top: 8px;
+}
+.otherwise {
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: var(--kinari);
+  border: 2px dashed var(--ink-subtle);
+}
+.deleteAll {
+  display: flex;
+  justify-content: flex-end;
+}
+.confirm {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--danger-soft);
+  animation: mz-rise 0.2s var(--ease-out);
+}
+.confirm span {
+  flex: 1 1 220px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* controls */
+.select,
+.input {
+  min-height: 40px;
+  max-width: 100%;
+  min-width: 0;
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--white);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  padding: 6px 14px;
+  transition:
+    box-shadow var(--t-press) var(--ease-out),
+    background-color var(--t-toggle);
+}
+.select {
+  appearance: none;
+  padding-right: 34px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink) 50%), linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 13px) 50%;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.select:hover,
+.input:hover {
+  background-color: var(--sakura-soft);
+}
+.select:focus-visible,
+.input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.input {
+  width: 11em;
+}
+.selectQ {
+  flex: 1 1 200px;
+}
+.selectV {
+  flex: 1 1 140px;
+}
+.selectWide {
+  flex: 1 1 220px;
+  width: 100%;
+}
+.selectBad {
+  border-color: var(--danger);
+  background-color: var(--danger-soft);
+}
+
+/* side: flow map and try it */
+.sideCard {
+  background: var(--white);
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: 0 4px 0 var(--ink);
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.sideHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.sideHead h3 {
+  margin: 0;
+  font-family: var(--font-round);
+  font-weight: 900;
+  font-size: 18px;
+}
+.sideHead span {
+  font-size: 13px;
+  color: var(--ink-subtle);
+}
+.map {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.mapScroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  border-radius: var(--r-md);
+  background: var(--cream);
+  border: 2px dashed #f3e2e8;
+  padding: 6px 0;
+  -webkit-overflow-scrolling: touch;
+}
+.mapSvg {
+  display: block;
+  margin: 0 auto;
+  font-family: var(--font-round);
+  overflow: visible;
+}
+.node .nodeBox {
+  fill: var(--white);
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+.nodeBadge {
+  fill: var(--sakura);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.nodeCode {
+  font-weight: 900;
+  font-size: 11px;
+  fill: var(--sakura-ink);
+}
+.nodeIcon {
+  color: var(--ink-muted);
+}
+.nodeTitle {
+  font-weight: 700;
+  font-size: 13px;
+  fill: var(--ink);
+}
+.nodeWelcome .nodeBox {
+  fill: var(--sora);
+}
+.nodeWelcome .nodeBadge {
+  fill: var(--white);
+}
+.nodeEnding .nodeBox {
+  fill: var(--matcha);
+}
+.nodeEnding .nodeBadge {
+  fill: var(--white);
+}
+.nodeEnding .nodeCode {
+  fill: var(--matcha-ink);
+}
+.nodeLost {
+  opacity: 0.55;
+}
+.nodeLost .nodeBox {
+  stroke-dasharray: 5 4;
+}
+.nodeTap {
+  cursor: pointer;
+  outline: none;
+}
+.nodeTap .nodeBox {
+  transition:
+    fill var(--t-toggle),
+    stroke-width var(--t-press);
+}
+.nodeTap:hover .nodeBox {
+  fill: var(--sakura-soft);
+}
+.nodeTap:focus-visible .nodeBox {
+  stroke: var(--focus);
+  stroke-width: 4;
+}
+.edge {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+.edgeDashed {
+  stroke-dasharray: 6 5;
+}
+.edgeOn,
+.edgeOn .edge {
+  stroke-width: 4;
+}
+.edgeOn.edge,
+.edgeOn .edge {
+  stroke-dasharray: 8 6;
+  animation: march 0.9s linear infinite;
+}
+@keyframes march {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+.leader {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-dasharray: 1 4;
+  stroke-linecap: round;
+}
+.edgeLabel {
+  font-weight: 800;
+  font-size: 11.5px;
+  paint-order: stroke;
+  stroke: var(--cream);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.mapDivider {
+  stroke: #f3e2e8;
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+}
+.mapSection {
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  fill: var(--ink-subtle);
+}
+.legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* try it */
+.try {
+  display: grid;
+  gap: 12px;
+}
+.tryField {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.tryField > span {
+  font-family: var(--font-round);
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+.tryField .input {
+  width: 100%;
+}
+.picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--white);
+  padding: 4px 12px;
+  font-family: var(--font-round);
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background-color var(--t-toggle),
+    transform var(--t-press);
+}
+.pick:active {
+  transform: translateY(2px);
+}
+.pickOn {
+  background: var(--sakura);
+  color: var(--sakura-ink);
+}
+.tryResult {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: var(--sora);
+  color: var(--sora-ink);
+  border: 2px solid var(--ink);
+}
+.tryResult svg {
+  flex: none;
+  margin-top: 1px;
+}
+.tryResult b {
+  display: block;
+  font-family: var(--font-round);
+  font-weight: 900;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.tryResult small {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+@media (max-width: 860px) {
+  .cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .side {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+  }
+  .card {
+    padding: 16px 14px 12px;
+  }
+  .rule {
+    padding: 12px;
+  }
+  .select,
+  .input,
+  .selectQ,
+  .selectV {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .word {
+    flex-basis: 100%;
+  }
+  .h {
+    font-size: 26px;
+  }
+}
+@media (pointer: coarse) {
+  .wrap button,
+  .select,
+  .input {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flash,
+  .setChip,
+  .rule,
+  .confirm,
+  .edgeOn.edge,
+  .edgeOn .edge {
+    animation: none;
+  }
+}
+
+/* Local copy of the shared pop-in: CSS Modules (Lightning CSS) scope keyframe
+   names, so a module cannot reference the global one from base.css. */
+@keyframes mz-pop-in {
+  from {
+    transform: translateY(6px) scale(0.97);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}

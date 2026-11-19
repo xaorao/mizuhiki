@@ -16,6 +16,8 @@ import { inboxRoutes } from "./routes/inbox";
 import { proofRoutes } from "./routes/proof";
 import { payRoutes } from "./routes/pay";
 import { invoiceRoutes } from "./routes/invoices";
+import { formRoutes } from "./routes/forms";
+import { snapshotRoutes } from "./routes/snapshots";
 
 export interface Ctx {
   cfg: Config;
@@ -58,6 +60,8 @@ export async function buildServer(
   await app.register(proofRoutes(ctx));
   await app.register(payRoutes(ctx));
   await app.register(invoiceRoutes(ctx));
+  await app.register(formRoutes(ctx));
+  await app.register(snapshotRoutes(ctx));
   return {
     app,
     ctx,

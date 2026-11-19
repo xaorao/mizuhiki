@@ -45,6 +45,12 @@ export default tseslint.config(
     },
   },
   {
+    // Plain browser scripts served as-is (no build step, not in any tsconfig): lint as JavaScript.
+    files: ["apps/web/public/**/*.js"],
+    extends: [tseslint.configs.disableTypeChecked],
+    languageOptions: { sourceType: "script", globals: { ...globals.browser } },
+  },
+  {
     files: ["**/*.tsx"],
     plugins: { "react-hooks": reactHooks },
     rules: { "react-hooks/rules-of-hooks": "error", "react-hooks/exhaustive-deps": "error" },

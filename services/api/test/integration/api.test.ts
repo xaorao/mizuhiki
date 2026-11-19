@@ -17,7 +17,10 @@ import {
   solvePow,
   toBase64Url,
   utf8,
+  verifyRecord,
+  type FormDef,
   type Manifest,
+  type Signed,
 } from "@mizuhiki/core";
 import { NETWORK } from "@mizuhiki/chain";
 import { ensurePersona, type ReadyPersona } from "@mizuhiki/testnet";
@@ -76,7 +79,7 @@ beforeAll(async () => {
   await runMigrations(DB);
   const postgres = (await import("postgres")).default;
   const sql = postgres(DB);
-  await sql`truncate accounts, auth_nonces, sessions, names, cards, pages, drafts, blobs, envelopes, payments, counters, index_checkpoints, reports, push_subscriptions, notify_prefs, media`;
+  await sql`truncate accounts, auth_nonces, sessions, names, cards, pages, drafts, blobs, envelopes, payments, counters, index_checkpoints, reports, push_subscriptions, notify_prefs, media, chain_events, invoices, forms, snapshots`;
   await sql.end();
   const cfg = loadConfig({
     ...process.env,
@@ -375,8 +378,18 @@ describe("chain relay", () => {
     expect(r.statusCode).toBe(200);
     expect(r.json()).toEqual({ tx_response: null, pending: true });
   });
-  it("reports the bio helper as off without credentials", async () => {
-    expect((await app.inject({ url: "/ai/status" })).json()).toEqual({ bio: Boolean(process.env.ANTHROPIC_API_KEY) });
+  it("reports the bio and form helpers on only with credentials", async () => {
+    const on = Boolean(process.env.ANTHROPIC_API_KEY ?? process.env.ANTHROPIC_AUTH_TOKEN);
+    expect((await app.inject({ url: "/ai/status" })).json()).toEqual({ bio: on, form: on });
+  });
+
+  it("drafts form questions only for a signed-in owner", async () => {
+    const r = await app.inject({
+      method: "POST",
+      url: "/ai/form",
+      payload: { description: "An intake form for my studio" },
+    });
+    expect(r.statusCode).toBe(401);
   });
 });
 
@@ -547,6 +560,264 @@ describe("drop and inbox", () => {
   });
 });
 
+describe("forms", () => {
+  const def = (version: number, extra: Partial<FormDef> = {}): FormDef => ({
+    v: 1,
+    id: "frmapitest01",
+    owner: owner.address,
+    name: owner.name ?? "",
+    slug: "intake",
+    title: "Client intake",
+    description: "",
+    welcome: { enabled: true, button: "Start", showTime: true },
+    blocks: [
+      {
+        id: "q1",
+        kind: "short",
+        title: "Your name",
+        description: "",
+        required: true,
+        hidden: false,
+        half: false,
+        placeholder: "",
+      },
+    ],
+    endings: [{ id: "end", title: "Thanks!", body: "" }],
+    logic: [],
+    settings: { progress: true, numbers: true, closed: false, notify: true, language: "en" },
+    readers: [],
+    hideReaders: false,
+    design: {},
+    preview: { title: "", description: "" },
+    version,
+    updatedAt: new Date().toISOString(),
+    ...extra,
+  });
+  const auth = () => ({ authorization: `Bearer ${token}` });
+  const putBlob = async () => {
+    const r = await app.inject({
+      method: "PUT",
+      url: "/blobs",
+      payload: Buffer.from(randomFill()),
+      headers: { "content-type": "application/octet-stream" },
+    });
+    return r.json<{ hash: string }>().hash;
+  };
+  const randomFill = () => crypto.getRandomValues(new Uint8Array(64));
+  const answer = async (extraRef = "form:frmapitest01") => {
+    const sealed = sealItem({
+      purpose: Purpose.form("frmapitest01"),
+      readers: [recipientOf(owner.seal)],
+      plaintext: utf8("{}"),
+      anonymous: true,
+    });
+    const b = (await app.inject({ url: "/drop/config" })).json<{ powBits: number }>().powBits;
+    return app.inject({
+      method: "POST",
+      url: `/drop/${owner.address}`,
+      payload: {
+        envelope: toBase64Url(sealed.envelope),
+        kind: "form",
+        ref: extraRef,
+        chunks: [],
+        pow: solvePow(owner.address, sealed.hash, b),
+      },
+    });
+  };
+
+  beforeAll(async () => {
+    // The indexer fills names from the registry; it is not running in this suite.
+    const postgres = (await import("postgres")).default;
+    const sql = postgres(DB);
+    await sql`insert into names (name, name_hash, address, evm, "primary", claimed_tx, claimed_block) values (${owner.name ?? ""}, 'x', ${owner.address}, ${owner.evm}, true, 'x', 1) on conflict do nothing`;
+    await sql.end();
+    token = await signIn(owner);
+  });
+
+  it("saves a draft, refuses bad publishes, publishes a signed definition and serves it", async () => {
+    const draft = await putBlob();
+    expect(
+      (
+        await app.inject({
+          method: "PUT",
+          url: "/forms",
+          payload: { id: "frmapitest01", slug: "intake", draftEnvelope: draft },
+        })
+      ).statusCode,
+    ).toBe(401);
+    expect(
+      (
+        await app.inject({
+          method: "PUT",
+          url: "/forms",
+          payload: { id: "frmapitest01", slug: "intake", draftEnvelope: draft },
+          headers: auth(),
+        })
+      ).json<{ published: boolean }>().published,
+    ).toBe(false);
+    expect((await app.inject({ url: `/forms/${owner.name ?? ""}/intake` })).statusCode).toBe(404);
+    // answers to an unpublished form are refused
+    expect((await answer()).json<{ error: { code: string } }>().error.code).toBe("FORM_CLOSED");
+    const signedBy = (p: typeof owner, body: FormDef) =>
+      signRecord({ kind: "form", body, signer: p.address, classical: p.classical, pq: p.pq });
+    // signed by someone else
+    const bad = await app.inject({
+      method: "PUT",
+      url: "/forms",
+      payload: {
+        id: "frmapitest01",
+        slug: "intake",
+        draftEnvelope: draft,
+        publish: signedBy(stranger, def(1, { owner: stranger.address })),
+      },
+      headers: auth(),
+    });
+    expect(bad.json<{ error: { code: string } }>().error.code).toBe("BAD_SIGNATURE");
+    // a definition that is not valid
+    const invalid = await app.inject({
+      method: "PUT",
+      url: "/forms",
+      payload: {
+        id: "frmapitest01",
+        slug: "intake",
+        draftEnvelope: draft,
+        publish: { ...signedBy(owner, def(1)), body: { ...def(1), endings: [] } },
+      },
+      headers: auth(),
+    });
+    expect(invalid.json<{ error: { code: string } }>().error.code).toBe("BAD_FORM");
+    // tampered after signing
+    const tampered = signedBy(owner, def(1));
+    const t = await app.inject({
+      method: "PUT",
+      url: "/forms",
+      payload: {
+        id: "frmapitest01",
+        slug: "intake",
+        draftEnvelope: draft,
+        publish: { ...tampered, body: { ...tampered.body, title: "Changed" } },
+      },
+      headers: auth(),
+    });
+    expect(t.json<{ error: { code: string } }>().error.code).toBe("BAD_SIGNATURE");
+    const ok = await app.inject({
+      method: "PUT",
+      url: "/forms",
+      payload: { id: "frmapitest01", slug: "intake", draftEnvelope: draft, publish: signedBy(owner, def(1)) },
+      headers: auth(),
+    });
+    expect(ok.json<{ published: boolean; version: number }>()).toMatchObject({ published: true, version: 1 });
+    const stale = await app.inject({
+      method: "PUT",
+      url: "/forms",
+      payload: { id: "frmapitest01", slug: "intake", draftEnvelope: draft, publish: signedBy(owner, def(1)) },
+      headers: auth(),
+    });
+    expect(stale.json<{ error: { code: string } }>().error.code).toBe("STALE");
+    const other = await app.inject({
+      method: "PUT",
+      url: "/forms",
+      payload: { id: "frmapitest02", slug: "intake", draftEnvelope: draft },
+      headers: auth(),
+    });
+    expect(other.json<{ error: { code: string } }>().error.code).toBe("SLUG_TAKEN");
+    const served = (await app.inject({ url: `/forms/${owner.name ?? ""}/intake` })).json<{
+      record: { body: FormDef };
+      open: boolean;
+    }>();
+    expect(served.open).toBe(true);
+    expect(served.record.body.title).toBe("Client intake");
+  });
+
+  it("accepts answers, counts events content-blind, and enforces close and limit", async () => {
+    expect((await answer()).statusCode).toBe(200);
+    expect((await answer("form:someoneelse")).statusCode).toBe(409);
+    for (const kind of ["view", "start", "submit"])
+      await app.inject({ method: "POST", url: "/forms/frmapitest01/event", payload: { kind, seconds: 42 } });
+    await app.inject({ method: "POST", url: "/forms/frmapitest01/event", payload: { kind: "reach", q: "q1" } });
+    expect(
+      (
+        await app.inject({ method: "POST", url: "/forms/frmapitest01/event", payload: { kind: "reach", q: "nope" } })
+      ).json<{ ok: boolean }>().ok,
+    ).toBe(false);
+    const st = (await app.inject({ url: "/owner/forms/frmapitest01/stats", headers: auth() })).json<{
+      views: number;
+      starts: number;
+      submissions: number;
+      secondsTotal: number;
+      reach: Record<string, number>;
+      responses: unknown[];
+    }>();
+    expect(st).toMatchObject({ views: 1, starts: 1, submissions: 1, secondsTotal: 42, reach: { q1: 1 } });
+    expect(st.responses).toHaveLength(1);
+    expect((await app.inject({ url: "/owner/forms/frmapitest01/stats" })).statusCode).toBe(401);
+    const signed = (d: FormDef) =>
+      signRecord({ kind: "form", body: d, signer: owner.address, classical: owner.classical, pq: owner.pq });
+    const draft = await putBlob();
+    // limit of 1 already reached
+    await app.inject({
+      method: "PUT",
+      url: "/forms",
+      payload: {
+        id: "frmapitest01",
+        slug: "intake",
+        draftEnvelope: draft,
+        publish: signed(
+          def(2, {
+            settings: { progress: true, numbers: true, closed: false, notify: true, language: "en", limit: 1 },
+          }),
+        ),
+      },
+      headers: auth(),
+    });
+    expect((await answer()).json<{ error: { message: string } }>().error.message).toMatch(/all the answers it takes/);
+    expect((await app.inject({ url: `/forms/${owner.name ?? ""}/intake` })).json<{ open: boolean }>().open).toBe(false);
+    // closed
+    await app.inject({
+      method: "PUT",
+      url: "/forms",
+      payload: {
+        id: "frmapitest01",
+        slug: "intake",
+        draftEnvelope: draft,
+        publish: signed(
+          def(3, { settings: { progress: true, numbers: true, closed: true, notify: true, language: "en" } }),
+        ),
+      },
+      headers: auth(),
+    });
+    expect((await answer()).json<{ error: { message: string } }>().error.message).toMatch(/closed/);
+    // close date in the past
+    await app.inject({
+      method: "PUT",
+      url: "/forms",
+      payload: {
+        id: "frmapitest01",
+        slug: "intake",
+        draftEnvelope: draft,
+        publish: signed(
+          def(4, {
+            settings: {
+              progress: true,
+              numbers: true,
+              closed: false,
+              notify: true,
+              language: "en",
+              closeAt: new Date(Date.now() - 1000).toISOString(),
+            },
+          }),
+        ),
+      },
+      headers: auth(),
+    });
+    expect((await answer()).json<{ error: { message: string } }>().error.message).toMatch(/closing date/);
+    const list = (await app.inject({ url: "/owner/forms", headers: auth() })).json<{
+      forms: { id: string; responses: number; published: { version: number } | null }[];
+    }>();
+    expect(list.forms.find((f) => f.id === "frmapitest01")).toMatchObject({ responses: 1, published: { version: 4 } });
+  });
+});
+
 describe("proof labels", () => {
   it("only the owner can file a label for themselves; labels never show in the inbox", async () => {
     const b = (await app.inject({ url: "/drop/config" })).json<{ powBits: number }>().powBits;
@@ -601,6 +872,117 @@ describe("proof labels", () => {
     // The names table is filled by the indexer (not running here); the route answers and refuses junk.
     expect((await app.inject({ url: `/names/of/${owner.address}` })).statusCode).toBe(200);
     expect((await app.inject({ url: "/names/of/nonsense" })).statusCode).toBe(400);
+  });
+});
+
+describe("snapshots", () => {
+  // Reuses form "frmapitest01" and the names row made in describe("forms").
+  const FORM = "frmapitest01";
+  let strangerToken = "";
+  const putBlob = async () => {
+    const r = await app.inject({
+      method: "PUT",
+      url: "/blobs",
+      payload: Buffer.from(crypto.getRandomValues(new Uint8Array(96))),
+      headers: { "content-type": "application/octet-stream" },
+    });
+    return r.json<{ hash: string }>().hash;
+  };
+  const sign = (p: ReadyPersona, body: { formId: string; envelope: string }) =>
+    signRecord({ kind: "snapshot", body, signer: p.address, classical: p.classical, pq: p.pq });
+  const keep = (auth: string | null, payload: Record<string, unknown>) =>
+    app.inject({
+      method: "PUT",
+      url: "/owner/snapshots",
+      payload,
+      headers: auth ? { authorization: `Bearer ${auth}` } : {},
+    });
+  const expiryOf = async (hash: string) => {
+    const postgres = (await import("postgres")).default;
+    const sql = postgres(DB);
+    const rows = await sql<{ expires_at: Date | null }[]>`select expires_at from blobs where hash = ${hash}`;
+    await sql.end();
+    return rows[0]?.expires_at;
+  };
+
+  it("keeps only a snapshot the form's owner signed for that sealed copy", async () => {
+    const ownerToken = token; // signed in by describe("forms")
+    const hash = await putBlob();
+    const good = { hash, formId: FORM, title: "Client intake", sig: sign(owner, { formId: FORM, envelope: hash }) };
+    expect((await keep(null, good)).statusCode).toBe(401);
+
+    const byStranger = await keep(ownerToken, { ...good, sig: sign(stranger, { formId: FORM, envelope: hash }) });
+    expect(byStranger.statusCode).toBe(400);
+    expect(byStranger.json<{ error: { code: string } }>().error.code).toBe("BAD_SIGNATURE");
+
+    const other = await putBlob();
+    const otherHash = await keep(ownerToken, { ...good, sig: sign(owner, { formId: FORM, envelope: other }) });
+    expect(otherHash.statusCode).toBe(400);
+    expect(otherHash.json<{ error: { code: string } }>().error.code).toBe("BAD_SIGNATURE");
+
+    // A stranger's own valid signature does not make the owner's form theirs.
+    strangerToken = await signIn(stranger);
+    const notYours = await keep(strangerToken, { ...good, sig: sign(stranger, { formId: FORM, envelope: hash }) });
+    expect(notYours.statusCode).toBe(404);
+
+    const missing = "0".repeat(64);
+    expect(
+      (await keep(ownerToken, { ...good, hash: missing, sig: sign(owner, { formId: FORM, envelope: missing }) }))
+        .statusCode,
+    ).toBe(409);
+    expect(await expiryOf(hash)).not.toBeNull();
+
+    const ok = await keep(ownerToken, good);
+    expect(ok.statusCode).toBe(200);
+    expect(await expiryOf(hash)).toBeNull();
+
+    const list = (
+      await app.inject({ url: `/owner/snapshots?formId=${FORM}`, headers: { authorization: `Bearer ${ownerToken}` } })
+    ).json<{ snapshots: { hash: string; title: string }[] }>().snapshots;
+    expect(list.map((r) => r.hash)).toEqual([hash]);
+    const theirs = await app.inject({
+      url: `/owner/snapshots?formId=${FORM}`,
+      headers: { authorization: `Bearer ${strangerToken}` },
+    });
+    expect(theirs.json<{ snapshots: unknown[] }>().snapshots).toEqual([]);
+    expect((await app.inject({ url: "/owner/snapshots" })).statusCode).toBe(401);
+  });
+
+  it("serves signed metadata only, and nothing after the owner deletes it", async () => {
+    const ownerToken = token; // signed in by describe("forms")
+    const hash = await putBlob();
+    const sig = sign(owner, { formId: FORM, envelope: hash });
+    expect((await keep(ownerToken, { hash, formId: FORM, title: "Client intake", sig })).statusCode).toBe(200);
+
+    const pub = await app.inject({ url: `/snapshots/${hash}` });
+    expect(pub.statusCode).toBe(200);
+    const meta = pub.json<Record<string, unknown>>();
+    expect(Object.keys(meta).sort()).toEqual(["createdAt", "formId", "owner", "ownerName", "sig", "title"]);
+    expect(meta).toMatchObject({ owner: owner.address, ownerName: owner.name, formId: FORM, title: "Client intake" });
+    expect(
+      verifyRecord(meta.sig as Signed<{ formId: string; envelope: string }>, {
+        kind: "snapshot",
+        signer: owner.address,
+        pqPublicKey: owner.pq.publicKey,
+      }),
+    ).toEqual({ formId: FORM, envelope: hash });
+    expect((await app.inject({ url: "/snapshots/nothex" })).statusCode).toBe(400);
+
+    const del = (t: string | null) =>
+      app.inject({
+        method: "DELETE",
+        url: `/owner/snapshots/${hash}`,
+        headers: t ? { authorization: `Bearer ${t}` } : {},
+      });
+    expect((await del(null)).statusCode).toBe(401);
+    expect((await del(strangerToken)).statusCode).toBe(404);
+    expect((await app.inject({ url: `/snapshots/${hash}` })).statusCode).toBe(200);
+    expect((await del(ownerToken)).statusCode).toBe(200);
+    expect((await app.inject({ url: `/snapshots/${hash}` })).statusCode).toBe(404);
+    expect((await del(ownerToken)).statusCode).toBe(404);
+    const expiry = await expiryOf(hash);
+    expect(expiry).toBeInstanceOf(Date);
+    expect((expiry as Date).getTime()).toBeLessThanOrEqual(Date.now());
   });
 });
 

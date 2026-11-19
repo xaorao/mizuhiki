@@ -4,15 +4,17 @@
  * setup checklist ring with Musubi peeking over it). Menu groups follow spec
  * 5.3; an area appears here once it is built, so no item leads nowhere.
  */
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Button, Icon, Musubi, OfflineBanner, ProgressRing, Wordmark, type IconName } from "@mizuhiki/ui";
+import { Button, Icon, Musubi, OfflineBanner, ProgressRing, Sheet, Wordmark, type IconName } from "@mizuhiki/ui";
 import { useAccount } from "@/account/AccountProvider";
 import { OwnerProvider, useOwner } from "./OwnerProvider";
 import { checklistState } from "@/editor/checklist";
 import { useOnline } from "@/lib/useOnline";
 import s from "./owner.module.css";
+
+const PHONE_TABS = ["/app", "/app/inbox", "/app/forms", "/app/invoices"];
 
 interface NavItem {
   href: string;
@@ -50,6 +52,7 @@ export function OwnerShell({ children }: { children: ReactNode }) {
 }
 
 function Frame({ children }: { children: ReactNode }) {
+  const [more, setMore] = useState(false);
   const path = usePathname();
   const owner = useOwner();
   const acct = useAccount();
@@ -70,6 +73,7 @@ function Frame({ children }: { children: ReactNode }) {
     {
       title: "Make",
       items: [
+        { href: "/app/forms", label: "Forms", icon: "form" },
         { href: "/app/invoices", label: "Invoices", icon: "invoice" },
         { href: "/app/proof", label: "Proofs", icon: "check" },
       ],
@@ -126,19 +130,55 @@ function Frame({ children }: { children: ReactNode }) {
         {children}
       </div>
       <nav className={s.tabbar} aria-label="Owner sections">
+        {/* Phones: the four main places, then More (every section and Lock), so it never overflows. */}
         {groups
           .flatMap((g) => g.items)
+          .filter((it) => PHONE_TABS.includes(it.href))
           .map((it) => (
             <Link key={it.href} href={it.href} className={s.tab} aria-current={active(it.href) ? "page" : undefined}>
               <Icon name={it.icon} />
               <span>{it.label}</span>
+              {it.href === "/app/inbox" && unread > 0 ? <span className={s.tabBadge}>{unread}</span> : null}
             </Link>
           ))}
-        <button type="button" className={s.tab} onClick={acct.lock}>
-          <Icon name="lock" />
-          <span>Lock</span>
+        <button
+          type="button"
+          className={s.tab}
+          aria-current={
+            groups.flatMap((g) => g.items).some((it) => !PHONE_TABS.includes(it.href) && active(it.href))
+              ? "page"
+              : undefined
+          }
+          onClick={() => setMore(true)}
+        >
+          <Icon name="menu" />
+          <span>More</span>
         </button>
       </nav>
+      <Sheet open={more} onClose={() => setMore(false)} title="Everything" history={false}>
+        <nav className={s.moreNav} aria-label="All sections">
+          {groups.map((g, i) => (
+            <div key={i}>
+              {g.title ? <h4>{g.title}</h4> : null}
+              {g.items.map((it) => (
+                <Link
+                  key={it.href}
+                  href={it.href}
+                  className={s.moreItem}
+                  aria-current={active(it.href) ? "page" : undefined}
+                  onClick={() => setMore(false)}
+                >
+                  <Icon name={it.icon} />
+                  {it.label}
+                </Link>
+              ))}
+            </div>
+          ))}
+          <Button variant="line" icon="lock" full onClick={acct.lock}>
+            Lock now
+          </Button>
+        </nav>
+      </Sheet>
     </div>
   );
 }

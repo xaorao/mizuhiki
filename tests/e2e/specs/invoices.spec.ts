@@ -200,6 +200,11 @@ test("invoices: create, send to @name, payer opens by link and pays, owner sees 
   expect(text).toContain("2.4 fUSD");
   expect(text).not.toContain("Client prefers");
   expect((await readFile(pdfPath)).subarray(0, 4).toString()).toBe("%PDF");
+  // The text layer can be right while the drawn glyphs are missing (a broken font subset),
+  // so render the page and read it back with OCR.
+  execFileSync("pdftoppm", ["-r", "150", "-png", "-f", "1", "-l", "1", pdfPath, `${pdfPath}-page`]);
+  const ocr = execFileSync("tesseract", [`${pdfPath}-page-1.png`, "-", "--psm", "4"]).toString();
+  for (const want of ["Leaf", "Kettle", "Logo design", "Revisions", "2.4 fUSD"]) expect(ocr).toContain(want);
   await det.getByRole("button", { name: "Prove it existed" }).click();
   const prove = o2.getByRole("dialog", { name: "Prove it existed" });
   await prove.getByRole("button", { name: "Anchor on QoreChain" }).click();

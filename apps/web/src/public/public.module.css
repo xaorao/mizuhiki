@@ -503,3 +503,16 @@
     gap: 2px;
   }
 }
+
+/* Local copy of the shared pop-in: CSS Modules (Lightning CSS) scope keyframe
+   names, so a module cannot reference the global one from base.css. */
+@keyframes mz-pop-in {
+  from {
+    transform: translateY(6px) scale(0.97);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}

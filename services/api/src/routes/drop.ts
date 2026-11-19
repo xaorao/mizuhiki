@@ -13,11 +13,23 @@ import { blobs, cards, envelopes, pages } from "@mizuhiki/db";
 import type { Ctx } from "../server";
 import { pqKeyOf } from "../lib/chainreads";
 import { sha256Hex } from "../lib/blobstore";
+import { formNotifies, formRefusal } from "./forms";
 import { fail, isAddress } from "../lib/http";
 
-export const DROP_KINDS = ["message", "form", "paynote", "invoice", "order", "reply", "request", "proof"] as const;
+export const DROP_KINDS = [
+  "message",
+  "form",
+  "paynote",
+  "invoice",
+  "order",
+  "reply",
+  "request",
+  "proof",
+  "formtags",
+  "formsnaps",
+] as const;
 /** Kinds an owner files for themselves (private labels): kept until deleted, never "unread". */
-export const SELF_KINDS: readonly string[] = ["proof"];
+export const SELF_KINDS: readonly string[] = ["proof", "formtags", "formsnaps"];
 const MAX_ENVELOPE = 256 * 1024;
 const MAX_CHUNKS = 600; // 600 x 4 MiB = 2.4 GB across all files in one drop
 
@@ -184,6 +196,13 @@ export const dropRoutes =
           senderSig = sig as Signed<typeof sig.body>;
         }
 
+        // Form answers: the form must accept them; with notifications off they arrive already read and silent.
+        let quiet = false;
+        if (b.data.kind === "form") {
+          const why = await formRefusal(ctx.db, address, b.data.ref);
+          if (why) return fail(reply, 409, "FORM_CLOSED", why, "nothing-stored");
+          quiet = !(await formNotifies(ctx.db, address, b.data.ref));
+        }
         const self = SELF_KINDS.includes(b.data.kind);
         if (self && senderSig?.signer !== address)
           return fail(
@@ -214,10 +233,10 @@ export const dropRoutes =
               chunks: b.data.chunks,
               senderSig,
               expiresAt,
-              readAt: self ? new Date() : null,
+              readAt: self || quiet ? new Date() : null,
             })
             .onConflictDoNothing();
-          await tx.execute(sql`select pg_notify('mzk_events', ${`drop:${address}`})`);
+          if (!quiet) await tx.execute(sql`select pg_notify('mzk_events', ${`drop:${address}`})`);
         });
         return { hash, expiresAt: expiresAt?.toISOString() ?? null, readers: facts.readers };
       },

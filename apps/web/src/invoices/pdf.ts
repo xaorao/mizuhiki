@@ -1,10 +1,11 @@
 /**
  * Invoice PDF, built in the owner's browser (spec 5.6): nothing about the
- * invoice is sent anywhere to make it. The brand font is embedded (subset) so
+ * invoice is sent anywhere to make it. The brand font is embedded (HarfBuzz subset) so
  * names and notes in any script the font covers come out right; characters the
  * font lacks (emoji) are dropped rather than breaking the file.
  */
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { embedBrandFont } from "@/lib/pdfFonts";
 import fontkit from "@pdf-lib/fontkit";
 import QRCode from "qrcode";
 import { DUE_LABEL, STATUS_LABEL, dueDate, money, numberLabel, totals, type InvoiceDoc, type Status } from "./model";
@@ -13,11 +14,6 @@ const INK = rgb(0.17, 0.14, 0.25);
 const MUTED = rgb(0.36, 0.29, 0.38);
 const CORD = rgb(0.76, 0.19, 0.06);
 const LINE = rgb(0.95, 0.89, 0.91);
-
-async function font(doc: PDFDocument, file: string): Promise<PDFFont> {
-  const bytes = new Uint8Array(await (await fetch(`/fonts/${file}`)).arrayBuffer());
-  return doc.embedFont(bytes, { subset: true });
-}
 
 function clean(f: PDFFont, s: string): string {
   const have = new Set(f.getCharacterSet());
@@ -54,9 +50,9 @@ export async function invoicePdf(args: {
   pdf.setTitle(`Invoice ${numberLabel(doc.number)}`);
   pdf.setProducer("Mizuhiki");
   const [reg, bold, black] = await Promise.all([
-    font(pdf, "MPLUSRounded1c-Regular.ttf"),
-    font(pdf, "MPLUSRounded1c-Bold.ttf"),
-    font(pdf, "MPLUSRounded1c-Black.ttf"),
+    embedBrandFont(pdf, "MPLUSRounded1c-Regular.ttf", JSON.stringify(args)),
+    embedBrandFont(pdf, "MPLUSRounded1c-Bold.ttf", JSON.stringify(args)),
+    embedBrandFont(pdf, "MPLUSRounded1c-Black.ttf", JSON.stringify(args)),
   ]);
   let page: PDFPage = pdf.addPage([595.28, 841.89]); // A4
   const M = 48;

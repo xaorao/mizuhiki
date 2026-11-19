@@ -16,7 +16,7 @@ import { MizuhikiError } from "./errors";
 import { CHAIN_ID } from "./seal";
 
 export type SignedKind =
-  "manifest" | "sender" | "room" | "receipt" | "pass" | "draft-index" | "form" | "product" | "invoice";
+  "manifest" | "sender" | "room" | "receipt" | "pass" | "draft-index" | "form" | "product" | "invoice" | "snapshot";
 
 export interface Signed<T> {
   kind: SignedKind;

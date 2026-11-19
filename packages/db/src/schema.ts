@@ -231,3 +231,48 @@ export const invoices = pgTable(
   },
   (t) => [index("invoices_owner").on(t.owner, t.createdAt)],
 );
+
+/**
+ * Forms (spec 5.9). The published definition is public and owner-signed;
+ * the working draft is sealed to the owner. Answers are envelopes
+ * (kind "form", ref "form:<id>") and never touch this table.
+ */
+export const forms = pgTable(
+  "forms",
+  {
+    id: text("id").primaryKey(),
+    owner: text("owner").notNull(),
+    slug: text("slug").notNull(),
+    /** Sealed working copy (owner only). */
+    draftEnvelope: text("draft_envelope"),
+    /** Signed published definition, or null before the first publish. */
+    record: jsonb("record"),
+    version: integer("version").notNull().default(0),
+    archived: boolean("archived").notNull().default(false),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    publishedAt: ts("published_at"),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("forms_owner").on(t.owner), uniqueIndex("forms_owner_slug").on(t.owner, t.slug)],
+);
+
+/**
+ * Shared results snapshots (spec 5.9). The sealed snapshot is a blob kept until
+ * the owner deletes it; this row holds only the owner's signature over
+ * {formId, envelope} and a public label. The link key never reaches the server.
+ */
+export const snapshots = pgTable(
+  "snapshots",
+  {
+    /** The sealed snapshot's blob hash. */
+    hash: text("hash").primaryKey(),
+    owner: text("owner").notNull(),
+    formId: text("form_id").notNull(),
+    /** Public label (the form title), at most 200 characters. Never answers. */
+    title: text("title").notNull(),
+    /** Owner's "snapshot" signature over {formId, envelope}; viewers check it against the chain. */
+    sig: jsonb("sig").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("snapshots_owner_form").on(t.owner, t.formId, t.createdAt)],
+);

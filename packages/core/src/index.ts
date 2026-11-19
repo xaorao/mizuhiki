@@ -14,3 +14,4 @@ export type { MessageSignature, ClassicalKey, PqKeyPair, AccountAddress } from "
 export * from "./names";
 export * from "./manifest";
 export * from "./memo";
+export * from "./forms";

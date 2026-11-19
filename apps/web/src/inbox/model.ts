@@ -4,7 +4,7 @@
  * key is derived from the owner's own sealing seed with HKDF, so the cached
  * plaintext is unreadable without the unlocked account.
  */
-import { Purpose, ab, fromUtf8, openItem, randomBytes, utf8, type FileFacts } from "@mizuhiki/core";
+import { Purpose, ab, fromUtf8, openItem, randomBytes, utf8, type AnswerValue, type FileFacts } from "@mizuhiki/core";
 import type { Account } from "@/account/AccountProvider";
 import { api } from "@/lib/api";
 import { idb } from "@/lib/idb";
@@ -50,7 +50,17 @@ export interface OpenedNote {
   from?: string;
 }
 
-export type Opened = OpenedMessage | OpenedNote;
+export interface OpenedForm {
+  kind: "form";
+  formId: string;
+  formVersion: number;
+  answers: Record<string, AnswerValue>;
+  files: Record<string, FileFacts[]>;
+  ending: string;
+  submittedAt: string;
+}
+
+export type Opened = OpenedMessage | OpenedNote | OpenedForm;
 
 const PURPOSE_BY_KIND: Record<string, string> = {
   message: Purpose.message,
@@ -61,6 +71,10 @@ const PURPOSE_BY_KIND: Record<string, string> = {
 };
 
 export function purposeFor(row: InboxRow): string | undefined {
+  if (row.kind === "form") {
+    const id = /^form:([A-Za-z0-9_-]{1,40})$/.exec(row.ref ?? "")?.[1];
+    return id ? Purpose.form(id) : undefined;
+  }
   return PURPOSE_BY_KIND[row.kind];
 }
 
@@ -74,6 +88,18 @@ export async function openRow(account: Account, row: InboxRow): Promise<Opened> 
   const bytes = await api.bytes(`/blobs/${row.envelope}`);
   const plain = openItem({ purpose, envelope: bytes, keys: account.keys.seal });
   const json = JSON.parse(fromUtf8(plain)) as Record<string, unknown>;
+  if (row.kind === "form") {
+    const formId = /^form:([A-Za-z0-9_-]{1,40})$/.exec(row.ref ?? "")?.[1] ?? "";
+    return {
+      kind: "form",
+      formId,
+      formVersion: typeof json.formVersion === "number" ? json.formVersion : 0,
+      answers: (json.answers ?? {}) as Record<string, AnswerValue>,
+      files: (json.files ?? {}) as Record<string, FileFacts[]>,
+      ending: str(json.ending),
+      submittedAt: str(json.submittedAt) || row.at,
+    };
+  }
   if (purpose === Purpose.payNote)
     return {
       kind: "paynote",
@@ -133,6 +159,7 @@ export async function writeCache(account: Account, data: Record<string, Opened>)
 }
 
 export function searchText(o: Opened): string {
+  if (o.kind === "form") return Object.values(o.answers).flat().join(" ");
   return o.kind === "message" ? `${o.text} ${o.contact} ${o.files.map((f) => f.name).join(" ")}` : o.note;
 }
 

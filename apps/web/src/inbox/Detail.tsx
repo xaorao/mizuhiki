@@ -17,7 +17,8 @@ import {
   TypeChip,
   useToast,
 } from "@mizuhiki/ui";
-import { decryptFile, type FileFacts } from "@mizuhiki/core";
+import { decryptFile, isQuestion, type AnswerValue, type FileFacts, type FormDef, type Question } from "@mizuhiki/core";
+import { useAccount } from "@/account/AccountProvider";
 import { explorerTx } from "@mizuhiki/chain";
 import type { Account } from "@/account/AccountProvider";
 import { api } from "@/lib/api";
@@ -213,6 +214,86 @@ function FileItem({ f, onProve }: { f: FileFacts; onProve: () => void }) {
   );
 }
 
+/** A form answer opened here, labelled with the form's published questions. */
+function FormAnswer({
+  answer,
+  token,
+  onProve,
+}: {
+  answer: Extract<Opened, { kind: "form" }>;
+  token: () => Promise<string>;
+  onProve: (f: FileFacts) => void;
+}) {
+  const [def, setDef] = useState<FormDef | null | "missing">(null);
+  const acct = useAccount();
+  useEffect(() => {
+    void (async () => {
+      try {
+        const t = await token();
+        const { forms } = await api.get<{ forms: { id: string; slug: string }[] }>("/owner/forms", { token: t });
+        const f = forms.find((x) => x.id === answer.formId);
+        const name = acct.account
+          ? (await api.get<{ name: string | null }>(`/names/of/${acct.account.owner.address}`)).name
+          : null;
+        if (!f || !name) throw new Error("missing");
+        const served = await api.get<{ record: { body: FormDef } }>(`/forms/${name}/${f.slug}`);
+        setDef(served.record.body);
+      } catch {
+        setDef("missing");
+      }
+    })();
+  }, [acct.account, answer.formId, token]);
+  if (def === null) return <Skeleton lines={3} />;
+  const qs = def === "missing" ? [] : def.blocks.filter(isQuestion);
+  const label = (q: Question | undefined, v: AnswerValue | undefined): string => {
+    if (v === undefined || v === null || v === "") return "—";
+    if (typeof v === "boolean") return v ? "Yes" : "No";
+    const one = (x: string) =>
+      q && "choices" in q
+        ? (q.choices.find((c) => c.id === x)?.label ??
+          (x === "other"
+            ? `Other: ${String(answer.answers[`${q.id}:other`] ?? "")}`
+            : x === "none"
+              ? "None of the above"
+              : x))
+        : x;
+    return Array.isArray(v) ? v.map(one).join(", ") : one(String(v));
+  };
+  const ids = def === "missing" ? Object.keys(answer.answers).filter((k) => !k.includes(":")) : qs.map((q) => q.id);
+  return (
+    <div className={s.formAnswer}>
+      {def === "missing" ? (
+        <p className={s.contact}>The form is no longer published, so questions show by id.</p>
+      ) : null}
+      <dl>
+        {ids.map((id) => {
+          const q = qs.find((x) => x.id === id);
+          const files = answer.files[id] ?? [];
+          return (
+            <div key={id}>
+              <dt>{q?.title.replace(/\{\{[^}]+\}\}/g, "…") ?? id}</dt>
+              <dd>
+                {files.length ? (
+                  <ul className={s.files}>
+                    {files.map((f) => (
+                      <FileItem key={f.fileId} f={f} onProve={() => onProve(f)} />
+                    ))}
+                  </ul>
+                ) : (
+                  label(q, answer.answers[id])
+                )}
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+      <ButtonLink href={`/app/forms/${answer.formId}?tab=results`} variant="line" icon="chart" className={s.openLink}>
+        See all answers to this form
+      </ButtonLink>
+    </div>
+  );
+}
+
 function SentReply({ row, account }: { row: InboxRow; account: Account }) {
   const [item, setItem] = useState<Opened | null | "failed">(null);
   useEffect(() => {
@@ -344,6 +425,13 @@ export function Detail({
           ) : null}
           {msg?.quote ? <blockquote className={s.quote}>{msg.quote}</blockquote> : null}
           {opened?.kind === "paynote" ? <p className={s.text}>{opened.note || "No note."}</p> : null}
+          {opened?.kind === "form" ? (
+            <FormAnswer
+              answer={opened}
+              token={token}
+              onProve={(f) => setProving({ hash: f.sha256, file: { name: f.name, size: f.size, type: f.type } })}
+            />
+          ) : null}
           {msg ? <p className={s.text}>{msg.text || <em>No message, files only.</em>}</p> : null}
           {msg?.link && safeInvoiceLink(msg.link) ? (
             <ButtonLink href={msg.link} variant="cord" icon="invoice" className={s.openLink}>

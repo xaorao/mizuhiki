@@ -177,7 +177,9 @@ test("editor on a phone: layout, preview sheet, no sideways scroll", async ({ pa
   await expect(page.getByRole("dialog", { name: "Preview" })).toBeVisible();
   await page.screenshot({ path: info.outputPath("preview-phone.png") });
   await page.getByRole("button", { name: "Close" }).click();
-  await page.getByRole("link", { name: "Design" }).click();
+  // phones reach Design through More
+  await page.getByRole("navigation", { name: "Owner sections" }).last().getByRole("button", { name: "More" }).click();
+  await page.getByRole("dialog", { name: "Everything" }).getByRole("link", { name: "Design" }).click();
   await expect(page.getByRole("heading", { name: "Design", exact: true })).toBeVisible();
   const [dw, diw] = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
   expect(dw).toBeLessThanOrEqual(diw);

@@ -173,3 +173,49 @@
     box-shadow: 0 3px 0 var(--ink);
   }
 }
+.tab {
+  position: relative;
+}
+.tabBadge {
+  position: absolute;
+  top: 2px;
+  right: calc(50% - 22px);
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--cord);
+  color: var(--white);
+  font-family: var(--font-round);
+  font-weight: 800;
+  font-size: 11px;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+}
+.moreNav {
+  display: grid;
+  gap: 14px;
+}
+.moreNav h4 {
+  font-family: var(--font-round);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-subtle);
+  margin-bottom: 4px;
+}
+.moreItem {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 12px;
+  border-radius: 16px;
+  color: var(--ink);
+  text-decoration: none;
+  font-family: var(--font-round);
+  font-weight: 800;
+}
+.moreItem[aria-current="page"] {
+  background: var(--sakura-soft);
+  border: 2px solid var(--ink);
+}

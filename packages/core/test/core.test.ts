@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { generateSealKeys, recipientOf, signRecipientCard } from "@qorechain/qoreseal";
 import {
+  answerProblem,
+  conditionHolds,
+  nextAfter,
+  pickHint,
+  recall,
+  type FormDef,
+  type Question,
   sha256File,
   sha256Hex,
   CHUNK_SIZE,
@@ -307,5 +314,115 @@ describe("signed records", () => {
   });
   it("canonical JSON ignores key order", () => {
     expect(canonicalJson({ b: 1, a: [1, { d: 2, c: 3 }] })).toBe(canonicalJson({ a: [1, { c: 3, d: 2 }], b: 1 }));
+  });
+});
+
+describe("forms: logic, recall, validation", () => {
+  const def = {
+    blocks: [
+      {
+        id: "name",
+        kind: "short",
+        title: "Name",
+        description: "",
+        required: true,
+        hidden: false,
+        half: false,
+        placeholder: "",
+      },
+      {
+        id: "score",
+        kind: "scale",
+        title: "How was it, {{name}}?",
+        description: "",
+        required: true,
+        hidden: false,
+        half: false,
+        from: 0,
+        to: 5,
+        left: "",
+        center: "",
+        right: "",
+      },
+      {
+        id: "why",
+        kind: "long",
+        title: "Sorry to hear that. Why?",
+        description: "",
+        required: false,
+        hidden: false,
+        half: false,
+        placeholder: "",
+        maxChars: 10,
+      },
+      {
+        id: "pick",
+        kind: "checkboxes",
+        title: "Pick",
+        description: "",
+        required: true,
+        hidden: false,
+        half: false,
+        choices: [
+          { id: "a", label: "Alpha" },
+          { id: "b", label: "Beta" },
+          { id: "c", label: "Gamma" },
+        ],
+        other: false,
+        none: false,
+        randomize: false,
+        minPick: 1,
+        maxPick: 2,
+      },
+    ],
+    logic: [
+      {
+        after: "score",
+        rules: [{ when: [{ q: "score", op: "lt" as const, value: "3" }], to: "why" }],
+        otherwise: "end-happy",
+      },
+    ],
+  } satisfies Pick<FormDef, "blocks" | "logic">;
+
+  it("branches by rule, falls back to all other cases, and goes on in order without logic", () => {
+    expect(nextAfter(def, "score", { score: 2 })).toBe("why");
+    expect(nextAfter(def, "score", { score: 5 })).toBe("end-happy");
+    expect(nextAfter(def, "name", { name: "Rohan" })).toBe("");
+    expect(conditionHolds(def, { q: "pick", op: "is", value: "b" }, { pick: ["a", "b"] })).toBe(true);
+    expect(conditionHolds(def, { q: "pick", op: "contains", value: "gam" }, { pick: ["c"] })).toBe(true);
+    expect(conditionHolds(def, { q: "name", op: "not_answered", value: "" }, {})).toBe(true);
+  });
+
+  it("recalls earlier answers by label", () => {
+    expect(recall("How was it, {{name}}?", def, { name: "Rohan" })).toBe("How was it, Rohan?");
+    expect(recall("You picked {{pick}}", def, { pick: ["a", "c"] })).toBe("You picked Alpha, Gamma");
+    expect(recall("Hi {{missing}}!", def, {})).toBe("Hi !");
+  });
+
+  it("explains every invalid answer the way Typeform does", () => {
+    const q = (id: string) => def.blocks.find((b) => b.id === id) as Question;
+    expect(answerProblem(q("name"), "")).toBe("Please fill this in");
+    expect(answerProblem(q("why"), "")).toBeNull();
+    expect(answerProblem(q("why"), "far too long here")).toBe("Please keep it under 10 characters");
+    expect(answerProblem(q("pick"), ["a", "b", "c"])).toBe("Make between 1 and 2 choices");
+    expect(pickHint(q("pick"))).toBe("Make between 1 and 2 choices");
+    const email = { ...q("name"), kind: "email" } as Question;
+    expect(answerProblem(email, "a@b")).toBe("Hmm, that email doesn't look right");
+    expect(answerProblem(email, "a@b.co")).toBeNull();
+    const wallet = { ...q("name"), kind: "wallet" } as Question;
+    expect(answerProblem(wallet, "0x1234")).toBe("That is not a QoreChain address (qor1…)");
+    const file = {
+      id: "f",
+      kind: "file",
+      title: "CV",
+      description: "",
+      required: true,
+      hidden: false,
+      half: false,
+      maxFiles: 1,
+      maxMB: 5,
+    } as Question;
+    expect(answerProblem(file, null, 0)).toBe("Please fill this in");
+    expect(answerProblem(file, null, 1)).toBeNull();
   });
 });

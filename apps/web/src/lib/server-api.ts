@@ -28,3 +28,24 @@ export async function lookupPage(name: string): Promise<PageLookup> {
     return { state: "error", message: j.error?.message ?? "This page could not be loaded." };
   return { state: "ok", record: j.record, card: j.card ?? null, registry: j.registry };
 }
+
+export type FormLookup =
+  | { state: "ok"; record: Signed<import("@mizuhiki/core").FormDef>; open: boolean; closedReason: string | null }
+  | { state: "missing" | "error"; message: string };
+
+export async function lookupForm(name: string, slug: string): Promise<FormLookup> {
+  try {
+    const res = await fetch(`${BASE}/forms/${encodeURIComponent(name)}/${encodeURIComponent(slug)}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
+    });
+    const j = (await res.json().catch(() => ({}))) as { error?: { message?: string } } & Partial<
+      Extract<FormLookup, { state: "ok" }>
+    >;
+    if (res.status === 404) return { state: "missing", message: j.error?.message ?? "This form isn't available." };
+    if (!res.ok || !j.record) return { state: "error", message: j.error?.message ?? "This form could not be loaded." };
+    return { state: "ok", record: j.record, open: j.open ?? false, closedReason: j.closedReason ?? null };
+  } catch {
+    return { state: "error", message: "Mizuhiki could not be reached. Try again in a moment." };
+  }
+}

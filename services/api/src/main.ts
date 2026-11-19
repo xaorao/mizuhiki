@@ -1,7 +1,14 @@
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { loadConfig } from "./config";
 import { runMigrations } from "@mizuhiki/db";
 import { buildServer } from "./server";
 import { sweepBlobs } from "./routes/blobs";
+
+// Local secrets (for example ANTHROPIC_API_KEY) live in services/api/.env.local,
+// which git ignores. Values already in the environment win.
+const localEnv = fileURLToPath(new URL("../.env.local", import.meta.url));
+if (existsSync(localEnv)) process.loadEnvFile(localEnv);
 
 const cfg = loadConfig();
 await runMigrations(cfg.DATABASE_URL);
