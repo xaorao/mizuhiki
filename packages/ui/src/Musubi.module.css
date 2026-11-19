@@ -1,0 +1,99 @@
+.musubi {
+  display: inline-block;
+  line-height: 0;
+  flex: none;
+}
+.svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.bob {
+  animation: mz-bob 3.2s ease-in-out infinite;
+}
+.body {
+  transform-origin: 110px 190px;
+}
+.hop .body {
+  animation: squish 0.7s var(--ease-pop);
+}
+@keyframes squish {
+  0% {
+    transform: scale(1, 1);
+  }
+  20% {
+    transform: scale(1.12, 0.86);
+  }
+  45% {
+    transform: translateY(-26px) scale(0.94, 1.08);
+  }
+  70% {
+    transform: scale(1.06, 0.94);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+.face :global(g),
+.face {
+  transition: transform 0.12s ease-out;
+}
+.bow {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+.musubi:hover .bow {
+  animation: bowwiggle 0.5s ease-in-out;
+}
+@keyframes bowwiggle {
+  0%,
+  100% {
+    transform: translate(110px, 56px) rotate(0);
+  }
+  30% {
+    transform: translate(110px, 56px) rotate(-9deg);
+  }
+  70% {
+    transform: translate(110px, 56px) rotate(7deg);
+  }
+}
+.paws {
+  animation: paws 1.2s ease-in-out infinite;
+  transform-origin: 110px 116px;
+}
+@keyframes paws {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(2px);
+  }
+}
+.z1 {
+  animation: zz 2.4s ease-in-out infinite;
+}
+.z2 {
+  animation: zz 2.4s 0.6s ease-in-out infinite;
+}
+@keyframes zz {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(2px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bob,
+  .hop .body,
+  .musubi:hover .bow,
+  .paws,
+  .z1,
+  .z2 {
+    animation: none;
+  }
+}

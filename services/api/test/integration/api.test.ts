@@ -1,0 +1,620 @@
+/**
+ * API integration tests against a real Postgres database and the real QoreChain
+ * testnet (keys, registry). Personas are disposable testnet accounts.
+ */
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { signSiwq } from "@qorechain/qoresign";
+import { generateSealKeys, recipientOf, signRecipientCard } from "@qorechain/qoreseal";
+import {
+  DEFAULT_THEME,
+  Purpose,
+  newId,
+  sealItem,
+  signRecord,
+  solvePow,
+  toBase64Url,
+  utf8,
+  type Manifest,
+} from "@mizuhiki/core";
+import { NETWORK } from "@mizuhiki/chain";
+import { ensurePersona, type ReadyPersona } from "@mizuhiki/testnet";
+import type { FastifyInstance } from "fastify";
+import { loadConfig } from "../../src/config";
+import { runMigrations } from "@mizuhiki/db";
+import { buildServer } from "../../src/server";
+
+const DB = "postgres://mizuhiki:mizuhiki-local-dev@127.0.0.1:5432/mizuhiki_test";
+let app: FastifyInstance;
+let close: () => Promise<void>;
+let owner: ReadyPersona;
+let stranger: ReadyPersona;
+let token = "";
+
+async function signIn(p: ReadyPersona): Promise<string> {
+  const c = await app.inject({ method: "POST", url: "/auth/challenge", payload: { address: p.address } });
+  const { message, nonce } = c.json<{ message: string; nonce: string }>();
+  const signature = signSiwq({ message, classicalKey: p.classical, pqKey: p.pq });
+  const v = await app.inject({ method: "POST", url: "/auth/verify", payload: { nonce, signature } });
+  expect(v.statusCode).toBe(200);
+  return v.json<{ token: string }>().token;
+}
+
+function manifest(p: ReadyPersona, version: number, extra: Partial<Manifest> = {}): Manifest {
+  return {
+    v: 1,
+    name: p.name ?? "",
+    address: p.address,
+    displayName: "Test Owner",
+    bio: "Integration test page",
+    socials: [],
+    goal: "creator",
+    theme: DEFAULT_THEME,
+    blocks: [
+      {
+        id: newId(),
+        type: "message",
+        on: true,
+        archived: false,
+        title: "Send me something private",
+        subtitle: "",
+        greeting: "Hi",
+        allowFiles: true,
+        maxFileMB: 500,
+      },
+    ],
+    periodKeys: [],
+    version,
+    updatedAt: new Date().toISOString(),
+    ...extra,
+  };
+}
+
+beforeAll(async () => {
+  await runMigrations(DB);
+  const postgres = (await import("postgres")).default;
+  const sql = postgres(DB);
+  await sql`truncate accounts, auth_nonces, sessions, names, cards, pages, drafts, blobs, envelopes, payments, counters, index_checkpoints, reports, push_subscriptions, notify_prefs, media`;
+  await sql.end();
+  const cfg = loadConfig({
+    ...process.env,
+    NODE_ENV: "test",
+    DATABASE_URL: DB,
+    BLOB_DIR: mkdtempSync(join(tmpdir(), "mzk-blobs-")),
+  });
+  ({ app, close } = await buildServer(cfg));
+  owner = await ensurePersona("api-owner", { name: "mzk-api-owner" });
+  stranger = await ensurePersona("api-stranger");
+}, 300_000);
+
+afterAll(async () => close());
+
+describe("names", () => {
+  it("explains invalid, reserved, taken and available names", async () => {
+    const short = (await app.inject({ url: "/names/ab" })).json();
+    expect(short).toMatchObject({
+      available: false,
+      problem: "short",
+      message: "Usernames must be 3 characters or longer",
+    });
+    expect((await app.inject({ url: "/names/settings" })).json()).toMatchObject({
+      available: false,
+      problem: "reserved",
+    });
+    const taken = (await app.inject({ url: "/names/mzk-api-owner" })).json<{
+      available: boolean;
+      problem: string;
+      suggestions: string[];
+    }>();
+    expect(taken.available).toBe(false);
+    expect(taken.problem).toBe("taken");
+    expect(taken.suggestions.length).toBeGreaterThan(0);
+    const free = (await app.inject({ url: `/names/free${Date.now()}` })).json();
+    expect(free).toMatchObject({ available: true });
+  });
+});
+
+describe("sign in with QoreChain", () => {
+  it("issues a session for a valid hybrid signature", async () => {
+    token = await signIn(owner);
+    const me = await app.inject({ url: "/auth/me", headers: { authorization: `Bearer ${token}` } });
+    expect(me.json()).toEqual({ address: owner.address });
+  });
+  it("refuses a signature by another account's keys", async () => {
+    const c = (await app.inject({ method: "POST", url: "/auth/challenge", payload: { address: owner.address } })).json<{
+      message: string;
+      nonce: string;
+    }>();
+    // stranger's keys cannot sign for owner's address
+    expect(() => signSiwq({ message: c.message, classicalKey: stranger.classical, pqKey: stranger.pq })).toThrow();
+    // a valid classical key but the wrong ML-DSA key
+    const signature = signSiwq({ message: c.message, classicalKey: owner.classical, pqKey: stranger.pq });
+    const v = await app.inject({ method: "POST", url: "/auth/verify", payload: { nonce: c.nonce, signature } });
+    expect(v.statusCode).toBe(401);
+  });
+  it("refuses a replayed nonce", async () => {
+    const c = (await app.inject({ method: "POST", url: "/auth/challenge", payload: { address: owner.address } })).json<{
+      message: string;
+      nonce: string;
+    }>();
+    const signature = signSiwq({ message: c.message, classicalKey: owner.classical, pqKey: owner.pq });
+    expect(
+      (await app.inject({ method: "POST", url: "/auth/verify", payload: { nonce: c.nonce, signature } })).statusCode,
+    ).toBe(200);
+    expect(
+      (await app.inject({ method: "POST", url: "/auth/verify", payload: { nonce: c.nonce, signature } })).statusCode,
+    ).toBe(401);
+  });
+  it("refuses a classical-only signature", async () => {
+    const c = (await app.inject({ method: "POST", url: "/auth/challenge", payload: { address: owner.address } })).json<{
+      message: string;
+      nonce: string;
+    }>();
+    const signature = signSiwq({ message: c.message, classicalKey: owner.classical });
+    expect(
+      (await app.inject({ method: "POST", url: "/auth/verify", payload: { nonce: c.nonce, signature } })).statusCode,
+    ).toBe(401);
+  });
+  it("ends a session on logout", async () => {
+    const t = await signIn(owner);
+    await app.inject({ method: "POST", url: "/auth/logout", headers: { authorization: `Bearer ${t}` } });
+    expect((await app.inject({ url: "/auth/me", headers: { authorization: `Bearer ${t}` } })).statusCode).toBe(401);
+  });
+});
+
+describe("cards", () => {
+  it("stores a card that matches the chain keys", async () => {
+    const r = await app.inject({
+      method: "PUT",
+      url: "/cards",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { card: owner.card },
+    });
+    expect(r.statusCode).toBe(200);
+    expect((await app.inject({ url: `/cards/${owner.address}` })).json<{ card: unknown }>().card).toEqual(owner.card);
+  });
+  it("refuses a forged card and a card for someone else", async () => {
+    const forgedKeys = generateSealKeys();
+    const forged = { ...owner.card, x25519PublicKey: Buffer.from(forgedKeys.x25519PublicKey).toString("hex") };
+    expect(
+      (
+        await app.inject({
+          method: "PUT",
+          url: "/cards",
+          headers: { authorization: `Bearer ${token}` },
+          payload: { card: forged },
+        })
+      ).statusCode,
+    ).toBe(400);
+    expect(
+      (
+        await app.inject({
+          method: "PUT",
+          url: "/cards",
+          headers: { authorization: `Bearer ${token}` },
+          payload: { card: stranger.card },
+        })
+      ).statusCode,
+    ).toBe(400);
+    const other = signRecipientCard({
+      chainId: NETWORK.chainId,
+      address: owner.address,
+      keys: forgedKeys,
+      classicalKey: owner.classical,
+      pqKey: owner.pq,
+    });
+    expect(
+      (
+        await app.inject({
+          method: "PUT",
+          url: "/cards",
+          headers: { authorization: `Bearer ${token}` },
+          payload: { card: other },
+        })
+      ).statusCode,
+    ).toBe(400);
+  });
+  it("needs a session", async () => {
+    expect((await app.inject({ method: "PUT", url: "/cards", payload: { card: owner.card } })).statusCode).toBe(401);
+  });
+});
+
+describe("pages", () => {
+  const sign = (m: Manifest, p: ReadyPersona) =>
+    signRecord({ kind: "manifest", body: m, signer: p.address, classical: p.classical, pq: p.pq });
+  it("publishes a signed manifest and serves it by name", async () => {
+    const r = await app.inject({
+      method: "PUT",
+      url: "/pages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { record: sign(manifest(owner, 1), owner) },
+    });
+    expect(r.statusCode).toBe(200);
+    const g = (await app.inject({ url: `/pages/${owner.name ?? ""}` })).json<{
+      record: { body: Manifest };
+      card: unknown;
+      registry: { owner: string };
+    }>();
+    expect(g.record.body.displayName).toBe("Test Owner");
+    expect(g.registry.owner).toBe(owner.address);
+    expect(g.card).toEqual(owner.card);
+  });
+  it("refuses a tampered manifest, a stale version, another signer and a name not owned", async () => {
+    const rec = sign(manifest(owner, 2), owner);
+    const tampered = { ...rec, body: { ...rec.body, displayName: "Mallory" } };
+    expect(
+      (
+        await app.inject({
+          method: "PUT",
+          url: "/pages",
+          headers: { authorization: `Bearer ${token}` },
+          payload: { record: tampered },
+        })
+      ).statusCode,
+    ).toBe(400);
+    expect(
+      (
+        await app.inject({
+          method: "PUT",
+          url: "/pages",
+          headers: { authorization: `Bearer ${token}` },
+          payload: { record: sign(manifest(owner, 1), owner) },
+        })
+      ).statusCode,
+    ).toBe(409);
+    const strangerToken = await signIn(stranger);
+    const asStranger = { ...manifest(owner, 3), address: stranger.address };
+    const r = await app.inject({
+      method: "PUT",
+      url: "/pages",
+      headers: { authorization: `Bearer ${strangerToken}` },
+      payload: { record: sign(asStranger, stranger) },
+    });
+    expect(r.statusCode).toBe(409);
+    expect(r.json<{ error: { code: string } }>().error.code).toBe("NAME_NOT_YOURS");
+    const viaOwnerSession = await app.inject({
+      method: "PUT",
+      url: "/pages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { record: sign(asStranger, stranger) },
+    });
+    expect(viaOwnerSession.statusCode).toBe(400);
+  });
+  it("hides an unpublished page and a name that does not exist", async () => {
+    await app.inject({ method: "POST", url: "/pages/unpublish", headers: { authorization: `Bearer ${token}` } });
+    const g = await app.inject({ url: `/pages/${owner.name ?? ""}` });
+    expect(g.statusCode).toBe(404);
+    expect(g.json<{ error: { message: string } }>().error.message).toBe("This page isn't available.");
+    const r = await app.inject({
+      method: "PUT",
+      url: "/pages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { record: sign(manifest(owner, 5), owner) },
+    });
+    expect(r.statusCode).toBe(200);
+    expect((await app.inject({ url: `/pages/nobody${Date.now()}` })).statusCode).toBe(404);
+  });
+});
+
+describe("blobs and media", () => {
+  it("stores content-addressed bytes and refuses oversize", async () => {
+    const bytes = Buffer.from(crypto.getRandomValues(new Uint8Array(1000)));
+    const put = await app.inject({
+      method: "PUT",
+      url: "/blobs",
+      headers: { "content-type": "application/octet-stream" },
+      payload: bytes,
+    });
+    const { hash } = put.json<{ hash: string }>();
+    const get = await app.inject({ url: `/blobs/${hash}` });
+    expect(Buffer.from(get.rawPayload).equals(bytes)).toBe(true);
+    expect((await app.inject({ url: `/blobs/${"0".repeat(64)}` })).statusCode).toBe(404);
+  });
+  it("accepts real images only, for signed-in owners", async () => {
+    const png = Buffer.from("89504e470d0a1a0a0000000d4948445200000001000000010806000000", "hex");
+    const r = await app.inject({
+      method: "PUT",
+      url: "/media",
+      headers: { "content-type": "application/octet-stream", authorization: `Bearer ${token}` },
+      payload: png,
+    });
+    expect(r.json()).toMatchObject({ type: "image/png" });
+    const html = Buffer.from("<html><script>alert(1)</script></html>");
+    expect(
+      (
+        await app.inject({
+          method: "PUT",
+          url: "/media",
+          headers: { "content-type": "application/octet-stream", authorization: `Bearer ${token}` },
+          payload: html,
+        })
+      ).statusCode,
+    ).toBe(415);
+    expect(
+      (
+        await app.inject({
+          method: "PUT",
+          url: "/media",
+          headers: { "content-type": "application/octet-stream" },
+          payload: png,
+        })
+      ).statusCode,
+    ).toBe(401);
+  });
+});
+
+describe("chain relay", () => {
+  it("relays allowlisted reads and refuses everything else", async () => {
+    const ok = await app.inject({ url: `/chain/cosmos/bank/v1beta1/balances/${owner.address}/by_denom?denom=uqor` });
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json<{ balance: { denom: string } }>().balance.denom).toBe("uqor");
+    expect((await app.inject({ url: "/chain/cosmos/staking/v1beta1/validators" })).statusCode).toBe(404);
+    expect((await app.inject({ url: `/chain/cosmos/bank/v1beta1/balances/${owner.address}?evil=1` })).statusCode).toBe(
+      400,
+    );
+    expect((await app.inject({ method: "POST", url: "/chain/cosmos/gov/v1/proposals", payload: {} })).statusCode).toBe(
+      404,
+    );
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: "/chain/cosmos/tx/v1beta1/txs",
+          payload: { tx_bytes: "AA", mode: "BROADCAST_MODE_ASYNC" },
+        })
+      ).statusCode,
+    ).toBe(400);
+    expect(
+      (await app.inject({ method: "POST", url: "/chain/cosmos/tx/v1beta1/simulate", payload: {} })).statusCode,
+    ).toBe(400);
+  });
+  it("answers a not-yet-committed transaction as pending, not as an error", async () => {
+    const r = await app.inject({ url: `/chain/cosmos/tx/v1beta1/txs/${"A".repeat(64)}` });
+    expect(r.statusCode).toBe(200);
+    expect(r.json()).toEqual({ tx_response: null, pending: true });
+  });
+  it("reports the bio helper as off without credentials", async () => {
+    expect((await app.inject({ url: "/ai/status" })).json()).toEqual({ bio: Boolean(process.env.ANTHROPIC_API_KEY) });
+  });
+});
+
+describe("drop and inbox", () => {
+  const sealTo = (text: string, readers = [recipientOf(owner.seal)]) =>
+    sealItem({
+      purpose: Purpose.message,
+      readers,
+      plaintext: utf8(JSON.stringify({ v: 1, kind: "message", text })),
+      anonymous: true,
+    });
+  const bits = () => app.inject({ url: "/drop/config" }).then((r) => r.json<{ powBits: number }>().powBits);
+  const drop = async (to: string, body: Record<string, unknown>) =>
+    app.inject({ method: "POST", url: `/drop/${to}`, payload: body });
+  let anonHash = "";
+  let signedHash = "";
+
+  it("refuses what it must not store, and says nothing was stored", async () => {
+    const b = await bits();
+    const ok = sealTo("hello");
+    const pow = solvePow(owner.address, ok.hash, b);
+    const base = { envelope: toBase64Url(ok.envelope), kind: "message", chunks: [], pow };
+    const bad = await drop("not-an-address", base);
+    expect(bad.statusCode).toBe(400);
+    const none = await drop(stranger.address, { ...base, pow: solvePow(stranger.address, ok.hash, b) });
+    expect(none.statusCode).toBe(404);
+    expect(none.json<{ error: { code: string; dataState: string } }>().error).toMatchObject({
+      code: "NO_ACCOUNT",
+      dataState: "nothing-stored",
+    });
+    const junk = new Uint8Array(400).fill(7);
+    expect(
+      (await drop(owner.address, { ...base, envelope: toBase64Url(junk) })).json<{ error: { code: string } }>().error
+        .code,
+    ).toBe("NOT_SEALED");
+    const other = sealTo("other");
+    const wrongPow = await drop(owner.address, { ...base, pow: solvePow(owner.address, other.hash, b) });
+    expect(wrongPow.statusCode).toBe(429);
+    const missing = await drop(owner.address, { ...base, chunks: ["a".repeat(64)] });
+    expect(missing.statusCode).toBe(409);
+    // a sender signature for a different envelope, and one that claims someone else's account
+    const sigOther = signRecord({
+      kind: "sender",
+      body: { envelope: other.hash, to: owner.address, at: new Date().toISOString() },
+      signer: stranger.address,
+      classical: stranger.classical,
+      pq: stranger.pq,
+    });
+    expect(
+      (await drop(owner.address, { ...base, sender: sigOther })).json<{ error: { code: string } }>().error.code,
+    ).toBe("BAD_SIGNATURE");
+    // Signed by the stranger's keys, then relabelled as the owner's account.
+    const forged = {
+      ...signRecord({
+        kind: "sender",
+        body: { envelope: ok.hash, to: owner.address, at: new Date().toISOString() },
+        signer: stranger.address,
+        classical: stranger.classical,
+        pq: stranger.pq,
+      }),
+      signer: owner.address,
+    };
+    expect(
+      (await drop(owner.address, { ...base, sender: forged })).json<{ error: { code: string } }>().error.code,
+    ).toBe("BAD_SIGNATURE");
+    const idx = await app.inject({ url: "/owner/inbox", headers: { authorization: `Bearer ${token}` } });
+    expect(idx.json<{ rows: unknown[] }>().rows).toHaveLength(0);
+  });
+
+  it("stores an anonymous drop and a signed drop; the owner's index shows metadata only", async () => {
+    const b = await bits();
+    const anon = sealTo("anonymous hello");
+    const r1 = await drop(owner.address, {
+      envelope: toBase64Url(anon.envelope),
+      kind: "message",
+      chunks: [],
+      pow: solvePow(owner.address, anon.hash, b),
+    });
+    expect(r1.statusCode).toBe(200);
+    anonHash = r1.json<{ hash: string }>().hash;
+    expect(anonHash).toBe(anon.hash);
+    const signed = sealTo("signed hello", [recipientOf(owner.seal), recipientOf(stranger.seal)]);
+    const sender = signRecord({
+      kind: "sender",
+      body: { envelope: signed.hash, to: owner.address, at: new Date().toISOString() },
+      signer: stranger.address,
+      classical: stranger.classical,
+      pq: stranger.pq,
+    });
+    const r2 = await drop(owner.address, {
+      envelope: toBase64Url(signed.envelope),
+      kind: "reply",
+      ref: `re:${anonHash}`,
+      chunks: [],
+      pow: solvePow(owner.address, signed.hash, b),
+      sender,
+    });
+    expect(r2.statusCode).toBe(200);
+    signedHash = signed.hash;
+    expect((await app.inject({ url: "/owner/inbox" })).statusCode).toBe(401);
+    const idx = (await app.inject({ url: "/owner/inbox", headers: { authorization: `Bearer ${token}` } })).json<{
+      rows: {
+        id: string;
+        kind: string;
+        read: boolean;
+        sender: { address: string } | null;
+        senderSig: unknown;
+        readers: number;
+        ref: string | null;
+      }[];
+    }>();
+    const a = idx.rows.find((r) => r.id === anonHash);
+    const s = idx.rows.find((r) => r.id === signedHash);
+    expect(a).toMatchObject({ kind: "message", read: false, sender: null, senderSig: null, readers: 1 });
+    expect(s).toMatchObject({ kind: "reply", read: false, readers: 2, ref: `re:${anonHash}` });
+    expect(s?.sender?.address).toBe(stranger.address);
+    expect(JSON.stringify(idx)).not.toContain("hello");
+    expect(
+      (await app.inject({ url: "/owner/unread", headers: { authorization: `Bearer ${token}` } })).json<{
+        unread: number;
+      }>().unread,
+    ).toBe(2);
+  });
+
+  it("read, archive and sent work only for the right account", async () => {
+    const auth = { authorization: `Bearer ${token}` };
+    const strangerToken = await signIn(stranger);
+    expect(
+      (
+        await app.inject({
+          method: "PATCH",
+          url: `/owner/inbox/${anonHash}`,
+          payload: { read: true },
+          headers: { authorization: `Bearer ${strangerToken}` },
+        })
+      ).statusCode,
+    ).toBe(404);
+    expect(
+      (await app.inject({ method: "PATCH", url: `/owner/inbox/${anonHash}`, payload: { read: true }, headers: auth }))
+        .statusCode,
+    ).toBe(200);
+    expect(
+      (
+        await app.inject({
+          method: "PATCH",
+          url: `/owner/inbox/${anonHash}`,
+          payload: { archived: true },
+          headers: auth,
+        })
+      ).statusCode,
+    ).toBe(200);
+    const inbox = (await app.inject({ url: "/owner/inbox", headers: auth }))
+      .json<{ rows: { id: string }[] }>()
+      .rows.map((r) => r.id);
+    const archived = (await app.inject({ url: "/owner/inbox?box=archived", headers: auth })).json<{
+      rows: { id: string; read: boolean }[];
+    }>().rows;
+    expect(inbox).not.toContain(anonHash);
+    expect(archived.find((r) => r.id === anonHash)?.read).toBe(true);
+    const sent = (
+      await app.inject({ url: "/owner/inbox?box=sent", headers: { authorization: `Bearer ${strangerToken}` } })
+    ).json<{
+      rows: { id: string; to: { address: string } | null; read: boolean }[];
+    }>().rows;
+    expect(sent.map((r) => r.id)).toEqual([signedHash]);
+    expect(sent[0]?.to?.address).toBe(owner.address);
+    expect((await app.inject({ url: "/owner/unread", headers: auth })).json<{ unread: number }>().unread).toBe(1);
+  });
+});
+
+describe("proof labels", () => {
+  it("only the owner can file a label for themselves; labels never show in the inbox", async () => {
+    const b = (await app.inject({ url: "/drop/config" })).json<{ powBits: number }>().powBits;
+    const label = sealItem({
+      purpose: Purpose.proofNote,
+      readers: [recipientOf(owner.seal)],
+      plaintext: utf8("{}"),
+      anonymous: true,
+    });
+    const pow = solvePow(owner.address, label.hash, b);
+    const base = { envelope: toBase64Url(label.envelope), kind: "proof", ref: "proof:abc", chunks: [], pow };
+    const at = new Date().toISOString();
+    const byStranger = signRecord({
+      kind: "sender",
+      body: { envelope: label.hash, to: owner.address, at },
+      signer: stranger.address,
+      classical: stranger.classical,
+      pq: stranger.pq,
+    });
+    expect(
+      (await app.inject({ method: "POST", url: `/drop/${owner.address}`, payload: { ...base, sender: byStranger } }))
+        .statusCode,
+    ).toBe(400);
+    expect((await app.inject({ method: "POST", url: `/drop/${owner.address}`, payload: base })).statusCode).toBe(400);
+    const byOwner = signRecord({
+      kind: "sender",
+      body: { envelope: label.hash, to: owner.address, at },
+      signer: owner.address,
+      classical: owner.classical,
+      pq: owner.pq,
+    });
+    const ok = await app.inject({
+      method: "POST",
+      url: `/drop/${owner.address}`,
+      payload: { ...base, sender: byOwner },
+    });
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json<{ expiresAt: string | null }>().expiresAt).toBeNull();
+    const auth = { authorization: `Bearer ${token}` };
+    const notes = (await app.inject({ url: "/owner/notes?kind=proof", headers: auth })).json<{
+      notes: { hash: string }[];
+    }>().notes;
+    expect(notes.map((n) => n.hash)).toContain(label.hash);
+    for (const box of ["inbox", "archived", "sent"]) {
+      const rows = (await app.inject({ url: `/owner/inbox?box=${box}`, headers: auth })).json<{
+        rows: { id: string }[];
+      }>().rows;
+      expect(rows.map((r) => r.id)).not.toContain(label.hash);
+    }
+    expect((await app.inject({ url: "/owner/notes?kind=message", headers: auth })).statusCode).toBe(400);
+    expect((await app.inject({ url: "/owner/notes?kind=proof" })).statusCode).toBe(401);
+    // The names table is filled by the indexer (not running here); the route answers and refuses junk.
+    expect((await app.inject({ url: `/names/of/${owner.address}` })).statusCode).toBe(200);
+    expect((await app.inject({ url: "/names/of/nonsense" })).statusCode).toBe(400);
+  });
+});
+
+describe("sign-in limits", () => {
+  it("limit per account: one account is throttled, another from the same IP is not", async () => {
+    const codes: number[] = [];
+    for (let i = 0; i < 22; i++)
+      codes.push(
+        (await app.inject({ method: "POST", url: "/auth/challenge", payload: { address: stranger.address } }))
+          .statusCode,
+      );
+    expect(codes.filter((c) => c === 429).length).toBeGreaterThan(0);
+    expect(
+      (await app.inject({ method: "POST", url: "/auth/challenge", payload: { address: owner.address } })).statusCode,
+    ).toBe(200);
+  });
+});

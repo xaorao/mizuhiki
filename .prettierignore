@@ -1,0 +1,14 @@
+pnpm-lock.yaml
+.next
+dist
+coverage
+contracts/lib
+contracts/out
+contracts/cache
+var
+packages/chain/src/abi.ts
+packages/chain/src/bytecode.ts
+playwright-report
+test-results
+next-env.d.ts
+packages/db/drizzle/meta

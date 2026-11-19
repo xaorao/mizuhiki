@@ -1,0 +1,25 @@
+{
+  "name": "@mizuhiki/indexer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "dev": "tsx watch --clear-screen=false src/main.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@mizuhiki/chain": "workspace:*",
+    "@mizuhiki/core": "workspace:*",
+    "@mizuhiki/db": "workspace:*",
+    "@qorechain/qoresign": "0.2.0",
+    "drizzle-orm": "0.45.4",
+    "viem": "2.58.0"
+  },
+  "devDependencies": {
+    "@mizuhiki/testnet": "workspace:*"
+  }
+}

@@ -1,0 +1,332 @@
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.label {
+  font-family: var(--font-round);
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--ink);
+}
+.box {
+  display: flex;
+  align-items: center;
+  /* never wider than its column: inputs otherwise keep their intrinsic ~20-character width */
+  min-width: 0;
+  min-height: 52px;
+  background: var(--white);
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-pill);
+  padding: 0 18px;
+  box-shadow: inset 0 2px 0 rgba(43, 35, 64, 0.06);
+  transition:
+    box-shadow var(--t-toggle),
+    border-color var(--t-toggle);
+}
+.box:focus-within {
+  box-shadow: 0 0 0 4px var(--sora);
+}
+.prefix {
+  color: var(--ink-subtle);
+  font-weight: 600;
+  white-space: nowrap;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+}
+/* An icon prefix (search) needs breathing room before the text. */
+.prefix:has(> svg) {
+  margin-right: 8px;
+}
+.input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 0;
+  color: var(--ink);
+  width: 100%;
+}
+.input:focus-visible {
+  outline: none;
+}
+.input::placeholder,
+.area::placeholder {
+  color: var(--ink-subtle);
+  opacity: 0.7;
+  font-weight: 500;
+}
+.area {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  border: var(--line) solid var(--ink);
+  border-radius: 20px;
+  background: var(--white);
+  padding: 14px 16px;
+  font-size: 16px;
+  line-height: 1.5;
+  outline: none;
+  transition: box-shadow var(--t-toggle);
+}
+.area:focus {
+  box-shadow: 0 0 0 4px var(--sora);
+}
+.bad,
+.bad.area {
+  border-color: var(--danger);
+}
+.good {
+  border-color: var(--ok);
+}
+.msgs {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 20px;
+}
+.hint,
+.error,
+.ok {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.hint {
+  color: var(--ink-muted);
+}
+.error {
+  color: var(--danger);
+  font-weight: 600;
+  animation: mz-shake 0.4s;
+}
+.ok {
+  color: var(--ok);
+  font-weight: 700;
+}
+.count {
+  font-size: 13px;
+  color: var(--ink-subtle);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.over {
+  color: var(--danger);
+  font-weight: 700;
+}
+/* switch */
+.switch {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 30px;
+  border-radius: var(--r-pill);
+  border: 2px solid var(--ink);
+  background: var(--sakura-soft);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color var(--t-toggle) var(--ease-out);
+}
+.switchSm {
+  width: 44px;
+  height: 26px;
+}
+.knob {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 2px solid var(--ink);
+  transition: transform var(--t-toggle) var(--ease-pop);
+}
+.switchSm .knob {
+  width: 18px;
+  height: 18px;
+}
+.switch[aria-checked="true"] {
+  background: var(--cord);
+}
+.switch[aria-checked="true"] .knob {
+  transform: translateX(22px);
+}
+.switchSm[aria-checked="true"] .knob {
+  transform: translateX(18px);
+}
+.switch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.switchLabel {
+  position: absolute;
+  left: 60px;
+  white-space: nowrap;
+}
+.toggleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: var(--sakura-soft);
+}
+.toggleRow b {
+  display: block;
+  font-family: var(--font-round);
+  font-size: 15px;
+}
+.toggleRow small {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+/* segmented */
+.seg {
+  display: inline-flex;
+  background: var(--sakura-soft);
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-pill);
+  padding: 4px;
+  gap: 2px;
+}
+.seg button {
+  border: 0;
+  background: transparent;
+  padding: 8px 22px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-round);
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--ink-muted);
+  transition:
+    background-color var(--t-toggle),
+    box-shadow var(--t-toggle);
+}
+.seg button[aria-pressed="true"] {
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+}
+/* choice cards */
+.choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--white);
+  padding: 16px 18px;
+  box-shadow: var(--drop-sm);
+  transition:
+    transform var(--t-press),
+    box-shadow var(--t-press),
+    background-color var(--t-toggle);
+}
+.choice:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 var(--ink);
+}
+.choice:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.chosen {
+  border-color: var(--cord);
+  box-shadow: 0 4px 0 var(--cord-deep);
+}
+.tone_sakura.chosen {
+  background: var(--sakura-soft);
+}
+.tone_sora.chosen {
+  background: var(--sora);
+}
+.tone_matcha.chosen {
+  background: var(--matcha);
+}
+.tone_butter.chosen {
+  background: var(--butter);
+}
+.tone_fuji.chosen {
+  background: var(--fuji);
+}
+.tone_kinari.chosen {
+  background: var(--kinari);
+}
+.choiceIcon {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  display: grid;
+  place-items: center;
+  background: var(--sakura);
+}
+.tone_sora .choiceIcon {
+  background: var(--sora);
+  color: var(--sora-ink);
+}
+.tone_matcha .choiceIcon {
+  background: var(--matcha-tile);
+  color: var(--matcha-ink);
+}
+.tone_butter .choiceIcon {
+  background: var(--butter);
+  color: var(--butter-ink);
+}
+.tone_fuji .choiceIcon {
+  background: var(--fuji);
+  color: var(--fuji-ink);
+}
+.tone_kinari .choiceIcon {
+  background: var(--kinari);
+  color: var(--kinari-ink);
+}
+.choiceText b {
+  display: block;
+  font-family: var(--font-round);
+  font-size: 17px;
+}
+.choiceText small {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.choiceTick {
+  margin-left: auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  display: grid;
+  place-items: center;
+  color: transparent;
+  background: var(--white);
+  transition:
+    background-color var(--t-toggle),
+    transform var(--t-toggle) var(--ease-pop);
+}
+.chosen .choiceTick {
+  background: var(--cord);
+  color: var(--white);
+  transform: scale(1.08);
+}
+.toggleRowTap {
+  cursor: pointer;
+}

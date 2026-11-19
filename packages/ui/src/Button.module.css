@@ -1,0 +1,145 @@
+/* Sticker buttons: ink outline, solid drop shadow, press down 3px (brand README, sticker style). */
+.btn {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--r-pill);
+  border: var(--line) solid var(--ink);
+  font-family: var(--font-round);
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+  line-height: 1;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--t-press) var(--ease-out),
+    box-shadow var(--t-press) var(--ease-out),
+    background-color var(--t-toggle) var(--ease-out),
+    filter var(--t-toggle);
+}
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sm {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
+  box-shadow: var(--drop-sm);
+}
+.md {
+  min-height: 46px;
+  padding: 0 20px;
+  font-size: 16px;
+  box-shadow: 0 4px 0 var(--ink);
+}
+.lg {
+  min-height: 56px;
+  padding: 0 26px;
+  font-size: 17px;
+  box-shadow: var(--drop);
+}
+.xl {
+  min-height: 64px;
+  padding: 0 32px;
+  font-size: 18px;
+  box-shadow: var(--drop);
+}
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.full {
+  width: 100%;
+}
+.cord {
+  background: var(--cord);
+  color: var(--on-cord);
+  border-color: var(--ink);
+  box-shadow: var(--drop-cord);
+}
+.cord.lg,
+.cord.xl {
+  box-shadow: 0 6px 0 var(--cord-deep);
+}
+.cord:active:not(:disabled) {
+  box-shadow: 0 1px 0 var(--cord-deep);
+}
+.line {
+  background: var(--white);
+  color: var(--ink);
+}
+.quiet {
+  background: var(--white);
+  color: var(--ink);
+}
+.ink {
+  background: var(--ink);
+  color: var(--white);
+}
+.ghost {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--ink);
+}
+.ghost:hover:not(:disabled) {
+  background: var(--sakura-soft);
+}
+.danger {
+  background: var(--white);
+  color: var(--danger);
+  border-color: var(--danger);
+  box-shadow: 0 4px 0 var(--danger);
+}
+.btn:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.4);
+  opacity: 0.6;
+}
+.busy:disabled {
+  opacity: 1;
+  filter: none;
+  cursor: progress;
+}
+.icon {
+  padding: 0;
+  aspect-ratio: 1;
+}
+.icon.sm {
+  width: 36px;
+}
+.icon.md {
+  width: 46px;
+}
+.icon.lg {
+  width: 56px;
+}
+.spin {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid currentColor;
+  border-right-color: transparent;
+  animation: spin 0.8s linear infinite;
+  flex: none;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation-duration: 2.4s !important;
+    animation-iteration-count: infinite !important;
+  }
+}

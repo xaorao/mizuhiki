@@ -1,0 +1,49 @@
+.knot {
+  flex: none;
+  overflow: visible;
+}
+.tie .petal {
+  stroke-dasharray: 240;
+  stroke-dashoffset: 240;
+}
+.tie .hub {
+  transform-origin: 100px 100px;
+  transform: scale(0);
+}
+.go .petal {
+  transition: stroke-dashoffset 0.5s var(--ease-out);
+  transition-delay: calc(var(--i) * 0.18s);
+  stroke-dashoffset: 0;
+}
+.go .hub {
+  transition: transform 0.3s 0.95s var(--ease-pop);
+  transform: scale(1);
+}
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.word {
+  font-family: var(--font-round);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.kanji {
+  font-family: var(--font-jp);
+  font-weight: 700;
+  color: var(--cord);
+  line-height: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tie .petal {
+    stroke-dashoffset: 0;
+  }
+  .tie .hub {
+    transform: none;
+  }
+}

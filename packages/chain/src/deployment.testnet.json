@@ -1,0 +1,12 @@
+{
+  "network": "qorechain-diana",
+  "evmChainId": 9800,
+  "registry": "0x302942b02c5e6746e92acf64c95e3ef42bdd64ea",
+  "vault": "0x52501bdb5d8fb4c87ebb10b41b52b1cf9b8e263c",
+  "deployedAt": {
+    "registryTx": "0x1ec621af026a74f89f2a88ed3ca77af2cde9936ee55ac008696f45371f121c60",
+    "vaultTx": "0xa817e85b75ca5b407ec4764ff7ed3bca4c26f10c12f3bbf6420856a05a6729a2",
+    "block": "10346748"
+  },
+  "deployer": "0x80BF57CEAB23CE51A0AeC21EB40efBCE492c91D2"
+}

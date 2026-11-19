@@ -1,0 +1,254 @@
+/* Global base for every Mizuhiki surface. Component styles live in CSS Modules. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+html,
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+}
+body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-variant-numeric: tabular-nums;
+}
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  text-wrap: balance;
+  font-family: var(--font-round);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+}
+a {
+  color: inherit;
+}
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+::selection {
+  background: var(--sakura);
+  color: var(--ink);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.mono {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.jp {
+  font-family: var(--font-jp);
+}
+/* Seigaiha waves: set --a and --b, then add the class (brand README, pattern). */
+.seigaiha {
+  background-color: var(--a);
+  background-size: 72px 36px;
+  background-image:
+    radial-gradient(
+      circle at 100% 150%,
+      var(--a) 24%,
+      var(--b) 24%,
+      var(--b) 28%,
+      var(--a) 28%,
+      var(--a) 36%,
+      var(--b) 36%,
+      var(--b) 40%,
+      transparent 40%,
+      transparent
+    ),
+    radial-gradient(
+      circle at 0 150%,
+      var(--a) 24%,
+      var(--b) 24%,
+      var(--b) 28%,
+      var(--a) 28%,
+      var(--a) 36%,
+      var(--b) 36%,
+      var(--b) 40%,
+      transparent 40%,
+      transparent
+    ),
+    radial-gradient(
+      circle at 50% 100%,
+      var(--b) 10%,
+      var(--a) 10%,
+      var(--a) 23%,
+      var(--b) 23%,
+      var(--b) 30%,
+      var(--a) 30%,
+      var(--a) 43%,
+      var(--b) 43%,
+      var(--b) 50%,
+      var(--a) 50%,
+      var(--a) 63%,
+      var(--b) 63%,
+      var(--b) 71%,
+      transparent 71%,
+      transparent
+    );
+}
+.sticker {
+  filter: var(--sticker);
+}
+/* Paper grain over everything, very faint (Level 3 preview). */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .15 0 0 0 0 .2 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+[data-theme="contrast"] body::after {
+  display: none;
+}
+/* Press ripple added by usePressRipple(). */
+.mz-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.18;
+  transform: scale(0);
+  animation: mz-ripple 0.6s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes mz-ripple {
+  to {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+/* Sakura burst from a point (burst()). */
+.mz-burst {
+  position: fixed;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+  z-index: 120;
+  margin: -11px 0 0 -11px;
+  animation: mz-burst 1s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+@keyframes mz-burst {
+  0% {
+    transform: translate(0, 0) scale(0.3) rotate(0);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), calc(var(--dy) + 60px)) scale(1) rotate(var(--r));
+    opacity: 0;
+  }
+}
+@keyframes mz-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(3deg);
+  }
+}
+@keyframes mz-fall {
+  0% {
+    transform: translate(0, -40px) rotate(0);
+  }
+  100% {
+    transform: translate(60px, 110vh) rotate(320deg);
+  }
+}
+@keyframes mz-shake {
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+@keyframes mz-pop-in {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes mz-rise {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .mz-burst,
+  .mz-ripple {
+    display: none;
+  }
+}

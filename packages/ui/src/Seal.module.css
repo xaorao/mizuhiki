@@ -1,0 +1,232 @@
+.moment {
+  text-align: center;
+  padding: 18px 0 6px;
+}
+.stage {
+  position: relative;
+  width: 200px;
+  height: 170px;
+  margin: 0 auto;
+}
+.ring {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+}
+.mm {
+  position: absolute;
+  left: 41px;
+  top: 34px;
+}
+.bar {
+  height: 14px;
+  border-radius: var(--r-pill);
+  background: var(--sakura-soft);
+  border: var(--line) solid var(--ink);
+  overflow: hidden;
+  margin: 16px auto 0;
+  max-width: 300px;
+}
+.bar i {
+  display: block;
+  height: 100%;
+  background: repeating-linear-gradient(-45deg, var(--cord) 0 10px, #ff6b5e 10px 20px);
+  background-size: 28px 28px;
+  animation: stripes 0.8s linear infinite;
+  transition: width 0.3s var(--ease-out);
+}
+@keyframes stripes {
+  to {
+    background-position: 28px 0;
+  }
+}
+.step {
+  margin-top: 12px;
+  font-family: var(--font-round);
+  font-weight: 800;
+}
+.sub {
+  display: block;
+  color: var(--ink-subtle);
+  margin-top: 4px;
+  font-family: var(--font-round);
+  font-size: 13px;
+}
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 16px auto 0;
+  display: grid;
+  gap: 6px;
+  max-width: 300px;
+  text-align: left;
+  font-size: 14px;
+}
+.list li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--ink-subtle);
+}
+.dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--white);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.running {
+  color: var(--ink) !important;
+  font-weight: 700;
+}
+.running .dot {
+  background: var(--butter);
+  animation: pulse 1s ease-in-out infinite;
+}
+.done .dot {
+  background: var(--matcha-tile);
+  color: var(--ok);
+}
+.done {
+  color: var(--ink-muted) !important;
+}
+.failed {
+  color: var(--danger) !important;
+  font-weight: 700;
+}
+.failed .dot {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+@keyframes pulse {
+  50% {
+    transform: scale(1.15);
+  }
+}
+/* receipt: perforated bottom edge and the 封 stamp */
+.receipt {
+  position: relative;
+  background: #fff4f6;
+  border: var(--line) solid var(--ink);
+  border-radius: 18px;
+  padding: 18px 18px 28px;
+  margin-top: 6px;
+  -webkit-mask: radial-gradient(circle 6px at 50% 100%, transparent 98%, #000) 0 0 / 14px 100% repeat-x;
+  mask: radial-gradient(circle 6px at 50% 100%, transparent 98%, #000) 0 0 / 14px 100% repeat-x;
+  animation: mz-rise var(--t-sheet) var(--ease-out);
+}
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 800;
+  font-family: var(--font-round);
+}
+.receipt h3 {
+  font-size: 26px;
+  margin-top: 10px;
+  max-width: calc(100% - 72px);
+}
+.stamp {
+  position: absolute;
+  right: 16px;
+  top: 40px;
+  animation: stampIn 0.5s 0.2s both var(--ease-pop);
+}
+@keyframes stampIn {
+  from {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.receipt dl {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 0;
+  font-size: 14px;
+}
+.line {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+}
+.line dt {
+  color: var(--ink-muted);
+}
+.line dd {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.hash {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 2px dashed #e7c9d3;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  word-break: break-all;
+}
+.tiny {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  margin-top: 8px;
+  line-height: 1.45;
+}
+.done,
+.failed {
+  text-align: center;
+}
+.doneMm {
+  display: inline-block;
+}
+.headline {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  align-items: center;
+  color: var(--ok);
+  font-family: var(--font-round);
+  font-weight: 800;
+  font-size: 15px;
+  margin: 4px 0 10px;
+}
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+.actions > :only-child {
+  grid-column: 1 / -1;
+}
+.failTitle {
+  font-family: var(--font-round);
+  font-weight: 900;
+  font-size: 20px;
+  color: var(--danger);
+  margin-top: 8px;
+}
+.failDetail {
+  color: var(--ink-muted);
+  margin-top: 6px;
+}
+.receipt + .actions,
+.done .receipt {
+  text-align: left;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar i,
+  .running .dot {
+    animation: none;
+  }
+}

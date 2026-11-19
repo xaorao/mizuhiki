@@ -1,0 +1,23 @@
+{
+  "name": "@mizuhiki/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "shots": "tsx tools/shots.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "@axe-core/playwright": "4.14.0",
+    "tsx": "4.23.15"
+  },
+  "dependencies": {
+    "@mizuhiki/chain": "workspace:*",
+    "@mizuhiki/core": "workspace:*",
+    "@mizuhiki/testnet": "workspace:*",
+    "@qorechain/qoreseal": "0.1.0",
+    "@qorechain/qoresign": "0.2.0",
+    "@qorechain/qorex-wallet-mock": "0.1.0"
+  }
+}
