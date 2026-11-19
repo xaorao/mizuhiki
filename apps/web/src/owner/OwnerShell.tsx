@@ -12,6 +12,7 @@ import { useAccount } from "@/account/AccountProvider";
 import { OwnerProvider, useOwner } from "./OwnerProvider";
 import { checklistState } from "@/editor/checklist";
 import { useOnline } from "@/lib/useOnline";
+import { AutoDeliver } from "@/shop/seller/AutoDeliver";
 import s from "./owner.module.css";
 
 const PHONE_TABS = ["/app", "/app/inbox", "/app/rooms", "/app/forms"];
@@ -74,6 +75,7 @@ function Frame({ children }: { children: ReactNode }) {
       title: "Make",
       items: [
         { href: "/app/forms", label: "Forms", icon: "form" },
+        { href: "/app/shop", label: "Shop", icon: "bag" },
         { href: "/app/rooms", label: "Rooms", icon: "users" },
         { href: "/app/invoices", label: "Invoices", icon: "invoice" },
         { href: "/app/proof", label: "Proofs", icon: "check" },
@@ -85,6 +87,7 @@ function Frame({ children }: { children: ReactNode }) {
   const active = (href: string) => (href === "/app" ? path === "/app" : path.startsWith(href));
   return (
     <div className={s.app}>
+      <AutoDeliver />
       <nav className={s.nav} aria-label="Owner sections">
         <div className={s.brand}>
           <Wordmark size={22} href="/app" />

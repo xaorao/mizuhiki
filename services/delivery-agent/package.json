@@ -1,0 +1,20 @@
+{
+  "name": "@mizuhiki/delivery-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/agent.ts"
+  },
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "provision": "tsx src/setup.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@mizuhiki/chain": "workspace:*",
+    "@mizuhiki/core": "workspace:*",
+    "@qorechain/qoreseal": "0.1.0",
+    "@qorechain/qoresign": "0.2.0"
+  }
+}

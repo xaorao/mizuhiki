@@ -1,0 +1,1 @@
+ALTER TABLE "orders" ADD COLUMN "records" jsonb DEFAULT '[]'::jsonb NOT NULL;

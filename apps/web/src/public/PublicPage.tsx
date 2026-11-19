@@ -35,6 +35,8 @@ import { PaySheet } from "./PaySheet";
 import { RoomSheet } from "./RoomSheet";
 import { useRouter } from "next/navigation";
 import { pendingNotesFor, retryPending } from "@/lib/pay";
+import { ShopBlockView } from "@/shop/buyer/ShopBlocks";
+import { useShop } from "@/shop/buyer/parts";
 import s from "./public.module.css";
 
 type Verify = { state: "checking" } | { state: "ok" } | { state: "failed"; reason: string };
@@ -143,6 +145,27 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
     else if (b.type === "form") router.push(deepLinkPath(name, { kind: "form", slug: b.slug }));
   };
 
+  // Links | Shop (spec 5.4) when the page has shop blocks; "?tab=shop" (Continue shopping) opens the Shop side.
+  // The switch shows when the shop is published: a Shop section on the page, or any published product.
+  const shop = useShop(name);
+  const hasShop =
+    blocks.some((b) => b.type === "shopSection" && b.on && !b.archived) || (shop.state === "ok" && shop.items.length > 0);
+  const allProducts: Block | null =
+    shop.state === "ok" && shop.items.length > 0
+      ? { id: "allshop", type: "shopSection", title: "Shop", subtitle: "", on: true, archived: false, productIds: shop.items.map((x) => x.def.id).slice(0, 48) }
+      : null;
+  const [tab, setTab] = useState<"links" | "shop">("links");
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("tab") === "shop") setTab("shop");
+  }, []);
+  const changeTab = (t: "links" | "shop") => {
+    setTab(t);
+    const url = t === "shop" ? `${window.location.pathname}?tab=shop` : window.location.pathname;
+    window.history.replaceState(window.history.state, "", url);
+  };
+  const renderBlock = (b: Block) =>
+    b.type === "product" || b.type === "shopSection" ? <ShopBlockView block={b} name={name} onTap={(x) => tap(x.id)} /> : undefined;
+
   // A sealed payment note that did not reach the owner earlier is kept on this device; offer it again.
   const [pendingNotes, setPendingNotes] = useState<Awaited<ReturnType<typeof pendingNotesFor>>>([]);
   const [resending, setResending] = useState(false);
@@ -238,7 +261,16 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
           </div>
         ) : null}
         {/* Taps before the chain check finishes are kept: sheets render only once the page is verified. */}
-        <PageView manifest={m} onBlock={onBlock} onInfo={() => setOpen({ kind: "info" })} />
+        <PageView
+          manifest={m}
+          onBlock={onBlock}
+          onInfo={() => setOpen({ kind: "info" })}
+          hasShop={hasShop}
+          shopFallback={allProducts ? <ShopBlockView block={allProducts} name={name} onTap={(x) => tap(x.id)} /> : null}
+          tab={tab}
+          onTab={changeTab}
+          renderBlock={renderBlock}
+        />
         <p className={s.verify} aria-live="polite">
           {ready ? (
             <>

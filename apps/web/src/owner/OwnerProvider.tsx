@@ -47,7 +47,15 @@ const HISTORY = 100;
 
 export function OwnerProvider({ account, children }: { account: Account; children: ReactNode }) {
   const acct = useAccount();
-  const [published, setPublished] = useState<Manifest | null>(null);
+  const [published, setPublishedState] = useState<Manifest | null>(null);
+  // The newest published page this device knows, read by publish() without waiting for a render.
+  const publishedRef = useRef<Manifest | null>(null);
+  const setPublished = useCallback((m: Manifest | null) => {
+    publishedRef.current = m;
+    setPublishedState(m);
+  }, []);
+  // One publish at a time: a second call waits for the first, then numbers itself after it.
+  const publishing$ = useRef<Promise<void> | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -78,11 +86,18 @@ export function OwnerProvider({ account, children }: { account: Account; childre
       .catch(() => undefined);
   }, [token]);
 
+  // Load once per account. The token function changes identity whenever the account context re-renders
+  // (a token refresh, say); re-running this would reload an older saved draft over edits made since.
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
+  const refreshRef = useRef(refreshStats);
+  refreshRef.current = refreshStats;
+  const accountKey = account.owner.address;
   useEffect(() => {
     const life = { alive: true };
     void (async () => {
       try {
-        const t = await token();
+        const t = await tokenRef.current();
         const own = await api.get<{ page: { record: { body: Manifest } } | null }>("/owner/page", { token: t });
         const pub = own.page?.record.body ?? null;
         const d = await loadDraft(account, t).catch(() => null);
@@ -97,11 +112,12 @@ export function OwnerProvider({ account, children }: { account: Account; childre
         if (life.alive) setLoading(false);
       }
     })();
-    refreshStats();
+    refreshRef.current();
     return () => {
       life.alive = false;
     };
-  }, [account, token, refreshStats]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately once per account; see above.
+  }, [accountKey, setPublished]);
 
   const persist = useCallback(() => {
     clearTimeout(saveTimer.current);
@@ -185,7 +201,7 @@ export function OwnerProvider({ account, children }: { account: Account; childre
     return () => removeEventListener("keydown", key);
   }, [undo, redo]);
 
-  const publish = useCallback(async () => {
+  const publishOnce = useCallback(async () => {
     const d = latest.current;
     if (!d) return;
     setPublishing(true);
@@ -194,7 +210,7 @@ export function OwnerProvider({ account, children }: { account: Account; childre
       const body: Manifest = publishable(
         {
           ...d.manifest,
-          version: Math.max(d.manifest.version, published?.version ?? 0) + 1,
+          version: Math.max(d.manifest.version, publishedRef.current?.version ?? 0) + 1,
           updatedAt: new Date().toISOString(),
         },
         blockProblem,
@@ -217,7 +233,18 @@ export function OwnerProvider({ account, children }: { account: Account; childre
     } finally {
       setPublishing(false);
     }
-  }, [account, token, published]);
+  }, [account, token, setPublished]);
+
+  const publish = useCallback(async () => {
+    const before = publishing$.current;
+    const run = (before ?? Promise.resolve()).catch(() => undefined).then(publishOnce);
+    publishing$.current = run;
+    try {
+      await run;
+    } finally {
+      if (publishing$.current === run) publishing$.current = null;
+    }
+  }, [publishOnce]);
 
   const value = useMemo<OwnerCtx>(
     () => ({

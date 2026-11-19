@@ -161,7 +161,8 @@ export async function indexPaymentsFor(db: Db, owner: string, sinceHeight: bigin
   return n;
 }
 
-async function storePayments(db: Db, owner: string, t: TxResponse): Promise<number> {
+/** Record the payments to `owner` in one transaction (the indexer and the API fast path share this). */
+export async function storePayments(db: Db, owner: string, t: TxResponse): Promise<number> {
   if (t.code !== 0) return 0;
   const memo = t.tx?.body?.memo ?? "";
   const parsed = parseMemo(memo);

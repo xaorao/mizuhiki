@@ -310,6 +310,7 @@
 }
 .choiceTick {
   margin-left: auto;
+  flex: none;
   width: 26px;
   height: 26px;
   border-radius: 50%;

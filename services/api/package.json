@@ -23,10 +23,12 @@
     "zod": "4.6.7",
     "viem": "2.58.0",
     "@mizuhiki/db": "workspace:*",
-    "@anthropic-ai/sdk": "1.10.0"
+    "@anthropic-ai/sdk": "1.10.0",
+    "@mizuhiki/indexer": "workspace:*"
   },
   "devDependencies": {
     "@mizuhiki/testnet": "workspace:*",
-    "@types/ws": "8.18.1"
+    "@types/ws": "8.18.1",
+    "@mizuhiki/delivery-agent": "workspace:*"
   }
 }

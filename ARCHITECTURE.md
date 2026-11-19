@@ -216,6 +216,20 @@ Read from `repos/qoreseal/packages/ts/src/group.ts` and `batch.ts` and `contract
 - **An open room refreshes with one request** (`GET /rooms/:id/sync`: room, new batches, keys, join requests). One live socket per tab; bursts of events are folded into one refresh; blobs are cached per tab; the room list never reopens the room already on screen.
 - **Someone who left or was removed** still gets the record of the epochs they belonged to (so their device can check who wrote what they saw), and nothing after.
 
+## 8b. Shop protocol (spec 5.11)
+
+Read from the spec (5.11, section 11 decisions 1 and 2), `research/gumroad/UX_SPEC.md`, `research/handson/gr-*`, `packages/core/src/memo.ts` and `services/indexer/src/indexer.ts`.
+
+- **Product record (public, signed):** title, description, covers, price (token, amount in base units, pay-what-you-want minimum and suggestion), versions (extra amount, cap), limits, quantity, refund promise, receipt text, kind (file, course, report, bundle, call, commission, tip), booking hours or commission deposit, the delivery mode, and the hash of the sealed content. Signed with the owner's hybrid key (kind `product`) and checked by every buyer's browser against the owner's key on chain, like forms. Publishing alone does not show it on the page; a Shop section or product button does, and the editor says so.
+- **Content:** a random 32-byte product key K encrypts the content page (pages of text, links and file cards) with AES-256-GCM; each file is sealed in pieces under its own key, whose facts live inside the content page. K is sealed to the owner (the private draft) and, only for "Instant delivery", to the delivery agent's key.
+- **Orders bind the buyer's key:** the order request (lines, quantities, versions, slot, recipient, nonce) is hashed; the first 22 base64url characters are the order reference, and the payment memo is `mzk:ord:<ref>`. Whoever delivers recomputes the reference from the stored request, so a server that swapped the recipient key would be caught before anything is sealed. The total is computed by one shared function (`orderTotal`) in the buyer's browser, the server and the deliverer.
+- **Recipients:** a Mizuhiki account's card (checked against the chain), or a buyer key made in the browser at checkout from a 12-word phrase (decision 2): passed as a recipient, never registered on chain, so buying costs no extra fee. "Send to another wallet" uses the gift recipient's card.
+- **Delivery:** the deliverer reads the payment from QoreChain (not from our database alone): recipient is the seller, token and amount cover the total, memo carries the reference; then seals `{ref, keys: [K per product]}` to the recipient (purpose `mzk:order:<ref>`) and posts it. By default the seller's own device does this while the dashboard is open or on next open (decision 1); "Instant delivery" lets the agent (`services/delivery-agent`, its own account and key) do it at once, and that product page says the helper can read it.
+- **Discount codes** are checked by the server (never a list in the browser) and re-checked by the deliverer; limits, version caps and booking slots are reserved by the server at order time and re-checked at delivery.
+- **Commissions** take a deposit with reference `<ref>` and the rest with `<ref>-2` when the seller asks; content is delivered after the second payment. **Calls** reserve one slot per order. **Tips** deliver the seller's thank-you page.
+- **Refunds** are a seller promise: the seller sends the money back from their wallet with memo `mzk:ord:<ref>-r`, and the server marks the order refunded only after reading that transfer on chain.
+- **Reviews** are verified purchases: the buyer's device keeps a review secret whose hash is stored with the order.
+
 ## 9. Sources behind the facts used here
 
 - QoreSign 0.2.0 source: `repos/qoresign/packages/ts/src` (`sign.ts`, `message.ts`, `network.ts`, `siwq.ts`).

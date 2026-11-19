@@ -16,3 +16,4 @@ export * from "./manifest";
 export * from "./memo";
 export * from "./forms";
 export * from "./rooms";
+export * from "./shop";

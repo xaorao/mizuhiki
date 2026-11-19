@@ -11,3 +11,4 @@ export * from "./registry";
 export * from "./recipients";
 export * from "./proof";
 export * from "./rooms";
+export * from "./shop";

@@ -209,6 +209,9 @@ importers:
       '@mizuhiki/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@mizuhiki/indexer':
+        specifier: workspace:*
+        version: link:../indexer
       '@qorechain/qoreseal':
         specifier: 0.1.0
         version: 0.1.0
@@ -231,12 +234,30 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
     devDependencies:
+      '@mizuhiki/delivery-agent':
+        specifier: workspace:*
+        version: link:../delivery-agent
       '@mizuhiki/testnet':
         specifier: workspace:*
         version: link:../../tests/testnet
       '@types/ws':
         specifier: 8.18.1
         version: 8.18.1
+
+  services/delivery-agent:
+    dependencies:
+      '@mizuhiki/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
+      '@mizuhiki/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@qorechain/qoreseal':
+        specifier: 0.1.0
+        version: 0.1.0
+      '@qorechain/qoresign':
+        specifier: 0.2.0
+        version: 0.2.0
 
   services/indexer:
     dependencies:

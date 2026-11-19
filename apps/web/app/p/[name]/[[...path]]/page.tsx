@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 import { normalizeNameInput } from "@mizuhiki/core";
-import { lookupForm, lookupPage } from "@/lib/server-api";
+import { lookupForm, lookupPage, lookupProduct } from "@/lib/server-api";
 import { FormPage } from "@/forms/FormPage";
 import { SITE_URL, pageUrl } from "@/lib/site";
+import { ProductPage } from "@/shop/buyer/ProductPage";
+import { CheckoutPage } from "@/shop/buyer/CheckoutPage";
 import { PublicPage, PageUnavailable } from "@/public/PublicPage";
 import { parseDeepLink } from "@/public/deeplink";
 
-type Props = { params: Promise<{ name: string; path?: string[] }> };
+type Props = {
+  params: Promise<{ name: string; path?: string[] }>;
+  searchParams?: Promise<{ line?: string | string[] }>;
+};
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { name: raw, path } = await params;
@@ -30,6 +35,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       twitter: { card: "summary", title, description },
     };
   }
+  if (link.kind === "product") {
+    const p = await lookupProduct(name, link.slug);
+    if (p.state !== "ok") return { title: "Product not available", robots: { index: false } };
+    const d = p.record.body;
+    const title = `${d.title} · @${name}`;
+    const description = d.summary || d.description.replace(/[*[\]()]/g, "").slice(0, 200) || `A product by @${name}, sealed to the buyer after payment.`;
+    const cover = d.covers.find((c) => c.type.startsWith("image/")) ?? d.thumbnail;
+    const api = (process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000").replace(/\/+$/, "");
+    const images = cover ? [{ url: `${api}/media/${cover.hash}`, alt: d.title }] : [];
+    return {
+      title,
+      description,
+      alternates: { canonical: `${pageUrl(name)}/p/${d.slug}` },
+      openGraph: { title, description, url: `${pageUrl(name)}/p/${d.slug}`, siteName: "Mizuhiki", type: "website", images },
+      twitter: { card: cover ? "summary_large_image" : "summary", title, description },
+    };
+  }
+  if (link.kind === "checkout") return { title: `Checkout · @${name}`, robots: { index: false } };
   const m = page.record.body;
   const title = `${m.displayName} (@${m.name})`;
   const description = m.bio || `Pay ${m.displayName}, or send them a message or a file, sealed on your device.`;
@@ -50,8 +73,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function Page({ params }: Props) {
+export default async function Page({ params, searchParams }: Props) {
   const { name: raw, path } = await params;
+  const sp = (await searchParams) ?? {};
   const name = normalizeNameInput(decodeURIComponent(raw));
   const page = await lookupPage(name);
   if (page.state !== "ok") return <PageUnavailable state={page.state} message={page.message} name={name} />;
@@ -71,6 +95,16 @@ export default async function Page({ params }: Props) {
       />
     );
   }
+  const m = page.record.body;
+  const seller = { displayName: m.displayName, avatar: m.avatar, owner: page.registry.owner };
+  if (link.kind === "product") {
+    const p = await lookupProduct(name, link.slug);
+    if (p.state !== "ok")
+      return <PageUnavailable state={p.state === "missing" ? "missing" : "error"} message={p.message} name={name} />;
+    const line = typeof sp.line === "string" && /^\d{1,2}$/.test(sp.line) ? Number(sp.line) : undefined;
+    return <ProductPage name={name} slug={link.slug} seller={seller} line={line} />;
+  }
+  if (link.kind === "checkout") return <CheckoutPage name={name} seller={seller} />;
   return (
     <PublicPage
       name={name}

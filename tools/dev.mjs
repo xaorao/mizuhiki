@@ -1,6 +1,7 @@
 // Runs the whole product locally against QoreChain testnet: database migrations,
 // then the API, the indexer and the web app, with prefixed output.
 import { spawn, execSync } from "node:child_process";
+import { existsSync } from "node:fs";
 
 const env = {
   ...process.env,
@@ -18,6 +19,10 @@ const procs = [
   ["api", "pnpm", ["--filter", "@mizuhiki/api", "dev"], "\x1b[35m"],
   ["indexer", "pnpm", ["--filter", "@mizuhiki/indexer", "dev"], "\x1b[36m"],
   ["web", "pnpm", ["--filter", "@mizuhiki/web", "dev"], "\x1b[33m"],
+  // The opt-in Instant delivery helper, once provisioned (pnpm --filter @mizuhiki/delivery-agent provision).
+  ...(existsSync(new URL("../services/delivery-agent/.env.local", import.meta.url))
+    ? [["helper", "pnpm", ["--filter", "@mizuhiki/delivery-agent", "start"], "\x1b[32m"]]
+    : []),
 ];
 const children = procs.map(([name, cmd, args, color]) => {
   const c = spawn(cmd, args, { env, stdio: ["ignore", "pipe", "pipe"] });

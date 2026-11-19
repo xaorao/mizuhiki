@@ -49,3 +49,25 @@ export async function lookupForm(name: string, slug: string): Promise<FormLookup
     return { state: "error", message: "Mizuhiki could not be reached. Try again in a moment." };
   }
 }
+
+export type ProductLookup =
+  | { state: "ok"; record: Signed<import("@mizuhiki/core").ProductDef> }
+  | { state: "missing" | "error"; message: string };
+
+/** A published product's public record, for the page title and social card. The browser verifies the signature. */
+export async function lookupProduct(name: string, slug: string): Promise<ProductLookup> {
+  try {
+    const res = await fetch(`${BASE}/products/${encodeURIComponent(name)}/${encodeURIComponent(slug)}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
+    });
+    const j = (await res.json().catch(() => ({}))) as { error?: { message?: string } } & Partial<
+      Extract<ProductLookup, { state: "ok" }>
+    >;
+    if (res.status === 404) return { state: "missing", message: j.error?.message ?? "This product isn't available." };
+    if (!res.ok || !j.record) return { state: "error", message: j.error?.message ?? "This product could not be loaded." };
+    return { state: "ok", record: j.record };
+  } catch {
+    return { state: "error", message: "Mizuhiki could not be reached. Try again in a moment." };
+  }
+}

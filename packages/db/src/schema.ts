@@ -393,3 +393,118 @@ export const roomRequests = pgTable(
   },
   (t) => [primaryKey({ columns: [t.roomId, t.address] })],
 );
+
+/**
+ * Shop (spec 5.11, ARCHITECTURE 8b). Public product records are signed by the
+ * owner; contents are sealed blobs. Orders store the buyer's request (which
+ * binds their key through the order reference) and the delivery envelope.
+ */
+export const products = pgTable(
+  "products",
+  {
+    id: text("id").primaryKey(),
+    owner: text("owner").notNull(),
+    slug: text("slug").notNull(),
+    kind: text("kind").notNull(),
+    /** draft | published | unpublished */
+    status: text("status").notNull().default("draft"),
+    /** The signed public record (null until first published). */
+    record: jsonb("record"),
+    version: integer("version").notNull().default(0),
+    /** The owner's sealed working copy (editor state and the product key). */
+    draftEnvelope: text("draft_envelope").notNull(),
+    /** The product key sealed to the delivery agent (instant delivery only). */
+    agentEnvelope: text("agent_envelope"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("products_owner_slug").on(t.owner, t.slug), index("products_owner").on(t.owner)],
+);
+
+export const orders = pgTable(
+  "orders",
+  {
+    ref: text("ref").primaryKey(),
+    seller: text("seller").notNull(),
+    request: jsonb("request").notNull(),
+    /** The signed product records the buyer saw and the total was priced with (bundle parts included). */
+    records: jsonb("records").notNull().default([]),
+    token: text("token").notNull(),
+    total: text("total").notNull(),
+    dueNow: text("due_now").notNull(),
+    dueLater: text("due_later").notNull(),
+    /** Account recipient (also a gift's receiver), for "Purchases for this wallet". */
+    recipientAddress: text("recipient_address"),
+    /** SHA-256 of a buyer key's public parts, for buyers without an account. */
+    recipientKeyHash: text("recipient_key_hash"),
+    discountId: text("discount_id"),
+    /** awaiting | paid | balance_due | delivered | refunded | expired */
+    status: text("status").notNull().default("awaiting"),
+    payer: text("payer"),
+    depositTx: text("deposit_tx"),
+    balanceTx: text("balance_tx"),
+    refundTx: text("refund_tx"),
+    /** Blob hash of the product keys sealed to the recipient. */
+    delivery: text("delivery"),
+    deliveredBy: text("delivered_by"),
+    reviewHash: text("review_hash").notNull(),
+    /** SHA-256 of the requester's network address, only to cap unpaid holds per address (never shown). */
+    holdBy: text("hold_by"),
+    /** The seller asked for the rest of a commission. */
+    balanceRequested: boolean("balance_requested").notNull().default(false),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    paidAt: ts("paid_at"),
+    deliveredAt: ts("delivered_at"),
+    /** Unpaid orders give back their reserved stock and call slots after this. */
+    expiresAt: ts("expires_at").notNull(),
+  },
+  (t) => [
+    index("orders_seller").on(t.seller, t.createdAt),
+    index("orders_recipient").on(t.recipientAddress),
+    index("orders_key").on(t.recipientKeyHash),
+  ],
+);
+
+/** One booked call slot per product; held while an order is unpaid, kept once paid. */
+export const orderSlots = pgTable(
+  "order_slots",
+  {
+    productId: text("product_id").notNull(),
+    slot: text("slot").notNull(),
+    orderRef: text("order_ref").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.productId, t.slot] })],
+);
+
+export const discounts = pgTable(
+  "discounts",
+  {
+    id: text("id").primaryKey(),
+    owner: text("owner").notNull(),
+    code: text("code").notNull(),
+    percent: integer("percent"),
+    amountOff: text("amount_off"),
+    token: text("token"),
+    productIds: jsonb("product_ids").$type<string[]>().notNull().default([]),
+    maxUses: integer("max_uses"),
+    uses: integer("uses").notNull().default(0),
+    expiresAt: ts("expires_at"),
+    active: boolean("active").notNull().default(true),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("discounts_owner_code").on(t.owner, t.code)],
+);
+
+export const reviews = pgTable(
+  "reviews",
+  {
+    orderRef: text("order_ref").notNull(),
+    productId: text("product_id").notNull(),
+    seller: text("seller").notNull(),
+    rating: integer("rating").notNull(),
+    text: text("text").notNull().default(""),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.orderRef, t.productId] }), index("reviews_product").on(t.productId)],
+);

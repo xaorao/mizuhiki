@@ -43,6 +43,8 @@ export function PageView({
   tab,
   onTab,
   hasShop = false,
+  renderBlock,
+  shopFallback,
 }: {
   manifest: Pick<Manifest, "name" | "displayName" | "bio" | "avatar" | "blocks" | "theme">;
   onBlock?: ((b: Block) => void) | undefined;
@@ -55,9 +57,18 @@ export function PageView({
   tab?: "links" | "shop";
   onTab?: (t: "links" | "shop") => void;
   hasShop?: boolean;
+  /** Draw a block another way (the public page's shop grid and product rows); undefined keeps the standard row. */
+  renderBlock?: ((b: Block) => ReactNode | undefined) | undefined;
+  /** The Shop side when the page has no Shop section (the public page shows every published product). */
+  shopFallback?: ReactNode;
 }) {
   const firstName = (manifest.displayName || manifest.name).split(" ")[0] ?? manifest.name;
-  const live = manifest.blocks.filter((b) => b.on && !b.archived);
+  // Links | Shop (spec 5.4): Links holds the page's buttons (a product button included, where the owner put it);
+  // Shop holds the store: the Shop sections, or every published product when there is no section.
+  const isShop = (b: Block) => b.type === "shopSection";
+  const live = manifest.blocks.filter(
+    (b) => b.on && !b.archived && (!(hasShop && tab) || b.type === "collection" || (tab === "shop") === isShop(b)),
+  );
   const collectionIds = new Set(live.filter((b) => b.type === "collection").map((b) => b.id));
   const hiddenCollections = new Set(
     manifest.blocks.filter((b) => b.type === "collection" && (!b.on || b.archived)).map((b) => b.id),
@@ -70,6 +81,13 @@ export function PageView({
   );
   const featured = live.find((b) => b.type === "message")?.id;
   const rowFor = (b: Block) => {
+    const custom = renderBlock?.(b);
+    if (custom !== undefined)
+      return (
+        <div key={b.id} id={compact ? undefined : b.id} className={s.anchor}>
+          {custom}
+        </div>
+      );
     const look = BLOCK_LOOK[b.type];
     return (
       <div key={b.id} id={compact ? undefined : b.id} className={s.anchor}>
@@ -158,6 +176,7 @@ export function PageView({
             }
             return visible.includes(b) ? rowFor(b) : null;
           })}
+          {hasShop && tab === "shop" && !live.some(isShop) ? shopFallback : null}
           {pending.map((p) => (
             <div key={p.key} className={s.pending}>
               <Icon name="wrench" size={16} />

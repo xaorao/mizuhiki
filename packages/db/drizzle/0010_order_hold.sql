@@ -1,0 +1,1 @@
+ALTER TABLE "orders" ADD COLUMN "hold_by" text;

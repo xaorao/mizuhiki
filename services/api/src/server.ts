@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import { createHash } from "node:crypto";
 import { sessionAddress } from "./lib/auth";
+import { isChainUnreachable } from "./lib/errors";
 import websocket from "@fastify/websocket";
 import type { Config } from "./config";
 import { makeDb, type Db } from "@mizuhiki/db";
@@ -21,6 +22,7 @@ import { invoiceRoutes } from "./routes/invoices";
 import { formRoutes } from "./routes/forms";
 import { snapshotRoutes } from "./routes/snapshots";
 import { roomRoutes } from "./routes/rooms";
+import { shopRoutes } from "./routes/shop";
 
 export interface Ctx {
   cfg: Config;
@@ -72,6 +74,19 @@ export async function buildServer(
   });
   await app.register(websocket, { options: { maxPayload: 64 * 1024 } });
   app.addContentTypeParser("application/octet-stream", { parseAs: "buffer" }, (_req, body, done) => done(null, body));
+  // One answer for failures no route handled. A QoreChain endpoint being unreachable (REST or EVM) is said
+  // plainly as 503; anything else is a 500 that still says nothing changed. Both are logged.
+  app.setErrorHandler((err, req, reply) => {
+    const e = err as Error & { statusCode?: number; code?: string; name?: string; cause?: unknown };
+    if (typeof e.statusCode === "number" && e.statusCode >= 400 && e.statusCode < 500) return reply.send(err);
+    const chainDown = isChainUnreachable(e);
+    req.log.error({ err }, chainDown ? "QoreChain unreachable" : "unhandled error");
+    if (chainDown)
+      return reply.code(503).send({
+        error: { code: "CHAIN_UNREACHABLE", message: "QoreChain could not be reached just now. Nothing was changed. Try again in a moment.", dataState: "nothing-changed" },
+      });
+    return reply.code(500).send({ error: { code: "INTERNAL", message: "Something went wrong on our side. Nothing was changed.", dataState: "unknown" } });
+  });
   app.get("/health", () => ({ ok: true }));
   await app.register(authRoutes(ctx));
   await app.register(pageRoutes(ctx));
@@ -86,6 +101,7 @@ export async function buildServer(
   await app.register(formRoutes(ctx));
   await app.register(snapshotRoutes(ctx));
   await app.register(roomRoutes(ctx));
+  await app.register(shopRoutes(ctx));
   return {
     app,
     ctx,

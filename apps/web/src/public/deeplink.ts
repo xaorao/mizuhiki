@@ -1,7 +1,7 @@
 /**
  * Deep links into a page (spec 5.4): /@name/pay, /@name/pay/25 (the amount in
  * the path pre-fills pay and wins over presets), /@name/message, /@name/f/<slug>,
- * /@name/p/<slug>, /@name/b/<blockId>. The same sheets open in place on tap.
+ * /@name/p/<slug>, /@name/checkout, /@name/b/<blockId>. The same sheets open in place on tap.
  */
 export type DeepLink =
   | { kind: "none" }
@@ -9,6 +9,7 @@ export type DeepLink =
   | { kind: "message" }
   | { kind: "form"; slug: string }
   | { kind: "product"; slug: string }
+  | { kind: "checkout" }
   | { kind: "block"; id: string }
   | { kind: "unknown"; path: string };
 
@@ -23,6 +24,7 @@ export function parseDeepLink(path: string[]): DeepLink {
   if (a === "pay" && !b) return { kind: "pay" };
   if (a === "pay" && b && AMOUNT.test(b)) return { kind: "pay", amount: b };
   if (a === "message" && !b) return { kind: "message" };
+  if (a === "checkout" && !b) return { kind: "checkout" };
   if (a === "f" && b && SLUG.test(b)) return { kind: "form", slug: b };
   if (a === "p" && b && SLUG.test(b)) return { kind: "product", slug: b };
   if (a === "b" && b && ID.test(b)) return { kind: "block", id: b };
@@ -39,6 +41,8 @@ export function deepLinkPath(name: string, d: DeepLink): string {
       return `/@${name}/f/${d.slug}`;
     case "product":
       return `/@${name}/p/${d.slug}`;
+    case "checkout":
+      return `/@${name}/checkout`;
     case "block":
       return `/@${name}/b/${d.id}`;
     default:
