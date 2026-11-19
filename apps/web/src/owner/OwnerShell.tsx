@@ -13,6 +13,7 @@ import { OwnerProvider, useOwner } from "./OwnerProvider";
 import { checklistState } from "@/editor/checklist";
 import { useOnline } from "@/lib/useOnline";
 import { AutoDeliver } from "@/shop/seller/AutoDeliver";
+import { RecoveryAlarm } from "@/recovery/RecoveryAlarm";
 import s from "./owner.module.css";
 
 const PHONE_TABS = ["/app", "/app/inbox", "/app/rooms", "/app/forms"];
@@ -83,7 +84,10 @@ function Frame({ children }: { children: ReactNode }) {
     },
     {
       title: "Access",
-      items: [{ href: "/app/passes", label: "Passes", icon: "pass" }],
+      items: [
+        { href: "/app/passes", label: "Passes", icon: "pass" },
+        { href: "/app/spare-key", label: "Spare key", icon: "key" },
+      ],
     },
   ];
   const checklist = owner.draft ? checklistState(owner.draft, owner.stats) : null;
@@ -130,6 +134,7 @@ function Frame({ children }: { children: ReactNode }) {
         </Button>
       </nav>
       <div className={s.content}>
+        <RecoveryAlarm />
         {!online ? (
           <div className={s.offline}>
             <OfflineBanner />

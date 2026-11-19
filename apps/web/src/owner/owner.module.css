@@ -26,6 +26,14 @@
   border-right: var(--line-strong) solid var(--ink);
   overflow-y: auto;
 }
+/* Never squeeze: when the sections and the checklist do not fit, the sidebar scrolls instead. */
+.nav > * {
+  flex-shrink: 0;
+}
+/* Room above the checklist card for Musubi, who sits on its top edge. */
+.nav > .group:last-of-type {
+  margin-bottom: 44px;
+}
 .brand {
   padding: 4px 10px 18px;
 }

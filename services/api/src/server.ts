@@ -24,6 +24,7 @@ import { snapshotRoutes } from "./routes/snapshots";
 import { roomRoutes } from "./routes/rooms";
 import { shopRoutes } from "./routes/shop";
 import { passRoutes } from "./routes/passes";
+import { recoveryRoutes } from "./routes/recovery";
 
 export interface Ctx {
   cfg: Config;
@@ -50,7 +51,7 @@ export async function buildServer(
   await app.register(cors, {
     origin: [cfg.WEB_ORIGIN],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allowedHeaders: ["content-type", "authorization", "x-pow"],
+    allowedHeaders: ["content-type", "authorization", "x-pow", "x-recovery-secret"],
   });
   // Signed-in calls are counted per account, anonymous ones per IP address: people behind one network
   // (an office, a family's Wi-Fi) must not share one budget. Only a real, unexpired session counts as
@@ -114,6 +115,7 @@ export async function buildServer(
   await app.register(roomRoutes(ctx));
   await app.register(shopRoutes(ctx));
   await app.register(passRoutes(ctx));
+  await app.register(recoveryRoutes(ctx));
   return {
     app,
     ctx,

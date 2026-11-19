@@ -195,6 +195,10 @@ function Restore({ canGoBack, onBack }: { canGoBack: boolean; onBack: () => void
         hint="At least 10 characters."
       />
       <LockLine>If you lost your phrase and have no spare key, your sealed items cannot be recovered.</LockLine>
+      <p className={s.fine}>
+        Lost your 24 words? <a href="/recover">Recover with your contacts</a> or{" "}
+        <a href="/recover/offline">read with an offline key</a>.
+      </p>
       {err ? <Oops title="Not restored">{err} Nothing left your device.</Oops> : null}
       <Button type="submit" variant="cord" size="lg" full busy={busy} disabled={!valid || !pass || !!problem}>
         Restore on this device

@@ -96,7 +96,19 @@ export function personProblem(input: string): string | null {
 }
 
 /** Live passes give the page its period keys; called by every page publish. */
-export function periodKeysOf(account: WithPhrase, passes: PassView[], now = Date.now()): Manifest["periodKeys"] {
+/** The offline reader key from the spare-key settings (spec 5.13), listed beside pass keys. */
+export interface OfflineKey {
+  mlkem: string;
+  x25519: string;
+  since: string;
+}
+
+export function periodKeysOf(
+  account: WithPhrase,
+  passes: PassView[],
+  now = Date.now(),
+  offline: OfflineKey | null = null,
+): Manifest["periodKeys"] {
   const out: Manifest["periodKeys"] = [];
   for (const p of passes) {
     const scope = p.invite.body.scope;
@@ -115,7 +127,19 @@ export function periodKeysOf(account: WithPhrase, passes: PassView[], now = Date
       kinds: scope.kinds,
     });
   }
-  return out.slice(0, 16);
+  const passKeys = out.slice(0, 16);
+  if (offline)
+    passKeys.push({
+      label: "Offline recovery reader",
+      // Not from the phrase: a separate random key printed on its own sheet.
+      index: -1,
+      mlkem: offline.mlkem,
+      x25519: offline.x25519,
+      from: offline.since,
+      until: "2999-12-31T00:00:00.000Z",
+      kinds: ["messages", "payments", "forms"],
+    });
+  return passKeys;
 }
 
 const KIND_OF: Record<string, PeriodKind> = {

@@ -35,5 +35,11 @@ export const Purpose = {
   order: (id: string) => scoped("order", id),
   product: (id: string) => scoped("product", id),
   recoveryShare: (id: string) => scoped("recovery", id),
+  /** A piece re-sealed to a new device's one-time key, for one recovery request. */
+  recoveryAnswer: (id: string) => scoped("recanswer", id),
+  /** The server's challenge to whoever claims an owner's offline reader key. */
+  offlineChallenge: "mzk:offline-challenge",
+  /** Older items re-sealed to the offline reader key. */
+  offlineCopy: "mzk:offline-copy",
   reply: (id: string) => scoped("reply", id),
 } as const;

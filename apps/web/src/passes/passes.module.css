@@ -516,3 +516,8 @@
     transition: none;
   }
 }
+/* Chips placed directly in a form or panel keep their own width. */
+.form > span,
+.panel > span {
+  justify-self: start;
+}

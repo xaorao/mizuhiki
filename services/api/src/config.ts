@@ -18,6 +18,12 @@ const Env = z.object({
   /** Days a dropped envelope is kept (spec 5.7: "We delete the sealed copy after N days"). */
   DROP_RETENTION_DAYS: z.coerce.number().int().default(30),
   SESSION_HOURS: z.coerce.number().int().default(12),
+  /** Wait between the last needed contact answering and pieces being released to a new device (spec 5.13: 48 hours). */
+  RECOVERY_DELAY_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .default(48 * 3600),
 });
 
 export type Config = z.infer<typeof Env>;

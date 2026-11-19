@@ -26,10 +26,12 @@ export class ApiFailure extends Error {
 export interface ApiOpts {
   token?: string | undefined;
   signal?: AbortSignal | undefined;
+  /** Extra request headers (a recovery request's secret). */
+  headers?: Record<string, string> | undefined;
 }
 
 async function request<T>(method: string, path: string, body: unknown, o: ApiOpts, raw = false): Promise<T> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...(o.headers ?? {}) };
   if (o.token) headers.authorization = `Bearer ${o.token}`;
   let payload: BodyInit | undefined;
   if (body instanceof Uint8Array) {

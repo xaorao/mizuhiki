@@ -19,7 +19,36 @@ export interface SheetInput {
   evm: string;
   phrase: string;
   createdAt: Date;
+  /** "offline": the offline reader sheet (spec 5.13), which reads items but cannot sign in. */
+  variant?: "spare" | "offline" | undefined;
 }
+
+const WORDING = {
+  spare: {
+    title: "Spare-key sheet",
+    warn: "Without it, no one can open your sealed items, including you.",
+    warn2:
+      "Give a copy to someone you trust, or add it to your will. Never type it into a site you did not open yourself.",
+    words: "Recovery phrase (24 words, in order)",
+    how: [
+      "1. On a new device, open Mizuhiki and choose Log in, then Use my recovery phrase.",
+      "2. Type the 24 words. Set a new device passphrase. Your sealed items open again.",
+      "3. If someone else has this sheet, they can open everything. Store it like a passport.",
+    ],
+  },
+  offline: {
+    title: "Offline reader sheet",
+    warn: "These words read what was sealed to this offline key. They cannot sign in, pay or change anything.",
+    warn2:
+      "Keep it offline, away from your spare-key sheet. Anyone holding it can read your items, so store it like a passport.",
+    words: "Offline reader key (24 words, in order)",
+    how: [
+      "1. Open Mizuhiki on any device and choose Log in, then Read with an offline key.",
+      "2. Type your @name and these 24 words. Items sealed to this key open on that device.",
+      "3. If you turn the offline reader off or make a new one, this sheet stops receiving new items.",
+    ],
+  },
+} as const;
 
 function text(page: PDFPage, s: string, x: number, y: number, size: number, font: PDFFont, color = INK) {
   page.drawText(s, { x, y, size, font, color });
@@ -41,8 +70,9 @@ function knot(page: PDFPage, cx: number, cy: number, r: number) {
 }
 
 export async function buildSpareKeySheet(input: SheetInput): Promise<Uint8Array> {
+  const wd = WORDING[input.variant ?? "spare"];
   const doc = await PDFDocument.create();
-  doc.setTitle(`Mizuhiki spare-key sheet for @${input.name}`);
+  doc.setTitle(`Mizuhiki ${wd.title.toLowerCase()} for @${input.name}`);
   doc.setCreator("Mizuhiki");
   doc.setProducer("Mizuhiki");
   const page = doc.addPage([595.28, 841.89]); // A4
@@ -53,7 +83,7 @@ export async function buildSpareKeySheet(input: SheetInput): Promise<Uint8Array>
   let y = 790;
   knot(page, 64, y - 4, 18);
   text(page, "mizuhiki", 92, y - 12, 22, bold);
-  text(page, "Spare-key sheet", W - 200, y - 10, 14, bold, CORD);
+  text(page, wd.title, W - 48 - bold.widthOfTextAtSize(wd.title, 14), y - 10, 14, bold, CORD);
   y -= 50;
   text(page, `For @${input.name}`, 48, y, 26, bold);
   y -= 22;
@@ -76,15 +106,8 @@ export async function buildSpareKeySheet(input: SheetInput): Promise<Uint8Array>
     borderColor: INK,
     borderWidth: 1.5,
   });
-  text(page, "Without it, no one can open your sealed items, including you.", 54, y - 10, 12, bold);
-  text(
-    page,
-    "Give a copy to someone you trust, or add it to your will. Never type it into a site you did not open yourself.",
-    54,
-    y - 30,
-    9.5,
-    reg,
-  );
+  text(page, wd.warn, 54, y - 10, wd.warn.length > 70 ? 10.5 : 12, bold);
+  text(page, wd.warn2, 54, y - 30, 9.5, reg);
   y -= 80;
   text(page, "Your page", 48, y, 10, bold, MUTED);
   text(page, input.pageUrl, 48, y - 16, 12, reg);
@@ -101,7 +124,7 @@ export async function buildSpareKeySheet(input: SheetInput): Promise<Uint8Array>
   const qrImg = await doc.embedPng(dataUrl);
   page.drawImage(qrImg, { x: W - 150, y: y - 92, width: 104, height: 104 });
   y -= 118;
-  text(page, "Recovery phrase (24 words, in order)", 48, y, 12, bold);
+  text(page, wd.words, 48, y, 12, bold);
   y -= 12;
   const words = input.phrase.split(" ");
   const colW = (W - 96) / 4;
@@ -123,12 +146,7 @@ export async function buildSpareKeySheet(input: SheetInput): Promise<Uint8Array>
   });
   y -= 6 * 30 + 44;
   text(page, "How to use it", 48, y, 12, bold);
-  const how = [
-    "1. On a new device, open Mizuhiki and choose Log in, then Use my recovery phrase.",
-    "2. Type the 24 words. Set a new device passphrase. Your sealed items open again.",
-    "3. If someone else has this sheet, they can open everything. Store it like a passport.",
-  ];
-  how.forEach((h, i) => text(page, h, 48, y - 18 - i * 15, 10, reg));
+  wd.how.forEach((h, i) => text(page, h, 48, y - 18 - i * 15, 10, reg));
   y -= 80;
   text(page, "Notes", 48, y, 12, bold);
   for (let i = 0; i < 5; i++)

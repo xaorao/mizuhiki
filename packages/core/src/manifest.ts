@@ -151,7 +151,8 @@ export const ManifestSchema = z.object({
           .optional(),
       }),
     )
-    .max(16)
+    // 16 period passes and the offline recovery reader (spec 5.12, 5.13).
+    .max(17)
     .default([]),
   version: z.number().int().min(1),
   updatedAt: z.iso.datetime(),

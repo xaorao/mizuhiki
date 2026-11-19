@@ -1,0 +1,241 @@
+/* Spare key and recovery (spec 5.13). Shares the Passes layout (passes.module.css); these are the parts of its own. */
+
+.ringPanel {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+}
+.ringText {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.checks li {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  color: var(--ink-muted);
+}
+.checks li b {
+  display: block;
+  color: var(--ink);
+}
+.checks li small {
+  display: block;
+  font-size: 13px;
+}
+.tick {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  display: grid;
+  place-items: center;
+  background: var(--white);
+}
+.checkDone .tick {
+  background: var(--matcha);
+  animation: mz-pop-in var(--t-sheet) var(--ease-pop) both;
+}
+.alarm {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  padding: 16px 18px;
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--danger-soft);
+  box-shadow: var(--drop);
+  color: var(--ink);
+}
+.alarm h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+.alarmRow {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 2px dashed var(--ink-subtle);
+}
+.alarmRow:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+.alarmRow p {
+  margin: 0;
+  line-height: 1.5;
+}
+.alarmRow > button {
+  justify-self: start;
+}
+.words {
+  font-size: 14px;
+}
+.small {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.contactRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-sm);
+  background: var(--white);
+  animation: mz-pop-in var(--t-sheet) var(--ease-out) both;
+}
+.sealBox,
+.testBox {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 2px dashed var(--ink);
+  border-radius: var(--r-md);
+  background: var(--butter);
+}
+.sealBox p,
+.testBox p {
+  margin: 0;
+}
+.sealBox > button,
+.testBox > button,
+.sealBox > span,
+.testBox > span {
+  justify-self: start;
+}
+.wordGrid {
+  margin: 0;
+  padding: 0 0 0 28px;
+  columns: 4;
+  column-gap: 18px;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1.9;
+}
+.honest {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+  max-width: 72ch;
+}
+
+/* ---- new device and offline reader pages ---- */
+.shell {
+  min-height: 100dvh;
+  background: var(--cream);
+  display: grid;
+  place-items: start center;
+  padding: 40px 16px 80px;
+}
+.card {
+  width: min(640px, 100%);
+  display: grid;
+  gap: 16px;
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--drop-lg);
+  padding: 28px;
+  animation: mz-pop-in var(--t-sheet) var(--ease-out) both;
+}
+.card h1 {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.15;
+}
+.card p {
+  margin: 0;
+  line-height: 1.55;
+}
+.count {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-family: var(--font-round);
+  font-weight: 800;
+  font-size: 22px;
+}
+.backLink {
+  color: var(--ink-muted);
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .ringPanel {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
+  }
+  .contactRow {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .contactRow > :last-child {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .wordGrid {
+    columns: 2;
+  }
+  .card {
+    padding: 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .checkDone .tick,
+  .contactRow,
+  .card {
+    animation: none;
+  }
+}
+.wordsBox {
+  width: 100%;
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  background: var(--white);
+  color: var(--ink);
+  resize: vertical;
+}
+.wordsBox:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: var(--danger);
+  color: var(--white);
+  font-size: 14.5px;
+}
+.bar a {
+  margin-left: auto;
+  color: var(--white);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.card > span {
+  justify-self: start;
+}

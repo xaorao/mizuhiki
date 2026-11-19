@@ -560,3 +560,101 @@ export const passItems = pgTable(
   },
   (t) => [primaryKey({ columns: [t.passId, t.source] })],
 );
+
+/**
+ * Spare key and recovery (spec 5.13, ARCHITECTURE 8d). Pieces of the phrase
+ * exist here only as envelopes sealed to each contact; the server never holds
+ * a piece it can open.
+ */
+export const recoverySettings = pgTable("recovery_settings", {
+  owner: text("owner").primaryKey(),
+  /** Pieces needed to rebuild the phrase (of the current version's contacts). */
+  threshold: integer("threshold").notNull().default(2),
+  /** Current piece set; bumped on every re-split. */
+  version: integer("version").notNull().default(0),
+  sheetSavedAt: ts("sheet_saved_at"),
+  testedAt: ts("tested_at"),
+  /** The offline reader's public key {mlkem, x25519} (hex), when turned on. */
+  offlineKey: jsonb("offline_key"),
+  offlineSheetSavedAt: ts("offline_sheet_saved_at"),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
+});
+
+export const recoveryContacts = pgTable(
+  "recovery_contacts",
+  {
+    owner: text("owner").notNull(),
+    contact: text("contact").notNull(),
+    /** invited | accepted | confirmed | declined | removed */
+    status: text("status").notNull().default("invited"),
+    invite: jsonb("invite").notNull(),
+    accept: jsonb("accept"),
+    /** Blob hash of this contact's piece (current version only). */
+    piece: text("piece"),
+    pieceVersion: integer("piece_version"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.owner, t.contact] }), index("recovery_contacts_contact").on(t.contact)],
+);
+
+export const recoveryRequests = pgTable(
+  "recovery_requests",
+  {
+    id: text("id").primaryKey(),
+    owner: text("owner").notNull(),
+    /** The one-time seal key on the new device {mlkem, x25519} (hex). */
+    recipient: jsonb("recipient").notNull(),
+    /** SHA-256 of the request's secret, which only the new device holds. */
+    secretHash: text("secret_hash").notNull(),
+    /** A dry run started by the signed-in owner: no wait. */
+    test: boolean("test").notNull().default(false),
+    version: integer("version").notNull(),
+    threshold: integer("threshold").notNull(),
+    /** open | waiting | ready | cancelled | done | expired */
+    status: text("status").notNull().default("open"),
+    /** IP hash of whoever started it (rate limit only). */
+    ipHash: text("ip_hash"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    releaseAt: ts("release_at"),
+    cancelledAt: ts("cancelled_at"),
+    expiresAt: ts("expires_at").notNull(),
+  },
+  (t) => [index("recovery_requests_owner").on(t.owner)],
+);
+
+export const recoveryAnswers = pgTable(
+  "recovery_answers",
+  {
+    requestId: text("request_id").notNull(),
+    contact: text("contact").notNull(),
+    /** Blob hash: the contact's piece re-sealed to the one-time key. */
+    envelope: text("envelope").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.requestId, t.contact] })],
+);
+
+/** A one-time challenge sealed to an owner's offline reader key; opening it proves the key is held. */
+export const recoveryChallenges = pgTable("recovery_challenges", {
+  id: text("id").primaryKey(),
+  owner: text("owner").notNull(),
+  nonceHash: text("nonce_hash").notNull(),
+  expiresAt: ts("expires_at").notNull(),
+});
+
+/** Older items re-sealed to the offline reader key by the owner's device. */
+export const recoveryOfflineItems = pgTable(
+  "recovery_offline_items",
+  {
+    owner: text("owner").notNull(),
+    /** The original item: an envelope hash, or "invoice:<id>". */
+    source: text("source").notNull(),
+    kind: text("kind").notNull(),
+    ref: text("ref"),
+    envelope: text("envelope").notNull(),
+    itemAt: ts("item_at").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.owner, t.source] })],
+);

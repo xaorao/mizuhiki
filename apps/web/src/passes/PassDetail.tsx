@@ -733,6 +733,8 @@ function HolderContent({ pass, from }: { pass: PassView; from: string }) {
   );
 }
 
+const noToken = () => Promise.reject(new Error("not used"));
+
 const TYPE: Record<string, { label: string; tone: "sakura" | "sora" | "matcha" | "butter" | "fuji" }> = {
   message: { label: "Message", tone: "sakura" },
   reply: { label: "Reply", tone: "sakura" },
@@ -740,7 +742,7 @@ const TYPE: Record<string, { label: string; tone: "sakura" | "sora" | "matcha" |
   form: { label: "Form answer", tone: "fuji" },
   invoice: { label: "Invoice", tone: "sora" },
 };
-function titleOf(it: PassItem): string {
+export function titleOf(it: PassItem): string {
   if ("doc" in it) return `Invoice ${it.doc.number}`;
   return TYPE[it.kind]?.label ?? "Item";
 }
@@ -756,7 +758,7 @@ function snippet(it: PassItem): string {
   if (o.kind === "paynote") return o.note.slice(0, 120);
   return `${Object.keys(o.answers).filter((k) => !k.includes(":")).length} answers`;
 }
-function ItemRow({ it, onOpen }: { it: PassItem; onOpen: () => void }) {
+export function ItemRow({ it, onOpen }: { it: PassItem; onOpen: () => void }) {
   const t = TYPE[it.kind] ?? { label: it.kind, tone: "sakura" as const };
   const bad = "error" in it;
   return (
@@ -770,13 +772,13 @@ function ItemRow({ it, onOpen }: { it: PassItem; onOpen: () => void }) {
     </button>
   );
 }
-function ItemBody({ it, owner }: { it: PassItem; owner: string }) {
-  const acct = useOwner();
+/** One opened item, for a pass holder or an offline reader (no account needed). */
+export function ItemBody({ it, owner }: { it: PassItem; owner: string }) {
   if ("error" in it) return <p>{it.error}</p>;
   if ("doc" in it) return <InvoiceView doc={it.doc} sentAt={it.at} />;
   const o = it.opened;
-  if (o.kind === "form")
-    return <FormAnswer answer={o} token={acct.token} loadDef={() => formDefFor(owner, o.formId)} />;
+  // Questions come from the verified form (loadDef), so no session is used.
+  if (o.kind === "form") return <FormAnswer answer={o} token={noToken} loadDef={() => formDefFor(owner, o.formId)} />;
   return (
     <div className={s.opened}>
       {o.kind === "message" ? (

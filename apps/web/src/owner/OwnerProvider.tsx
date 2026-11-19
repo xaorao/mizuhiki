@@ -12,6 +12,7 @@ import { api, ApiFailure } from "@/lib/api";
 import { draftFromManifest, differsFromPublished, loadDraft, publishable, saveDraft, type Draft } from "@/editor/state";
 import { blockProblem } from "@/editor/blocks";
 import { ownedPasses, periodKeysOf } from "@/passes/engine";
+import type { OfflineKey } from "@/passes/model";
 import { forgetPassKeys } from "@/lib/passKeys";
 
 export type SaveState = "idle" | "saving" | "saved" | "offline" | "error";
@@ -208,7 +209,11 @@ export function OwnerProvider({ account, children }: { account: Account; childre
   const livePeriodKeys = useCallback(
     async (t: string) => {
       forgetPassKeys(account.owner.address);
-      return periodKeysOf(account, (await ownedPasses({ ...account, token: t })).passes);
+      const [{ passes }, rec] = await Promise.all([
+        ownedPasses({ ...account, token: t }),
+        api.get<{ settings: { offlineKey: OfflineKey | null } }>("/owner/recovery", { token: t }),
+      ]);
+      return periodKeysOf(account, passes, Date.now(), rec.settings.offlineKey);
     },
     [account],
   );
