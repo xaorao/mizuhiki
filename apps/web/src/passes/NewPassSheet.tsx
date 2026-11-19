@@ -57,7 +57,11 @@ export function NewPassSheet({
   const [kinds, setKinds] = useState<PeriodKind[]>(["invoices", "payments"]);
   const [lasts, setLasts] = useState<Lasts>("90d");
   const [note, setNote] = useState("");
-  const [options, setOptions] = useState<Record<Exclude<What, "period">, Option[] | null>>({ room: null, form: null, product: null });
+  const [options, setOptions] = useState<Record<Exclude<What, "period">, Option[] | null>>({
+    room: null,
+    form: null,
+    product: null,
+  });
   const [picked, setPicked] = useState<Option | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,18 +93,35 @@ export function NewPassSheet({
       let list: Option[] = [];
       try {
         if (what === "room") {
-          const [{ rooms }, sums] = await Promise.all([listRooms(withToken(owner.account, token)), readSummaries(owner.account)]);
+          const [{ rooms }, sums] = await Promise.all([
+            listRooms(withToken(owner.account, token)),
+            readSummaries(owner.account),
+          ]);
           list = rooms
             .filter((r) => r.status === "active" && (r.role === "owner" || r.role === "admin"))
-            .map((r) => ({ id: r.id, label: sums[r.id]?.name || "Unnamed room", detail: `${r.members} ${r.members === 1 ? "member" : "members"}` }));
+            .map((r) => ({
+              id: r.id,
+              label: sums[r.id]?.name || "Unnamed room",
+              detail: `${r.members} ${r.members === 1 ? "member" : "members"}`,
+            }));
         } else if (what === "form") {
           const { forms } = await api.get<{ forms: FormRow[] }>("/owner/forms", { token });
-          list = forms.filter((f) => f.published && !f.archived).map((f) => ({ id: f.id, label: f.published?.title ?? f.slug, detail: `${f.responses} ${f.responses === 1 ? "answer" : "answers"}` }));
+          list = forms
+            .filter((f) => f.published && !f.archived)
+            .map((f) => ({
+              id: f.id,
+              label: f.published?.title ?? f.slug,
+              detail: `${f.responses} ${f.responses === 1 ? "answer" : "answers"}`,
+            }));
         } else {
           const products = await listMyProducts({ ...owner.account, token });
           list = products
             .filter((p) => p.status === "published" && p.record?.body.content)
-            .map((p) => ({ id: p.id, label: p.record?.body.title ?? p.slug, detail: `${p.sales} ${p.sales === 1 ? "sale" : "sales"}` }));
+            .map((p) => ({
+              id: p.id,
+              label: p.record?.body.title ?? p.slug,
+              detail: `${p.sales} ${p.sales === 1 ? "sale" : "sales"}`,
+            }));
         }
       } catch {
         list = [];
@@ -176,9 +197,16 @@ export function NewPassSheet({
     }
     setBusy(true);
     try {
-      onCreated(await createPass({ ...owner.account, token: await owner.token() }, { holder: p.address, scope, expiresAt, note }));
+      onCreated(
+        await createPass(
+          { ...owner.account, token: await owner.token() },
+          { holder: p.address, scope, expiresAt, note },
+        ),
+      );
     } catch (e) {
-      setError(e instanceof ApiFailure || e instanceof Error ? e.message : "The pass was not made. Nothing was shared.");
+      setError(
+        e instanceof ApiFailure || e instanceof Error ? e.message : "The pass was not made. Nothing was shared.",
+      );
     } finally {
       setBusy(false);
     }
@@ -212,7 +240,8 @@ export function NewPassSheet({
             <p className={s.person}>
               <Avatar name={person.name ?? person.address.slice(4, 6)} size={32} tone="matcha" />
               <span>
-                <b>{person.name ? `@${person.name}` : `${person.address.slice(0, 12)}…`}</b> has a Mizuhiki key on QoreChain.
+                <b>{person.name ? `@${person.name}` : `${person.address.slice(0, 12)}…`}</b> has a Mizuhiki key on
+                QoreChain.
               </span>
               <Icon name="check" size={16} />
             </p>
@@ -253,14 +282,26 @@ export function NewPassSheet({
                     {q.label}
                   </button>
                 ))}
-                <button type="button" role="radio" aria-checked={custom} className={s.pick} onClick={() => setCustom(true)}>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={custom}
+                  className={s.pick}
+                  onClick={() => setCustom(true)}
+                >
                   <Icon name="calendar" size={14} /> Custom dates
                 </button>
               </div>
               {custom ? (
                 <div className={s.grid2}>
                   <TextField label="From" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-                  <TextField label="To (included)" type="date" value={to} onChange={(e) => setTo(e.target.value)} error={from && to && !period ? "The end must be on or after the start." : undefined} />
+                  <TextField
+                    label="To (included)"
+                    type="date"
+                    value={to}
+                    onChange={(e) => setTo(e.target.value)}
+                    error={from && to && !period ? "The end must be on or after the start." : undefined}
+                  />
                 </div>
               ) : null}
               <div className={s.chips} role="group" aria-label="Kinds of items">
@@ -277,18 +318,32 @@ export function NewPassSheet({
                   </button>
                 ))}
               </div>
-              <p className={s.hint}>Items dated in the period are covered, including ones from before today. New ones arrive sealed to the pass.</p>
+              <p className={s.hint}>
+                Items dated in the period are covered, including ones from before today. New ones arrive sealed to the
+                pass.
+              </p>
             </>
           ) : list === null ? (
             <Skeleton lines={2} />
           ) : list.length === 0 ? (
             <p className={s.hint}>
-              {what === "room" ? "You do not run any rooms yet." : what === "form" ? "You have no published forms yet." : "You have no published products with content yet."}
+              {what === "room"
+                ? "You do not run any rooms yet."
+                : what === "form"
+                  ? "You have no published forms yet."
+                  : "You have no published products with content yet."}
             </p>
           ) : (
             <div className={s.form} role="radiogroup" aria-label={`Pick a ${what}`}>
               {list.map((o) => (
-                <ChoiceCard key={o.id} selected={picked?.id === o.id} onSelect={() => setPicked(o)} title={o.label} detail={o.detail} tone="matcha" />
+                <ChoiceCard
+                  key={o.id}
+                  selected={picked?.id === o.id}
+                  onSelect={() => setPicked(o)}
+                  title={o.label}
+                  detail={o.detail}
+                  tone="matcha"
+                />
               ))}
             </div>
           )}
@@ -298,14 +353,29 @@ export function NewPassSheet({
           <legend className={s.legend}>How long</legend>
           <div className={s.chips} role="radiogroup" aria-label="How long the pass lasts">
             {LASTS.filter((l) => l.value !== "period" || what === "period").map((l) => (
-              <button key={l.value} type="button" role="radio" aria-checked={lasts === l.value} className={s.pick} onClick={() => setLasts(l.value)}>
+              <button
+                key={l.value}
+                type="button"
+                role="radio"
+                aria-checked={lasts === l.value}
+                className={s.pick}
+                onClick={() => setLasts(l.value)}
+              >
                 {l.label}
               </button>
             ))}
           </div>
         </fieldset>
 
-        <TextArea label="Note for them (optional)" value={note} maxLength={500} counter rows={2} onChange={(e) => setNote(e.target.value)} placeholder="Hi Mila, here is Q3 for the VAT return." />
+        <TextArea
+          label="Note for them (optional)"
+          value={note}
+          maxLength={500}
+          counter
+          rows={2}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Hi Mila, here is Q3 for the VAT return."
+        />
 
         <section className={s.boundary} aria-live="polite">
           <h3>
@@ -314,7 +384,11 @@ export function NewPassSheet({
           <p>{preview ?? "Choose who and what, and the boundary appears here."}</p>
         </section>
 
-        {error ? <p className={s.err} role="alert">{error}</p> : null}
+        {error ? (
+          <p className={s.err} role="alert">
+            {error}
+          </p>
+        ) : null}
         <div className={s.actions}>
           <Button variant="quiet" onClick={onClose} disabled={busy}>
             Cancel
@@ -323,7 +397,10 @@ export function NewPassSheet({
             {busy ? "Signing the invite" : "Send invite"}
           </Button>
         </div>
-        <p className={s.hint}>Nothing is shared yet. After they accept, you compare six safety words, and only then is anything sealed to them.</p>
+        <p className={s.hint}>
+          Nothing is shared yet. After they accept, you compare six safety words, and only then is anything sealed to
+          them.
+        </p>
       </div>
     </Sheet>
   );

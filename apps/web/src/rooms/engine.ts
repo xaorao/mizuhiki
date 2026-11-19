@@ -203,7 +203,12 @@ function cacheKey(account: Account, roomId: string): string {
 async function localKey(account: Account, label: string): Promise<CryptoKey> {
   const base = await crypto.subtle.importKey("raw", ab(account.keys.seal.seed), "HKDF", false, ["deriveKey"]);
   return crypto.subtle.deriveKey(
-    { name: "HKDF", hash: "SHA-256", salt: ab(utf8(`mzk:room-cache:v1:${label}`)), info: ab(utf8(account.owner.address)) },
+    {
+      name: "HKDF",
+      hash: "SHA-256",
+      salt: ab(utf8(`mzk:room-cache:v1:${label}`)),
+      info: ab(utf8(account.owner.address)),
+    },
     base,
     { name: "AES-GCM", length: 256 },
     false,
@@ -227,7 +232,9 @@ async function writeLocal(account: Account, name: string, value: unknown): Promi
   try {
     const k = await localKey(account, name);
     const iv = randomBytes(12);
-    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: ab(iv) }, k, ab(utf8(JSON.stringify(value)))));
+    const ct = new Uint8Array(
+      await crypto.subtle.encrypt({ name: "AES-GCM", iv: ab(iv) }, k, ab(utf8(JSON.stringify(value)))),
+    );
     await idb.set(`room:${account.owner.address}:${name}`, { iv, ct });
   } catch {
     // A private window can refuse storage; rooms still work, just without the local copy.
@@ -251,7 +258,12 @@ export interface KeysView {
   current: number;
 }
 
-export async function roomKeys(account: Tokened, roomId: string, refresh = false, given?: KeysView): Promise<Map<bigint, Uint8Array>> {
+export async function roomKeys(
+  account: Tokened,
+  roomId: string,
+  refresh = false,
+  given?: KeysView,
+): Promise<Map<bigint, Uint8Array>> {
   const ck = cacheKey(account, roomId);
   const have = keyCache.get(ck) ?? new Map<bigint, Uint8Array>();
   const fresh = fetchedAt.get(ck);
@@ -266,7 +278,9 @@ export async function roomKeys(account: Tokened, roomId: string, refresh = false
   for (const h of r.history) {
     try {
       const env = await blobBytes(h.hash);
-      const list = JSON.parse(fromUtf8(openItem({ purpose: Purpose.roomHistory(roomId), envelope: env, keys: account.keys.seal }))) as StoredKey[];
+      const list = JSON.parse(
+        fromUtf8(openItem({ purpose: Purpose.roomHistory(roomId), envelope: env, keys: account.keys.seal })),
+      ) as StoredKey[];
       for (const k of list) if (!have.has(BigInt(k.epoch))) have.set(BigInt(k.epoch), fromBase64Url(k.key));
     } catch {
       // Not sealed to this account, or damaged: skip it, and the messages of those epochs stay unreadable here.
@@ -276,7 +290,12 @@ export async function roomKeys(account: Tokened, roomId: string, refresh = false
     if (have.has(BigInt(e.epoch))) continue;
     try {
       const env = await blobBytes(e.hash);
-      const k = openEpochKey({ chainId: CHAIN_ID, purpose: Purpose.room(roomId), envelope: env, keys: account.keys.seal });
+      const k = openEpochKey({
+        chainId: CHAIN_ID,
+        purpose: Purpose.room(roomId),
+        envelope: env,
+        keys: account.keys.seal,
+      });
       if (k.epoch !== BigInt(e.epoch)) continue; // a distribution must carry the epoch it is filed under
       have.set(k.epoch, k.key);
     } catch {
@@ -402,7 +421,11 @@ async function openLine(roomId: string, keys: Map<bigint, Uint8Array>, row: Batc
 }
 
 /** Opened lines are kept locally (encrypted), so reopening a room is instant and survives auto-delete on the server. */
-export async function loadLines(account: Tokened, roomId: string, first?: { after: bigint; batches: BatchRow[]; more: boolean; keys: KeysView }): Promise<Line[]> {
+export async function loadLines(
+  account: Tokened,
+  roomId: string,
+  first?: { after: bigint; batches: BatchRow[]; more: boolean; keys: KeysView },
+): Promise<Line[]> {
   const stored = (await readLocal<Array<Omit<Line, "seq"> & { seq: string }>>(account, `lines:${roomId}`)) ?? [];
   const lines = new Map<string, Line>(stored.map((l) => [l.hash, { ...l, seq: BigInt(l.seq) }]));
   let after = stored.reduce((m, l) => (BigInt(l.seq) > m ? BigInt(l.seq) : m), 0n);
@@ -412,7 +435,9 @@ export async function loadLines(account: Tokened, roomId: string, first?: { afte
   // A page the caller already has (from /sync) is used only if it starts where the local copy ends.
   let prefetched = first && first.after === after ? { batches: first.batches, more: first.more } : undefined;
   for (;;) {
-    const page = prefetched ?? (await api.get<{ batches: BatchRow[]; more: boolean }>(`/rooms/${roomId}/batches?after=${after}`, T(account)));
+    const page =
+      prefetched ??
+      (await api.get<{ batches: BatchRow[]; more: boolean }>(`/rooms/${roomId}/batches?after=${after}`, T(account)));
     prefetched = undefined;
     for (const row of page.batches) {
       if (!keys.has(BigInt(row.epoch))) keys = await roomKeys(account, roomId, true);
@@ -423,7 +448,17 @@ export async function loadLines(account: Tokened, roomId: string, first?: { afte
   }
   for (const l of retry) {
     if (keys.has(BigInt(l.epoch))) {
-      lines.set(l.hash, await openLine(roomId, keys, { seq: l.seq.toString(), hash: l.hash, epoch: l.epoch, at: l.at, size: 0, expiresAt: l.expiresAt }));
+      lines.set(
+        l.hash,
+        await openLine(roomId, keys, {
+          seq: l.seq.toString(),
+          hash: l.hash,
+          epoch: l.epoch,
+          at: l.at,
+          size: 0,
+          expiresAt: l.expiresAt,
+        }),
+      );
     }
   }
   const out = [...lines.values()].sort((a, b) => (a.seq < b.seq ? -1 : 1));
@@ -439,12 +474,18 @@ export async function loadLines(account: Tokened, roomId: string, first?: { afte
 export async function dropLocalLines(account: Tokened, roomId: string, hashes: string[]): Promise<void> {
   const stored = (await readLocal<Array<{ hash: string }>>(account, `lines:${roomId}`)) ?? [];
   const gone = new Set(hashes);
-  await writeLocal(account, `lines:${roomId}`, stored.filter((l) => !gone.has(l.hash)));
+  await writeLocal(
+    account,
+    `lines:${roomId}`,
+    stored.filter((l) => !gone.has(l.hash)),
+  );
 }
 
 /** Delete token: derived from the account's own seed, so the author can delete from any device. */
 async function deleteToken(account: Account, roomId: string, msgId: string): Promise<string> {
-  const k = await crypto.subtle.importKey("raw", ab(account.keys.seal.seed), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const k = await crypto.subtle.importKey("raw", ab(account.keys.seal.seed), { name: "HMAC", hash: "SHA-256" }, false, [
+    "sign",
+  ]);
   const mac = new Uint8Array(await crypto.subtle.sign("HMAC", k, ab(utf8(`mzk:room-delete:${roomId}:${msgId}`))));
   return toHex(mac);
 }
@@ -455,38 +496,54 @@ export const newMsgId = () => toBase64Url(randomBytes(12));
  * Seal and send one message under the current epoch key. If the key changed
  * meanwhile (the server answers STALE_EPOCH), refresh the keys and seal again.
  */
-export async function postMessage(account: Tokened, roomId: string, body: RoomBody, msgId = newMsgId()): Promise<{ seq: string; msgId: string; epoch: number }> {
+export async function postMessage(
+  account: Tokened,
+  roomId: string,
+  body: RoomBody,
+  msgId = newMsgId(),
+): Promise<{ seq: string; msgId: string; epoch: number }> {
   const parsed = RoomBodySchema.parse(body);
   // One send at a time per room keeps the order the person typed.
   const prev = pending.get(roomId) ?? Promise.resolve();
-  const run = prev.catch(() => undefined).then(async () => {
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const keys = await roomKeys(account, roomId, attempt > 0);
-      const all = sortedKeys(keys);
-      const current = all[all.length - 1];
-      if (!current) throw new RoomError("This device has no key for this room yet.", "NO_KEY");
-      const signed = signRoomMessage({
-        roomId,
-        epoch: current.epoch,
-        msgId,
-        body: parsed,
-        author: account.owner.address,
-        classical: account.keys.classical,
-        pq: account.keys.pq,
-      });
-      const sealed = sealBatch({ epochKey: current, context: roomContext(roomId), batchIndex: nextBatchIndex(), data: utf8(JSON.stringify(signed)) });
-      const up = await api.put<{ hash: string }>("/blobs", sealed.blob, T(account));
-      const token = await deleteToken(account, roomId, msgId);
-      try {
-        const r = await api.post<{ seq: string; epoch: number }>(`/rooms/${roomId}/batches`, { hash: up.hash, deleteHash: sha256Hex(utf8(token)) }, T(account));
-        return { seq: r.seq, msgId, epoch: r.epoch };
-      } catch (e) {
-        if (e instanceof ApiFailure && e.code === "STALE_EPOCH") continue;
-        throw e;
+  const run = prev
+    .catch(() => undefined)
+    .then(async () => {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const keys = await roomKeys(account, roomId, attempt > 0);
+        const all = sortedKeys(keys);
+        const current = all[all.length - 1];
+        if (!current) throw new RoomError("This device has no key for this room yet.", "NO_KEY");
+        const signed = signRoomMessage({
+          roomId,
+          epoch: current.epoch,
+          msgId,
+          body: parsed,
+          author: account.owner.address,
+          classical: account.keys.classical,
+          pq: account.keys.pq,
+        });
+        const sealed = sealBatch({
+          epochKey: current,
+          context: roomContext(roomId),
+          batchIndex: nextBatchIndex(),
+          data: utf8(JSON.stringify(signed)),
+        });
+        const up = await api.put<{ hash: string }>("/blobs", sealed.blob, T(account));
+        const token = await deleteToken(account, roomId, msgId);
+        try {
+          const r = await api.post<{ seq: string; epoch: number }>(
+            `/rooms/${roomId}/batches`,
+            { hash: up.hash, deleteHash: sha256Hex(utf8(token)) },
+            T(account),
+          );
+          return { seq: r.seq, msgId, epoch: r.epoch };
+        } catch (e) {
+          if (e instanceof ApiFailure && e.code === "STALE_EPOCH") continue;
+          throw e;
+        }
       }
-    }
-    throw new RoomError("The room key kept changing. Try again in a moment.", "STALE");
-  });
+      throw new RoomError("The room key kept changing. Try again in a moment.", "STALE");
+    });
   pending.set(roomId, run);
   return run;
 }
@@ -527,9 +584,11 @@ export const STEP_LABEL: Record<Step, string> = {
 
 const chainFriendly = (e: unknown): never => {
   const m = e instanceof Error ? e.message : String(e);
-  if (/StaleEpoch/.test(m)) throw new RoomError("Someone else changed this room at the same moment. Refresh and try again.", "STALE");
+  if (/StaleEpoch/.test(m))
+    throw new RoomError("Someone else changed this room at the same moment. Refresh and try again.", "STALE");
   if (/NotRoomAdmin/.test(m)) throw new RoomError("QoreChain says you are not an admin of this room.", "NOT_ADMIN");
-  if (/insufficient|balance/i.test(m)) throw new RoomError("Your account needs a little QOR for the network fee.", "FEE");
+  if (/insufficient|balance/i.test(m))
+    throw new RoomError("Your account needs a little QOR for the network fee.", "FEE");
   throw e instanceof Error ? e : new RoomError(String(e));
 };
 
@@ -545,7 +604,11 @@ export interface CreateArgs {
   photo?: File | undefined;
 }
 
-export async function createRoom(account: Tokened, a: CreateArgs, onStep: (s: Step) => void = () => undefined): Promise<string> {
+export async function createRoom(
+  account: Tokened,
+  a: CreateArgs,
+  onStep: (s: Step) => void = () => undefined,
+): Promise<string> {
   const id = toHex(randomBytes(10));
   const others = [...new Set(a.members)].filter((m) => m !== account.owner.address);
   onStep("keys");
@@ -554,18 +617,42 @@ export async function createRoom(account: Tokened, a: CreateArgs, onStep: (s: St
   const manager = new EpochKeyManager({ chainId: CHAIN_ID, purpose: Purpose.room(id), members: recipients });
   const envelope = manager.distribution();
   const up = await api.put<{ hash: string }>("/blobs", envelope, T(account));
-  const members: MemberEntry[] = [{ address: account.owner.address, role: "owner" }, ...others.map((m) => ({ address: m, role: "member" as const }))];
+  const members: MemberEntry[] = [
+    { address: account.owner.address, role: "owner" },
+    ...others.map((m) => ({ address: m, role: "member" as const })),
+  ];
   onStep("chain");
-  const txHash = await createRoomOnChain(account.owner, roomIdBytes32(id), membershipHash(id, 1n, members), distributionHash(envelope)).catch(chainFriendly);
+  const txHash = await createRoomOnChain(
+    account.owner,
+    roomIdBytes32(id),
+    membershipHash(id, 1n, members),
+    distributionHash(envelope),
+  ).catch(chainFriendly);
   onStep("relay");
-  await api.post("/rooms", { id, txHash, members, distribution: up.hash, approval: a.approval, autoDeleteSeconds: a.autoDeleteSeconds }, T(account));
+  await api.post(
+    "/rooms",
+    { id, txHash, members, distribution: up.hash, approval: a.approval, autoDeleteSeconds: a.autoDeleteSeconds },
+    T(account),
+  );
   keyCache.set(cacheKey(account, id), new Map([[1n, manager.currentKey.key]]));
   await writeLocal(account, `keys:${id}`, [{ epoch: "1", key: toBase64Url(manager.currentKey.key) }]);
   onStep("announce");
   const photo = a.photo ? await sealRoomFile(account, a.photo) : undefined;
   await postMessage(account, id, { kind: "created", members: others });
-  await postMessage(account, id, { kind: "info", name: a.name.trim(), description: a.description.trim(), type: a.type, ...(photo ? { photo: photo as unknown as Record<string, unknown> } : {}) });
-  await postMessage(account, id, { kind: "settings", approval: a.approval, autoDeleteSeconds: a.autoDeleteSeconds, restrictSaving: a.restrictSaving, historyDefault: a.historyDefault });
+  await postMessage(account, id, {
+    kind: "info",
+    name: a.name.trim(),
+    description: a.description.trim(),
+    type: a.type,
+    ...(photo ? { photo: photo as unknown as Record<string, unknown> } : {}),
+  });
+  await postMessage(account, id, {
+    kind: "settings",
+    approval: a.approval,
+    autoDeleteSeconds: a.autoDeleteSeconds,
+    restrictSaving: a.restrictSaving,
+    historyDefault: a.historyDefault,
+  });
   return id;
 }
 
@@ -579,10 +666,18 @@ export interface Change {
 }
 
 /** Add or remove people: a new epoch key, sealed to the new member list, recorded on chain. */
-export async function changeMembers(account: Tokened, roomId: string, change: Change, onStep: (s: Step) => void = () => undefined): Promise<number> {
+export async function changeMembers(
+  account: Tokened,
+  roomId: string,
+  change: Change,
+  onStep: (s: Step) => void = () => undefined,
+): Promise<number> {
   const detail = await getRoom(account, roomId);
-  if (detail.me.role !== "owner" && detail.me.role !== "admin") throw new RoomError("Only admins can change who is in the room.", "NOT_ADMIN");
-  const add = (change.add ?? []).filter((x) => !detail.members.some((m) => m.address === x.address && m.status === "active"));
+  if (detail.me.role !== "owner" && detail.me.role !== "admin")
+    throw new RoomError("Only admins can change who is in the room.", "NOT_ADMIN");
+  const add = (change.add ?? []).filter(
+    (x) => !detail.members.some((m) => m.address === x.address && m.status === "active"),
+  );
   const remove = change.remove ?? [];
   const removing = new Set(remove.map((r) => r.address));
   const active = detail.members.filter((m) => m.status === "active" && !removing.has(m.address));
@@ -591,16 +686,25 @@ export async function changeMembers(account: Tokened, roomId: string, change: Ch
     if (m?.role === "owner") throw new RoomError("The owner cannot be removed.");
     if (m?.role === "admin" && detail.me.role !== "owner") throw new RoomError("Only the owner can remove an admin.");
   }
-  const next: MemberEntry[] = [...active.map((m) => ({ address: m.address, role: m.role })), ...add.map((x) => ({ address: x.address, role: "member" as const }))];
+  const next: MemberEntry[] = [
+    ...active.map((m) => ({ address: m.address, role: m.role })),
+    ...add.map((x) => ({ address: x.address, role: "member" as const })),
+  ];
   onStep("keys");
   const current = derive(await loadLines(account, roomId), detail.members, detail.epochs).info;
   const keys = await roomKeys(account, roomId, true);
   const history = sortedKeys(keys);
   const last = history[history.length - 1];
-  if (!last || last.epoch !== BigInt(detail.epoch)) throw new RoomError("This device does not hold the room's current key. Reopen the room and try again.", "NO_KEY");
+  if (!last || last.epoch !== BigInt(detail.epoch))
+    throw new RoomError("This device does not hold the room's current key. Reopen the room and try again.", "NO_KEY");
   const recipients = await recipientsOf(next.map((m) => m.address));
   onStep("seal");
-  const manager = new EpochKeyManager({ chainId: CHAIN_ID, purpose: Purpose.room(roomId), members: recipients, history });
+  const manager = new EpochKeyManager({
+    chainId: CHAIN_ID,
+    purpose: Purpose.room(roomId),
+    members: recipients,
+    history,
+  });
   const rotation = manager.rotate();
   if (!rotation.envelope) throw new RoomError("A room needs at least one member.");
   const up = await api.put<{ hash: string }>("/blobs", rotation.envelope, T(account));
@@ -620,14 +724,38 @@ export async function changeMembers(account: Tokened, roomId: string, change: Ch
   const rid = roomIdBytes32(roomId);
   for (const r of remove) {
     const m = detail.members.find((x) => x.address === r.address);
-    if (m?.role === "admin") await setRoleOnChain(account.owner, rid, evm(r.address), ROOM_ROLE.none).catch(chainFriendly);
+    if (m?.role === "admin")
+      await setRoleOnChain(account.owner, rid, evm(r.address), ROOM_ROLE.none).catch(chainFriendly);
   }
   const epoch = rotation.epoch;
-  const txHash = await rotateRoomOnChain(account.owner, rid, epoch, membershipHash(roomId, epoch, next), distributionHash(rotation.envelope), change.reason).catch(chainFriendly);
+  const txHash = await rotateRoomOnChain(
+    account.owner,
+    rid,
+    epoch,
+    membershipHash(roomId, epoch, next),
+    distributionHash(rotation.envelope),
+    change.reason,
+  ).catch(chainFriendly);
   onStep("relay");
-  await api.post(`/rooms/${roomId}/epochs`, { epoch: Number(epoch), txHash, reason: change.reason, members: next, distribution: up.hash, admitted, removed: remove }, T(account));
+  await api.post(
+    `/rooms/${roomId}/epochs`,
+    {
+      epoch: Number(epoch),
+      txHash,
+      reason: change.reason,
+      members: next,
+      distribution: up.hash,
+      admitted,
+      removed: remove,
+    },
+    T(account),
+  );
   keys.set(epoch, manager.currentKey.key);
-  await writeLocal(account, `keys:${roomId}`, sortedKeys(keys).map((k) => ({ epoch: k.epoch.toString(), key: toBase64Url(k.key) })));
+  await writeLocal(
+    account,
+    `keys:${roomId}`,
+    sortedKeys(keys).map((k) => ({ epoch: k.epoch.toString(), key: toBase64Url(k.key) })),
+  );
   onStep("announce");
   // The room's name, photo and rules live in signed messages; re-post them under the new key so anyone
   // who joins without past messages still sees them. Derived views ignore a re-post that changes nothing.
@@ -648,8 +776,10 @@ export async function changeMembers(account: Tokened, roomId: string, change: Ch
     });
   }
   for (const x of add) await postMessage(account, roomId, { kind: "added", member: x.address, history: x.history });
-  for (const r of remove) await postMessage(account, roomId, { kind: "removed", member: r.address, blocked: r.blocked });
-  if (add.length === 0 && remove.length === 0 && !change.quiet) await postMessage(account, roomId, { kind: "rotated", reason: change.reason });
+  for (const r of remove)
+    await postMessage(account, roomId, { kind: "removed", member: r.address, blocked: r.blocked });
+  if (add.length === 0 && remove.length === 0 && !change.quiet)
+    await postMessage(account, roomId, { kind: "rotated", reason: change.reason });
   return Number(epoch);
 }
 
@@ -666,17 +796,31 @@ export async function rotateAfterLeave(account: Tokened, roomId: string): Promis
 export async function admitWaiting(account: Tokened, roomId: string, history: "share" | "hide"): Promise<number> {
   const r = await api.get<{ requests: JoinRequest[] }>(`/rooms/${roomId}/requests`, T(account));
   if (r.requests.length === 0) return 0;
-  await changeMembers(account, roomId, { add: r.requests.map((q) => ({ address: q.address, history })), reason: "joined" });
+  await changeMembers(account, roomId, {
+    add: r.requests.map((q) => ({ address: q.address, history })),
+    reason: "joined",
+  });
   return r.requests.length;
 }
 
-export async function setRole(account: Tokened, roomId: string, member: string, role: "member" | "admin", permissions: Permission[]): Promise<void> {
+export async function setRole(
+  account: Tokened,
+  roomId: string,
+  member: string,
+  role: "member" | "admin",
+  permissions: Permission[],
+): Promise<void> {
   const detail = await getRoom(account, roomId);
   const target = detail.members.find((m) => m.address === member && m.status === "active");
   if (!target) throw new RoomError("That person is not in this room.");
   if (target.role !== role) {
     if (detail.me.role !== "owner") throw new RoomError("Only the owner can make or dismiss admins.");
-    await setRoleOnChain(account.owner, roomIdBytes32(roomId), evm(member), role === "admin" ? ROOM_ROLE.admin : ROOM_ROLE.none).catch(chainFriendly);
+    await setRoleOnChain(
+      account.owner,
+      roomIdBytes32(roomId),
+      evm(member),
+      role === "admin" ? ROOM_ROLE.admin : ROOM_ROLE.none,
+    ).catch(chainFriendly);
   }
   await api.post(`/rooms/${roomId}/role`, { member, role, permissions }, T(account));
   await postMessage(account, roomId, { kind: "role", member, role, permissions });
@@ -703,11 +847,19 @@ export async function saveSettings(
   roomId: string,
   s: { approval: boolean; autoDeleteSeconds: number; restrictSaving: boolean; historyDefault: "share" | "hide" },
 ): Promise<void> {
-  await api.post(`/rooms/${roomId}/settings`, { approval: s.approval, autoDeleteSeconds: s.autoDeleteSeconds }, T(account));
+  await api.post(
+    `/rooms/${roomId}/settings`,
+    { approval: s.approval, autoDeleteSeconds: s.autoDeleteSeconds },
+    T(account),
+  );
   await postMessage(account, roomId, { kind: "settings", ...s });
 }
 
-export async function saveInfo(account: Tokened, roomId: string, info: { name: string; description: string; type: RoomType; photo?: FileFacts | undefined }): Promise<void> {
+export async function saveInfo(
+  account: Tokened,
+  roomId: string,
+  info: { name: string; description: string; type: RoomType; photo?: FileFacts | undefined },
+): Promise<void> {
   await postMessage(account, roomId, {
     kind: "info",
     name: info.name.trim(),
@@ -720,7 +872,10 @@ export async function saveInfo(account: Tokened, roomId: string, info: { name: s
 // ---- reads --------------------------------------------------------------------------------
 
 export const listRooms = (account: Tokened) =>
-  api.get<{ rooms: RoomListItem[]; waiting: { roomId: string; at: string; status: "pending" | "declined" }[] }>("/rooms", T(account));
+  api.get<{ rooms: RoomListItem[]; waiting: { roomId: string; at: string; status: "pending" | "declined" }[] }>(
+    "/rooms",
+    T(account),
+  );
 export const getRoom = (account: Tokened, roomId: string) => api.get<RoomDetail>(`/rooms/${roomId}`, T(account));
 
 /** Where this device's copy of a room ends (the last sequence number it opened). */
@@ -730,20 +885,33 @@ export async function localEnd(account: Tokened, roomId: string): Promise<bigint
 }
 
 /** One refresh of an open room in one request (room, new batches, keys, join requests), then opened here. */
-export async function syncRoom(account: Tokened, roomId: string): Promise<{ detail: RoomDetail; lines: Line[]; requests: JoinRequest[] }> {
+export async function syncRoom(
+  account: Tokened,
+  roomId: string,
+): Promise<{ detail: RoomDetail; lines: Line[]; requests: JoinRequest[] }> {
   const after = await localEnd(account, roomId);
-  const r = await api.get<{ room: RoomDetail; batches: BatchRow[]; more: boolean; keys: KeysView; requests: JoinRequest[] }>(`/rooms/${roomId}/sync?after=${after}`, T(account));
+  const r = await api.get<{
+    room: RoomDetail;
+    batches: BatchRow[];
+    more: boolean;
+    keys: KeysView;
+    requests: JoinRequest[];
+  }>(`/rooms/${roomId}/sync?after=${after}`, T(account));
   const lines = await loadLines(account, roomId, { after, batches: r.batches, more: r.more, keys: r.keys });
   return { detail: r.room, lines, requests: r.requests };
 }
-export const getRequests = (account: Tokened, roomId: string) => api.get<{ requests: JoinRequest[] }>(`/rooms/${roomId}/requests`, T(account));
+export const getRequests = (account: Tokened, roomId: string) =>
+  api.get<{ requests: JoinRequest[] }>(`/rooms/${roomId}/requests`, T(account));
 export const declineRequest = (account: Tokened, roomId: string, address: string) =>
   api.patch(`/rooms/${roomId}/requests/${address}`, { status: "declined" }, T(account));
 export const suggestMembers = (account: Tokened, roomId: string, addresses: string[]) =>
   api.post(`/rooms/${roomId}/requests`, { addresses }, T(account));
-export const markRead = (account: Tokened, roomId: string, seq: bigint) => api.post(`/rooms/${roomId}/read`, { seq: seq.toString() }, T(account));
-export const setMuted = (account: Tokened, roomId: string, muted: boolean) => api.patch(`/rooms/${roomId}/me`, { muted }, T(account));
-export const unblock = (account: Tokened, roomId: string, address: string) => api.del(`/rooms/${roomId}/blocked/${address}`, T(account));
+export const markRead = (account: Tokened, roomId: string, seq: bigint) =>
+  api.post(`/rooms/${roomId}/read`, { seq: seq.toString() }, T(account));
+export const setMuted = (account: Tokened, roomId: string, muted: boolean) =>
+  api.patch(`/rooms/${roomId}/me`, { muted }, T(account));
+export const unblock = (account: Tokened, roomId: string, address: string) =>
+  api.del(`/rooms/${roomId}/blocked/${address}`, T(account));
 export const forgetRoom = (account: Tokened, roomId: string) => api.del(`/rooms/${roomId}/me`, T(account));
 export const cancelRequest = (account: Tokened, roomId: string) => api.del(`/rooms/${roomId}/requests/me`, T(account));
 
@@ -772,20 +940,34 @@ export async function createInvite(
 ): Promise<{ id: string; url: string }> {
   const id = toHex(randomBytes(10));
   const seed = newLinkSeed();
-  const sealed = sealItem({ purpose: Purpose.roomInvite(id), readers: [publicRecipient(linkKeys(seed))], plaintext: utf8(JSON.stringify(card)) });
+  const sealed = sealItem({
+    purpose: Purpose.roomInvite(id),
+    readers: [publicRecipient(linkKeys(seed))],
+    plaintext: utf8(JSON.stringify(card)),
+  });
   const up = await api.put<{ hash: string }>("/blobs", sealed.envelope, T(account));
   await api.post(
     `/rooms/${roomId}/invites`,
-    { id, secretHash: sha256Hex(utf8(inviteSecret(seed))), card: up.hash, primary: o.primary, expiresAt: o.expiresAt?.toISOString() ?? null, maxUses: o.maxUses },
+    {
+      id,
+      secretHash: sha256Hex(utf8(inviteSecret(seed))),
+      card: up.hash,
+      primary: o.primary,
+      expiresAt: o.expiresAt?.toISOString() ?? null,
+      maxUses: o.maxUses,
+    },
     T(account),
   );
   return { id, url: inviteUrl(id, seed) };
 }
 
-export const inviteUrl = (id: string, seed: Uint8Array) => `${window.location.origin}/join/${id}#k=${toBase64Url(seed)}`;
+export const inviteUrl = (id: string, seed: Uint8Array) =>
+  `${window.location.origin}/join/${id}#k=${toBase64Url(seed)}`;
 
-export const listInvites = (account: Tokened, roomId: string) => api.get<{ invites: InviteRow[] }>(`/rooms/${roomId}/invites`, T(account));
-export const revokeInvite = (account: Tokened, roomId: string, id: string) => api.patch(`/rooms/${roomId}/invites/${id}`, { revoked: true }, T(account));
+export const listInvites = (account: Tokened, roomId: string) =>
+  api.get<{ invites: InviteRow[] }>(`/rooms/${roomId}/invites`, T(account));
+export const revokeInvite = (account: Tokened, roomId: string, id: string) =>
+  api.patch(`/rooms/${roomId}/invites/${id}`, { revoked: true }, T(account));
 
 export interface InvitePreview {
   roomId: string;
@@ -798,15 +980,25 @@ export interface InvitePreview {
   you: string | null;
 }
 
-export async function openInvite(id: string, seedB64: string, token?: string): Promise<{ preview: InvitePreview; card: InviteCard }> {
+export async function openInvite(
+  id: string,
+  seedB64: string,
+  token?: string,
+): Promise<{ preview: InvitePreview; card: InviteCard }> {
   const preview = await api.get<InvitePreview>(`/invites/${id}`, token ? { token } : {});
   const seed = fromBase64Url(seedB64);
   const env = await blobBytes(preview.card);
-  const card = JSON.parse(fromUtf8(openItem({ purpose: Purpose.roomInvite(id), envelope: env, keys: linkKeys(seed) }))) as InviteCard;
+  const card = JSON.parse(
+    fromUtf8(openItem({ purpose: Purpose.roomInvite(id), envelope: env, keys: linkKeys(seed) })),
+  ) as InviteCard;
   return { preview, card };
 }
 
-export async function joinWithInvite(token: string, id: string, seedB64: string): Promise<{ status: "member" | "pending"; roomId: string; approval?: boolean }> {
+export async function joinWithInvite(
+  token: string,
+  id: string,
+  seedB64: string,
+): Promise<{ status: "member" | "pending"; roomId: string; approval?: boolean }> {
   return api.post(`/invites/${id}/join`, { secret: inviteSecret(fromBase64Url(seedB64)) }, { token });
 }
 

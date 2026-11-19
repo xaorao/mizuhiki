@@ -30,8 +30,17 @@ async function party(browser: Browser, problems: string[], tag: string): Promise
   });
   return { ctx, page };
 }
-const nav = (page: Page, label: string) => page.getByRole("link", { name: label }).filter({ visible: true }).first().click();
-const order = async (ref: string) => (await (await fetch(`${API}/orders/${ref}`)).json()) as { status: string; deliveredBy: string | null; depositTx: string | null; balanceTx: string | null; refundTx: string | null; request: { lines: { slot: string | null }[] } };
+const nav = (page: Page, label: string) =>
+  page.getByRole("link", { name: label }).filter({ visible: true }).first().click();
+const order = async (ref: string) =>
+  (await (await fetch(`${API}/orders/${ref}`)).json()) as {
+    status: string;
+    deliveredBy: string | null;
+    depositTx: string | null;
+    balanceTx: string | null;
+    refundTx: string | null;
+    request: { lines: { slot: string | null }[] };
+  };
 const untilStatus = (ref: string, status: string, timeout = 300_000) =>
   expect.poll(async () => (await order(ref)).status, { timeout, intervals: [2000] }).toBe(status);
 
@@ -45,7 +54,10 @@ async function makeProduct(page: Page, kind: RegExp, title: string, price: strin
   await page.getByRole("button", { name: "Next: Customize" }).click();
   await page.waitForURL(/\/app\/shop\/pr[0-9a-f]+/, { timeout: 60_000 });
   if (setup) await setup();
-  await page.getByRole("button", { name: /^Publish/ }).first().click();
+  await page
+    .getByRole("button", { name: /^Publish/ })
+    .first()
+    .click();
   await expect(page.getByText("Your product is live.")).toBeVisible({ timeout: 120_000 });
   await page.getByRole("tab", { name: "Share" }).click();
   await page.getByRole("button", { name: "Add button" }).click();
@@ -55,10 +67,18 @@ async function makeProduct(page: Page, kind: RegExp, title: string, price: strin
 /** Open a product from the seller's page and get to checkout. */
 async function toCheckout(page: Page, title: string, onProduct?: () => Promise<void>) {
   await page.goto(`/@${NAME}`);
-  await page.getByRole("link", { name: new RegExp(title) }).first().click();
+  await page
+    .getByRole("link", { name: new RegExp(title) })
+    .first()
+    .click();
   await page.waitForURL(new RegExp(`/@${NAME}/p/`));
   if (onProduct) await onProduct();
-  await page.locator("aside[aria-label='Buy']").getByRole("button").filter({ hasText: /I want this!|Book a time/ }).first().click();
+  await page
+    .locator("aside[aria-label='Buy']")
+    .getByRole("button")
+    .filter({ hasText: /I want this!|Book a time/ })
+    .first()
+    .click();
   await page.waitForURL(new RegExp(`/@${NAME}/checkout`));
 }
 
@@ -94,7 +114,10 @@ async function payWithWallet(page: Page): Promise<string> {
   return /library\/([A-Za-z0-9_-]{22})/.exec(page.url())?.[1] ?? "";
 }
 
-test("shop: instant delivery as a gift, a booked call refunded, a commission in two payments", async ({ browser, problems }, info) => {
+test("shop: instant delivery as a gift, a booked call refunded, a commission in two payments", async ({
+  browser,
+  problems,
+}, info) => {
   test.skip(info.project.name !== "desktop", "a multi-party run");
   test.setTimeout(1_500_000);
   await ensureOwner("shop-e2e-seller", NAME);
@@ -150,7 +173,10 @@ test("shop: instant delivery as a gift, a booked call refunded, a commission in 
   // ---- a booked call: the first free time; the next buyer sees it taken
   await toCheckout(B.page, call, async () => {
     await B.page.getByRole("tablist", { name: "Days" }).locator("button[role=tab]:not([disabled])").first().click();
-    const first = B.page.getByRole("radiogroup", { name: /^Times on/ }).getByRole("radio").first();
+    const first = B.page
+      .getByRole("radiogroup", { name: /^Times on/ })
+      .getByRole("radio")
+      .first();
     await first.click();
     await expect(first).toHaveAttribute("aria-checked", "true");
   });
@@ -158,9 +184,13 @@ test("shop: instant delivery as a gift, a booked call refunded, a commission in 
   await untilStatus(callRef, "paid", 120_000);
   const slot = (await order(callRef)).request.lines[0]?.slot ?? "";
   expect(slot).toMatch(/Z$/);
-  const pub = (await (await fetch(`${API}/shop/${NAME}`)).json()) as { products: { record: { body: { title: string; slug: string } } }[] };
+  const pub = (await (await fetch(`${API}/shop/${NAME}`)).json()) as {
+    products: { record: { body: { title: string; slug: string } } }[];
+  };
   const callSlug = pub.products.find((p) => p.record.body.title === call)?.record.body.slug ?? "";
-  expect(((await (await fetch(`${API}/products/${NAME}/${callSlug}`)).json()) as { booked: string[] }).booked).toContain(slot);
+  expect(
+    ((await (await fetch(`${API}/products/${NAME}/${callSlug}`)).json()) as { booked: string[] }).booked,
+  ).toContain(slot);
 
   // ---- a commission: the deposit now
   await toCheckout(B.page, portrait);
@@ -176,7 +206,13 @@ test("shop: instant delivery as a gift, a booked call refunded, a commission in 
   await untilStatus(callRef, "delivered", 180_000);
   const comCard = S2.page.getByRole("listitem").filter({ hasText: portrait });
   await comCard.getByRole("button", { name: /Ask for the rest/ }).click();
-  await expect.poll(async () => ((await (await fetch(`${API}/orders/${comRef}`)).json()) as { balanceRequested: boolean }).balanceRequested, { timeout: 60_000 }).toBe(true);
+  await expect
+    .poll(
+      async () =>
+        ((await (await fetch(`${API}/orders/${comRef}`)).json()) as { balanceRequested: boolean }).balanceRequested,
+      { timeout: 60_000 },
+    )
+    .toBe(true);
 
   // ---- the buyer pays the rest; the seller's open dashboard seals it
   await B.page.goto(`/library/${comRef}`);

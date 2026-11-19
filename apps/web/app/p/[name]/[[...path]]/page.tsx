@@ -40,7 +40,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (p.state !== "ok") return { title: "Product not available", robots: { index: false } };
     const d = p.record.body;
     const title = `${d.title} · @${name}`;
-    const description = d.summary || d.description.replace(/[*[\]()]/g, "").slice(0, 200) || `A product by @${name}, sealed to the buyer after payment.`;
+    const description =
+      d.summary ||
+      d.description.replace(/[*[\]()]/g, "").slice(0, 200) ||
+      `A product by @${name}, sealed to the buyer after payment.`;
     const cover = d.covers.find((c) => c.type.startsWith("image/")) ?? d.thumbnail;
     const api = (process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000").replace(/\/+$/, "");
     const images = cover ? [{ url: `${api}/media/${cover.hash}`, alt: d.title }] : [];
@@ -48,7 +51,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       alternates: { canonical: `${pageUrl(name)}/p/${d.slug}` },
-      openGraph: { title, description, url: `${pageUrl(name)}/p/${d.slug}`, siteName: "Mizuhiki", type: "website", images },
+      openGraph: {
+        title,
+        description,
+        url: `${pageUrl(name)}/p/${d.slug}`,
+        siteName: "Mizuhiki",
+        type: "website",
+        images,
+      },
       twitter: { card: cover ? "summary_large_image" : "summary", title, description },
     };
   }

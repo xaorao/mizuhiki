@@ -818,7 +818,8 @@
   box-shadow: var(--drop);
   overflow: hidden;
   background:
-    radial-gradient(circle at 0 100%, transparent 18px, var(--sora-wave) 19px, var(--sora-wave) 22px, transparent 23px) 0 0 / 48px 24px,
+    radial-gradient(circle at 0 100%, transparent 18px, var(--sora-wave) 19px, var(--sora-wave) 22px, transparent 23px)
+      0 0 / 48px 24px,
     var(--sora);
   max-height: calc(100vh - 110px);
   display: grid;

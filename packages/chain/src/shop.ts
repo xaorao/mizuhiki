@@ -41,12 +41,21 @@ export class DeliveryRefused extends Error {
 }
 
 /** The amount of `token` sent to `seller` with memo `mzk:ord:<ref>` in one transaction, and when, read from chain. */
-export async function paidOnChain(txHash: string, seller: string, token: "QOR" | "fUSD", ref: string): Promise<{ sum: bigint; at: Date | null }> {
+export async function paidOnChain(
+  txHash: string,
+  seller: string,
+  token: "QOR" | "fUSD",
+  ref: string,
+): Promise<{ sum: bigint; at: Date | null }> {
   const t = await getTx(txHash.toUpperCase());
   if (!t || t.code !== 0 || t.tx?.body?.memo?.trim() !== `mzk:ord:${ref}`) return { sum: 0n, at: null };
   const denom = DENOMS[token].denom;
   let sum = 0n;
-  for (const m of (t.tx.body.messages ?? []) as { "@type"?: string; to_address?: string; amount?: { denom: string; amount: string }[] }[]) {
+  for (const m of (t.tx.body.messages ?? []) as {
+    "@type"?: string;
+    to_address?: string;
+    amount?: { denom: string; amount: string }[];
+  }[]) {
     if (m["@type"] !== "/cosmos.bank.v1beta1.MsgSend" || m.to_address !== seller) continue;
     for (const c of m.amount ?? []) if (c.denom === denom) sum += BigInt(c.amount);
   }
@@ -56,9 +65,15 @@ export async function paidOnChain(txHash: string, seller: string, token: "QOR" |
 /** How long an unpaid order may keep the price it was given (the server's hold). */
 export const PRICE_HOLD_MS = 60 * 60_000;
 
-export async function recipientOfOrder(req: OrderRequest, cardOf: (address: string) => Promise<RecipientCard>): Promise<SealRecipient> {
+export async function recipientOfOrder(
+  req: OrderRequest,
+  cardOf: (address: string) => Promise<RecipientCard>,
+): Promise<SealRecipient> {
   if (req.recipient.kind === "account") return resolveOwner(req.recipient.address, await cardOf(req.recipient.address));
-  return { mlkemPublicKey: hexToBytes(`0x${req.recipient.mlkem}`), x25519PublicKey: hexToBytes(`0x${req.recipient.x25519}`) };
+  return {
+    mlkemPublicKey: hexToBytes(`0x${req.recipient.mlkem}`),
+    x25519PublicKey: hexToBytes(`0x${req.recipient.x25519}`),
+  };
 }
 
 /**
@@ -83,21 +98,31 @@ export async function prepareDelivery(args: {
   const { order } = args;
   if (orderRef(order.request) !== order.ref)
     throw new DeliveryRefused("This order's details do not match its reference. Nothing was sealed.");
-  if (order.request.seller !== order.seller) throw new DeliveryRefused("This order is for another seller. Nothing was sealed.");
+  if (order.request.seller !== order.seller)
+    throw new DeliveryRefused("This order is for another seller. Nothing was sealed.");
   const token = order.request.token;
   const total = orderTotal(order.request, args.products, args.discount);
   if (!order.depositTx) throw new DeliveryRefused("No payment for this order is known yet.");
   const deposit = await paidOnChain(order.depositTx, order.seller, token, order.ref);
-  if (deposit.sum < total.dueNow) throw new DeliveryRefused("QoreChain does not show the full payment for this order. Nothing was sealed.");
+  if (deposit.sum < total.dueNow)
+    throw new DeliveryRefused("QoreChain does not show the full payment for this order. Nothing was sealed.");
   for (const p of args.products) {
     const now = args.current?.find((c) => c.id === p.id);
-    if (now && now.version > p.version && deposit.at && deposit.at.getTime() > Date.parse(now.updatedAt) + PRICE_HOLD_MS)
-      throw new DeliveryRefused(`This order was priced with an old version of “${p.title}” and paid long after it changed. Nothing was sealed.`);
+    if (
+      now &&
+      now.version > p.version &&
+      deposit.at &&
+      deposit.at.getTime() > Date.parse(now.updatedAt) + PRICE_HOLD_MS
+    )
+      throw new DeliveryRefused(
+        `This order was priced with an old version of “${p.title}” and paid long after it changed. Nothing was sealed.`,
+      );
   }
   if (total.dueLater > 0n) {
     if (!order.balanceTx) throw new DeliveryRefused("The rest of this commission has not been paid yet.");
     const rest = await paidOnChain(order.balanceTx, order.seller, token, balanceRef(order.ref));
-    if (rest.sum < total.dueLater) throw new DeliveryRefused("QoreChain does not show the rest of this commission. Nothing was sealed.");
+    if (rest.sum < total.dueLater)
+      throw new DeliveryRefused("QoreChain does not show the rest of this commission. Nothing was sealed.");
   }
   // Every product in the order, and every product inside a bundle.
   const wanted = new Set<string>();

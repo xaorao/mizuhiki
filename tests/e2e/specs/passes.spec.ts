@@ -33,7 +33,10 @@ const HOLDER = "mzk-e2e-passacct";
 async function call<T>(path: string, init: { method?: string; body?: unknown; token?: string } = {}): Promise<T> {
   const r = await fetch(`${API}${path}`, {
     method: init.method ?? "GET",
-    headers: { ...(init.body ? { "content-type": "application/json" } : {}), ...(init.token ? { authorization: `Bearer ${init.token}` } : {}) },
+    headers: {
+      ...(init.body ? { "content-type": "application/json" } : {}),
+      ...(init.token ? { authorization: `Bearer ${init.token}` } : {}),
+    },
     ...(init.body ? { body: JSON.stringify(init.body) } : {}),
   });
   if (!r.ok) throw new Error(`${path} ${r.status} ${await r.text()}`);
@@ -41,7 +44,12 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; to
 }
 const bytes = async (path: string) => new Uint8Array(await (await fetch(`${API}${path}`)).arrayBuffer());
 
-async function party(browser: Browser, problems: string[], tag: string, viewport = { width: 1440, height: 900 }): Promise<{ ctx: BrowserContext; page: Page }> {
+async function party(
+  browser: Browser,
+  problems: string[],
+  tag: string,
+  viewport = { width: 1440, height: 900 },
+): Promise<{ ctx: BrowserContext; page: Page }> {
   const ctx = await browser.newContext({ viewport });
   const page = await ctx.newPage();
   page.on("console", (m) => {
@@ -54,7 +62,8 @@ async function party(browser: Browser, problems: string[], tag: string, viewport
   });
   return { ctx, page };
 }
-const nav = (page: Page, label: string) => page.getByRole("link", { name: label }).filter({ visible: true }).first().click();
+const nav = (page: Page, label: string) =>
+  page.getByRole("link", { name: label }).filter({ visible: true }).first().click();
 
 /** The owner's published page, verified against their key on chain. */
 async function signedPage(name: string, owner: string): Promise<Manifest> {
@@ -71,7 +80,10 @@ interface PassRow {
   invite: { body: { scope: { kind: string } } };
 }
 
-test("passes: invite, accept, safety words, confirm, a visitor's message sealed to the pass, older items brought up to date, revoke", async ({ browser, problems }, info) => {
+test("passes: invite, accept, safety words, confirm, a visitor's message sealed to the pass, older items brought up to date, revoke", async ({
+  browser,
+  problems,
+}, info) => {
   test.skip(info.project.name !== "desktop", "four-party flow runs once, on desktop");
   test.setTimeout(900_000);
   const owner = await ensureOwner("e2e-pass-owner", OWNER);
@@ -81,14 +93,37 @@ test("passes: invite, accept, safety words, confirm, a visitor's message sealed 
   const holderToken = await apiToken(holder);
   // Each run starts with no live passes (a page lists at most 16 pass keys).
   for (const p of (await call<{ passes: PassRow[] }>("/owner/passes", { token: ownerToken })).passes)
-    if (["invited", "accepted", "active"].includes(p.status)) await call(`/passes/${p.id}/revoke`, { method: "POST", body: {}, token: ownerToken });
+    if (["invited", "accepted", "active"].includes(p.status))
+      await call(`/passes/${p.id}/revoke`, { method: "POST", body: {}, token: ownerToken });
 
   // An older message, sealed to the owner only, before any pass exists.
   const oldText = `Receipt for March rent ${Date.now()}`;
   {
-    const sealed = sealItem({ purpose: Purpose.message, readers: [recipientOf(owner.seal)], plaintext: utf8(JSON.stringify({ v: 1, kind: "message", text: oldText, contact: "", files: [], sentAt: new Date().toISOString() })), anonymous: true });
+    const sealed = sealItem({
+      purpose: Purpose.message,
+      readers: [recipientOf(owner.seal)],
+      plaintext: utf8(
+        JSON.stringify({
+          v: 1,
+          kind: "message",
+          text: oldText,
+          contact: "",
+          files: [],
+          sentAt: new Date().toISOString(),
+        }),
+      ),
+      anonymous: true,
+    });
     const cfg = await call<{ powBits: number }>("/drop/config");
-    await call(`/drop/${owner.address}`, { method: "POST", body: { envelope: toBase64Url(sealed.envelope), kind: "message", chunks: [], pow: solvePow(owner.address, sealed.hash, cfg.powBits) } });
+    await call(`/drop/${owner.address}`, {
+      method: "POST",
+      body: {
+        envelope: toBase64Url(sealed.envelope),
+        kind: "message",
+        chunks: [],
+        pow: solvePow(owner.address, sealed.hash, cfg.powBits),
+      },
+    });
   }
 
   // ---- owner: empty list, then New pass
@@ -121,8 +156,19 @@ test("passes: invite, accept, safety words, confirm, a visitor's message sealed 
   await sheet.getByRole("radio", { name: "Until the period ends" }).click();
   await sheet.getByLabel("Note for them (optional)").fill("Hi, here is this quarter for the VAT return.");
   const period = quarterPeriod(now.getUTCFullYear(), q);
-  const lastDay = new Date(Date.parse(period.until) - 1).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
-  await expect(sheet.getByText(new RegExp(`^Can read: messages and files, payment notes and invoices, .* to ${lastDay}\\. Cannot read anything else\\. Cannot change anything\\.`))).toBeVisible();
+  const lastDay = new Date(Date.parse(period.until) - 1).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  await expect(
+    sheet.getByText(
+      new RegExp(
+        `^Can read: messages and files, payment notes and invoices, .* to ${lastDay}\\. Cannot read anything else\\. Cannot change anything\\.`,
+      ),
+    ),
+  ).toBeVisible();
   await o.screenshot({ path: info.outputPath("01-new-pass.png") });
   await sheet.getByRole("button", { name: "Send invite" }).click();
   await o.waitForURL(/\/app\/passes\/pass_/);
@@ -156,18 +202,26 @@ test("passes: invite, accept, safety words, confirm, a visitor's message sealed 
   await h.screenshot({ path: info.outputPath("03-holder-invite.png"), fullPage: true });
   await h.getByRole("button", { name: "Accept" }).click();
   await expect(h.getByRole("heading", { name: "Your safety words" })).toBeVisible({ timeout: 30_000 });
-  await expect(h.getByRole("list", { name: "Your safety words" }).getByRole("listitem")).toHaveCount(6, { timeout: 30_000 });
-  const holderWords = (await h.getByRole("list", { name: "Your safety words" }).getByRole("listitem").allInnerTexts()).join(" ");
+  await expect(h.getByRole("list", { name: "Your safety words" }).getByRole("listitem")).toHaveCount(6, {
+    timeout: 30_000,
+  });
+  const holderWords = (
+    await h.getByRole("list", { name: "Your safety words" }).getByRole("listitem").allInnerTexts()
+  ).join(" ");
   expect(holderWords.split(" ")).toHaveLength(6);
 
   // ---- owner: live update to "Needs confirmation", words match, confirm
   await expect(o.getByRole("heading", { name: `Check it is really @${HOLDER}` })).toBeVisible({ timeout: 30_000 });
   await expect(o.getByRole("list", { name: "Safety words" }).getByRole("listitem")).toHaveCount(6, { timeout: 30_000 });
-  const ownerWords = (await o.getByRole("list", { name: "Safety words" }).getByRole("listitem").allInnerTexts()).join(" ");
+  const ownerWords = (await o.getByRole("list", { name: "Safety words" }).getByRole("listitem").allInnerTexts()).join(
+    " ",
+  );
   expect(ownerWords).toBe(holderWords);
   await o.screenshot({ path: info.outputPath("04-compare-words.png"), fullPage: true });
   await o.getByRole("button", { name: "They match, confirm" }).click();
-  await expect(o.getByText(`The pass is active. @${HOLDER} can read what it covers.`)).toBeVisible({ timeout: 240_000 });
+  await expect(o.getByText(`The pass is active. @${HOLDER} can read what it covers.`)).toBeVisible({
+    timeout: 240_000,
+  });
   await expect(o.getByRole("heading", { name: "Active" })).toBeVisible();
   const active = await call<PassRow>(`/passes/${passId}`, { token: ownerToken });
   expect(active.status).toBe("active");
@@ -176,11 +230,24 @@ test("passes: invite, accept, safety words, confirm, a visitor's message sealed 
   expect(keys).toHaveLength(1);
   expect(keys[0]?.kinds).toEqual(["messages", "payments", "invoices"]);
   // The holder's key opens the sealed pass key; it matches the key on the signed page.
-  const seed = (JSON.parse(fromUtf8(openItem({ purpose: Purpose.pass(passId), envelope: await bytes(`/blobs/${active.keyEnvelope ?? ""}`), keys: holder.seal, context: "key" }))) as { seed: string }).seed;
+  const seed = (
+    JSON.parse(
+      fromUtf8(
+        openItem({
+          purpose: Purpose.pass(passId),
+          envelope: await bytes(`/blobs/${active.keyEnvelope ?? ""}`),
+          keys: holder.seal,
+          context: "key",
+        }),
+      ),
+    ) as { seed: string }
+  ).seed;
   const passKeys = sealKeysFromSeed(fromBase64Url(seed));
   expect(Buffer.from(passKeys.x25519PublicKey).toString("hex")).toBe(keys[0]?.x25519);
   // The older message was brought up to date: one copy sealed to the holder.
-  const covered = await call<{ resealed: { source: string; envelope: string }[] }>(`/passes/${passId}/items`, { token: holderToken });
+  const covered = await call<{ resealed: { source: string; envelope: string }[] }>(`/passes/${passId}/items`, {
+    token: holderToken,
+  });
   expect(covered.resealed.length).toBeGreaterThanOrEqual(1);
 
   // ---- a visitor sends a message from the public page; their browser seals it to the pass key too
@@ -192,11 +259,21 @@ test("passes: invite, accept, safety words, confirm, a visitor's message sealed 
   await msg.getByRole("button", { name: "Next" }).click();
   await msg.getByRole("button", { name: "Seal and send" }).click();
   await expect(v.getByRole("dialog", { name: /^Sealed for/ })).toBeVisible({ timeout: 120_000 });
-  const items = await call<{ live: { envelope: string; kind: string }[] }>(`/passes/${passId}/items`, { token: holderToken });
+  const items = await call<{ live: { envelope: string; kind: string }[] }>(`/passes/${passId}/items`, {
+    token: holderToken,
+  });
   const texts: string[] = [];
   for (const it of items.live) {
     try {
-      texts.push((JSON.parse(fromUtf8(openItem({ purpose: Purpose.message, envelope: await bytes(`/blobs/${it.envelope}`), keys: passKeys }))) as { text: string }).text);
+      texts.push(
+        (
+          JSON.parse(
+            fromUtf8(
+              openItem({ purpose: Purpose.message, envelope: await bytes(`/blobs/${it.envelope}`), keys: passKeys }),
+            ),
+          ) as { text: string }
+        ).text,
+      );
     } catch {
       // sealed before the pass: covered by a copy instead
     }
@@ -216,10 +293,14 @@ test("passes: invite, accept, safety words, confirm, a visitor's message sealed 
 
   // ---- owner: bring up to date is idempotent; revoke with the honest words
   await o.getByRole("button", { name: "Bring up to date" }).click();
-  await expect(o.getByText(/^Up to date\. The pass covers \d+ items?\.$|sealed to @/)).toBeVisible({ timeout: 120_000 });
+  await expect(o.getByText(/^Up to date\. The pass covers \d+ items?\.$|sealed to @/)).toBeVisible({
+    timeout: 120_000,
+  });
   await o.getByRole("button", { name: "Revoke" }).click();
   const revoke = o.getByRole("dialog", { name: `Revoke @${HOLDER}'s pass?` });
-  await expect(revoke.getByText(`@${HOLDER} keeps anything already opened. Future items are not sealed to them.`)).toBeVisible();
+  await expect(
+    revoke.getByText(`@${HOLDER} keeps anything already opened. Future items are not sealed to them.`),
+  ).toBeVisible();
   await revoke.getByRole("button", { name: "Revoke" }).click();
   await expect(o.getByRole("heading", { name: "Revoked" })).toBeVisible({ timeout: 60_000 });
   expect((await call<PassRow>(`/passes/${passId}`, { token: ownerToken })).status).toBe("revoked");
@@ -227,7 +308,9 @@ test("passes: invite, accept, safety words, confirm, a visitor's message sealed 
   await o.screenshot({ path: info.outputPath("06-revoked.png"), fullPage: true });
 
   // ---- accountant: told plainly, keeps what was covered
-  await expect(h.getByText(`@${OWNER} revoked this pass. You keep what it covered; nothing new arrives.`)).toBeVisible({ timeout: 60_000 });
+  await expect(h.getByText(`@${OWNER} revoked this pass. You keep what it covered; nothing new arrives.`)).toBeVisible({
+    timeout: 60_000,
+  });
   await nav(o, "Passes");
   await expect(o.getByRole("link", { name: new RegExp(`@${HOLDER}`) }).first()).toBeVisible();
   await o.screenshot({ path: info.outputPath("07-list.png"), fullPage: true });
@@ -243,7 +326,9 @@ test("passes on a phone: list, new pass sheet and one pass fit", async ({ page }
   await page.getByRole("button", { name: "Unlock" }).click();
   await expect(page.getByRole("heading", { name: "Passes", level: 1 })).toBeVisible();
   await expect(page.getByRole("tab", { name: /Shared by me/ })).toBeVisible();
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
   expect(overflow).toBeLessThanOrEqual(0);
   await page.screenshot({ path: info.outputPath("phone-list.png"), fullPage: true });
   await page.getByRole("button", { name: "New pass" }).first().click();

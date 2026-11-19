@@ -64,7 +64,15 @@ export function ContentTab({ draft, update, tokened }: EditorProps) {
         toast.show(`${f.name} is larger than 2 GB. Nothing left your device.`, { tone: "error" });
         continue;
       }
-      const u: Upload = { id: newId("up"), pageId: page.id, name: f.name, type: f.type, done: 0, total: f.size, ctrl: new AbortController() };
+      const u: Upload = {
+        id: newId("up"),
+        pageId: page.id,
+        name: f.name,
+        type: f.type,
+        done: 0,
+        total: f.size,
+        ctrl: new AbortController(),
+      };
       setUploads((x) => [...x, u]);
       const patchU = (p: Partial<Upload>) => setUploads((x) => x.map((y) => (y.id === u.id ? { ...y, ...p } : y)));
       try {
@@ -108,13 +116,22 @@ export function ContentTab({ draft, update, tokened }: EditorProps) {
   };
 
   const pageUploads = uploads.filter((u) => u.pageId === page.id);
-  const empty = page.blocks.length === 0 || (page.blocks.length === 1 && page.blocks[0]?.t === "text" && !page.blocks[0].text.trim());
+  const empty =
+    page.blocks.length === 0 ||
+    (page.blocks.length === 1 && page.blocks[0]?.t === "text" && !page.blocks[0].text.trim());
 
   return (
     <div className={s.tabStack}>
       <div className={s.pageTabs} role="tablist" aria-label="Content pages">
         {pages.map((p, i) => (
-          <button key={p.id} type="button" role="tab" aria-selected={i === at} className={s.pageTab} onClick={() => setAt(i)}>
+          <button
+            key={p.id}
+            type="button"
+            role="tab"
+            aria-selected={i === at}
+            className={s.pageTab}
+            onClick={() => setAt(i)}
+          >
             {p.title.trim() || `Page ${i + 1}`}
           </button>
         ))}
@@ -153,18 +170,32 @@ export function ContentTab({ draft, update, tokened }: EditorProps) {
             value={page.title}
             maxLength={120}
             placeholder={pages.length > 1 ? `Page ${at + 1} title` : "Title (optional)"}
-            onChange={(e) => setPages((ps) => ps.map((p) => (p.id === page.id ? { ...p, title: e.target.value } : p)), `pt-${page.id}`)}
+            onChange={(e) =>
+              setPages((ps) => ps.map((p) => (p.id === page.id ? { ...p, title: e.target.value } : p)), `pt-${page.id}`)
+            }
           />
           {pages.length > 1 ? (
             <div className={s.pageTools}>
-              <IconButton icon="back" label="Move page earlier" disabled={at === 0} onClick={() => (setPages((ps) => move(ps, at, at - 1)), setAt(at - 1))} />
-              <IconButton icon="arrow" label="Move page later" disabled={at === pages.length - 1} onClick={() => (setPages((ps) => move(ps, at, at + 1)), setAt(at + 1))} />
+              <IconButton
+                icon="back"
+                label="Move page earlier"
+                disabled={at === 0}
+                onClick={() => (setPages((ps) => move(ps, at, at - 1)), setAt(at - 1))}
+              />
+              <IconButton
+                icon="arrow"
+                label="Move page later"
+                disabled={at === pages.length - 1}
+                onClick={() => (setPages((ps) => move(ps, at, at + 1)), setAt(at + 1))}
+              />
               <IconButton icon="trash" label="Delete this page" onClick={() => setKillPage(at)} />
             </div>
           ) : null}
         </div>
 
-        {empty && pageUploads.length === 0 ? <p className={s.contentHint}>Enter the content you want to sell. Upload your files or start typing.</p> : null}
+        {empty && pageUploads.length === 0 ? (
+          <p className={s.contentHint}>Enter the content you want to sell. Upload your files or start typing.</p>
+        ) : null}
 
         <ol className={s.blocks}>
           {page.blocks.map((b, i) => (
@@ -196,16 +227,39 @@ export function ContentTab({ draft, update, tokened }: EditorProps) {
                 <Icon name="grip" size={18} />
               </span>
               <div className={s.blockBody}>
-                <BlockEditor block={b} onChange={(nb, key) => setBlocks(page.id, (bs) => bs.map((x, j) => (j === i ? nb : x)), key && `${key}-${page.id}-${i}`)} />
+                <BlockEditor
+                  block={b}
+                  onChange={(nb, key) =>
+                    setBlocks(page.id, (bs) => bs.map((x, j) => (j === i ? nb : x)), key && `${key}-${page.id}-${i}`)
+                  }
+                />
               </div>
               <div className={s.blockTools}>
-                <IconButton icon="chev" size="sm" className={s.rotUp} label="Move up" disabled={i === 0} onClick={() => setBlocks(page.id, (bs) => move(bs, i, i - 1))} />
-                <IconButton icon="chev" size="sm" className={s.rotDown} label="Move down" disabled={i === page.blocks.length - 1} onClick={() => setBlocks(page.id, (bs) => move(bs, i, i + 1))} />
+                <IconButton
+                  icon="chev"
+                  size="sm"
+                  className={s.rotUp}
+                  label="Move up"
+                  disabled={i === 0}
+                  onClick={() => setBlocks(page.id, (bs) => move(bs, i, i - 1))}
+                />
+                <IconButton
+                  icon="chev"
+                  size="sm"
+                  className={s.rotDown}
+                  label="Move down"
+                  disabled={i === page.blocks.length - 1}
+                  onClick={() => setBlocks(page.id, (bs) => move(bs, i, i + 1))}
+                />
                 <IconButton
                   icon="trash"
                   size="sm"
                   label="Remove"
-                  onClick={() => setBlocks(page.id, (bs) => (bs.length === 1 ? [{ t: "text", text: "" }] : bs.filter((_, j) => j !== i)))}
+                  onClick={() =>
+                    setBlocks(page.id, (bs) =>
+                      bs.length === 1 ? [{ t: "text", text: "" }] : bs.filter((_, j) => j !== i),
+                    )
+                  }
                 />
               </div>
             </li>
@@ -214,7 +268,9 @@ export function ContentTab({ draft, update, tokened }: EditorProps) {
             <li key={u.id} className={s.blockRow}>
               <span className={s.grip} aria-hidden="true" />
               <div className={[s.fileCard, u.error ? s.fileBad : ""].join(" ")}>
-                <span className={s.fileIcon}>{u.error ? <Icon name="alert" size={20} /> : <span className={s.spinner} aria-hidden="true" />}</span>
+                <span className={s.fileIcon}>
+                  {u.error ? <Icon name="alert" size={20} /> : <span className={s.spinner} aria-hidden="true" />}
+                </span>
                 <span className={s.fileText}>
                   <b>{u.name}</b>
                   <small aria-live="polite">{u.error ?? uploadLine(u.name, u.type, u.done, u.total)}</small>
@@ -248,7 +304,12 @@ export function ContentTab({ draft, update, tokened }: EditorProps) {
           <Button size="sm" variant="line" icon="pen" onClick={() => addBlock({ t: "heading", text: "" })}>
             Heading
           </Button>
-          <Button size="sm" variant="line" icon="link" onClick={() => addBlock({ t: "link", url: "https://", label: "" })}>
+          <Button
+            size="sm"
+            variant="line"
+            icon="link"
+            onClick={() => addBlock({ t: "link", url: "https://", label: "" })}
+          >
             Link
           </Button>
           <small className={s.muted}>Or drop files on this page.</small>
@@ -267,7 +328,8 @@ export function ContentTab({ draft, update, tokened }: EditorProps) {
       </section>
 
       <LockLine>
-        Everything on these pages, files included, is sealed with this product&rsquo;s key before it leaves your device. Only people who bought it get the key; Mizuhiki stores ciphertext and file sizes, never the contents.
+        Everything on these pages, files included, is sealed with this product&rsquo;s key before it leaves your device.
+        Only people who bought it get the key; Mizuhiki stores ciphertext and file sizes, never the contents.
       </LockLine>
 
       <Confirm
@@ -280,16 +342,27 @@ export function ContentTab({ draft, update, tokened }: EditorProps) {
           setPages((ps) => ps.filter((_, j) => j !== i));
           setAt(Math.max(0, i - 1));
           setKillPage(null);
-          toast.show("Page deleted", { action: { label: "Undo", onClick: () => document.dispatchEvent(new CustomEvent("mzk-shop-undo")) } });
+          toast.show("Page deleted", {
+            action: { label: "Undo", onClick: () => document.dispatchEvent(new CustomEvent("mzk-shop-undo")) },
+          });
         }}
       >
-        <p>Its text, links and files are removed from what buyers get once you publish. People who already bought keep the copy they have.</p>
+        <p>
+          Its text, links and files are removed from what buyers get once you publish. People who already bought keep
+          the copy they have.
+        </p>
       </Confirm>
     </div>
   );
 }
 
-function BlockEditor({ block, onChange }: { block: ContentBlock; onChange: (b: ContentBlock, coalesce?: string) => void }) {
+function BlockEditor({
+  block,
+  onChange,
+}: {
+  block: ContentBlock;
+  onChange: (b: ContentBlock, coalesce?: string) => void;
+}) {
   if (block.t === "text")
     return (
       <TextArea
@@ -304,11 +377,27 @@ function BlockEditor({ block, onChange }: { block: ContentBlock; onChange: (b: C
       />
     );
   if (block.t === "heading")
-    return <TextField label="Heading" hideLabel className={s.blockHeading} value={block.text} maxLength={200} placeholder="Heading" onChange={(e) => onChange({ t: "heading", text: e.target.value }, "h")} />;
+    return (
+      <TextField
+        label="Heading"
+        hideLabel
+        className={s.blockHeading}
+        value={block.text}
+        maxLength={200}
+        placeholder="Heading"
+        onChange={(e) => onChange({ t: "heading", text: e.target.value }, "h")}
+      />
+    );
   if (block.t === "link")
     return (
       <div className={s.linkBlock}>
-        <TextField label="Link text" value={block.label} maxLength={120} placeholder="Watch the walkthrough" onChange={(e) => onChange({ ...block, label: e.target.value }, "ll")} />
+        <TextField
+          label="Link text"
+          value={block.label}
+          maxLength={120}
+          placeholder="Watch the walkthrough"
+          onChange={(e) => onChange({ ...block, label: e.target.value }, "ll")}
+        />
         <TextField
           label="Address"
           value={block.url}
@@ -316,7 +405,9 @@ function BlockEditor({ block, onChange }: { block: ContentBlock; onChange: (b: C
           spellCheck={false}
           autoCapitalize="none"
           onChange={(e) => onChange({ ...block, url: e.target.value.trim() }, "lu")}
-          error={/^https?:\/\/[^\s/]+\.[^\s]+/.test(block.url) ? undefined : "Use a full address, starting with https://"}
+          error={
+            /^https?:\/\/[^\s/]+\.[^\s]+/.test(block.url) ? undefined : "Use a full address, starting with https://"
+          }
           hint="Buyers see this link only inside their sealed copy."
         />
       </div>

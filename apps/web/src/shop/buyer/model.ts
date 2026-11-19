@@ -3,15 +3,19 @@
  * renderer's tokens, prices for people, the cart, the call week, and the
  * after-payment steps. No browser APIs here, so all of it is unit-tested.
  */
-import { formatAmount, orderTotal, type Discount, type OrderRequest, type ProductDef, type ShopToken } from "@mizuhiki/core";
+import {
+  formatAmount,
+  orderTotal,
+  type Discount,
+  type OrderRequest,
+  type ProductDef,
+  type ShopToken,
+} from "@mizuhiki/core";
 
 // ---- description: **bold**, *italic*, [link](https://…), paragraphs ---------------------------
 
 export type Inline =
-  | { t: "text"; v: string }
-  | { t: "b"; c: Inline[] }
-  | { t: "i"; c: Inline[] }
-  | { t: "a"; href: string; c: Inline[] };
+  { t: "text"; v: string } | { t: "b"; c: Inline[] } | { t: "i"; c: Inline[] } | { t: "a"; href: string; c: Inline[] };
 
 const INLINE = /\*\*([^*\n]+?)\*\*|\*([^*\s\n][^*\n]*?)\*|\[([^\]\n]{1,200})\]\((https:\/\/[^\s)]{1,2000})\)/g;
 
@@ -63,7 +67,8 @@ export function paragraphs(s: string): string[][] {
 // ---- prices ----------------------------------------------------------------------------------
 
 /** "12.5 fUSD" without the token, for places that show the token once. */
-export const amountOnly = (units: bigint | string, token: ShopToken) => formatAmount(units, token).replace(` ${token}`, "");
+export const amountOnly = (units: bigint | string, token: ShopToken) =>
+  formatAmount(units, token).replace(` ${token}`, "");
 
 /** The lowest price a buyer can pay for one item (base plus the cheapest version, or the pay-what-you-want minimum). */
 export function fromPrice(def: ProductDef): bigint {
@@ -179,7 +184,8 @@ export function addToCart(
   if (cart && cart.seller !== base.seller) return { ok: false, reason: "seller" };
   if (cart && cart.lines.length && cart.token !== base.token) return { ok: false, reason: "token" };
   const lines = [...(cart?.lines ?? [])];
-  const same = (l: CartLine) => l.productId === line.productId && l.versionId === line.versionId && (line.slot === null || l.slot === line.slot);
+  const same = (l: CartLine) =>
+    l.productId === line.productId && l.versionId === line.versionId && (line.slot === null || l.slot === line.slot);
   const at = replace !== undefined && lines[replace] ? replace : lines.findIndex(same);
   if (at >= 0) lines[at] = line;
   else {
@@ -281,7 +287,10 @@ export type StepState = "waiting" | "running" | "done" | "failed";
  * preparing your copy, ready. `sentTx` is a transaction this device sent and
  * the server has not seen yet.
  */
-export function afterPaySteps(o: { status: OrderStatusLike; depositTx: string | null; delivery: string | null }, sentTx: string | null): StepState[] {
+export function afterPaySteps(
+  o: { status: OrderStatusLike; depositTx: string | null; delivery: string | null },
+  sentTx: string | null,
+): StepState[] {
   if (o.status === "expired") return ["failed", "waiting", "waiting", "waiting"];
   if (o.status === "delivered" || (o.status === "refunded" && o.delivery)) return ["done", "done", "done", "done"];
   if (o.status === "paid" || o.status === "refunded") return ["done", "done", "running", "waiting"];

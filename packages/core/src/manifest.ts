@@ -61,7 +61,12 @@ export const BlockSchema = z.discriminatedUnion("type", [
   z.object({ ...base, type: z.literal("product"), productId: id }),
   z.object({ ...base, type: z.literal("shopSection"), productIds: z.array(id).max(48) }),
   /** A room invite on the page: the join path with its link key (anyone who sees the page can ask to join). */
-  z.object({ ...base, type: z.literal("room"), roomId: id, invite: z.string().regex(/^\/join\/[a-z0-9]{12,32}#k=[A-Za-z0-9_-]{43}$/) }),
+  z.object({
+    ...base,
+    type: z.literal("room"),
+    roomId: id,
+    invite: z.string().regex(/^\/join\/[a-z0-9]{12,32}#k=[A-Za-z0-9_-]{43}$/),
+  }),
   z.object({ ...base, type: z.literal("capsule") }),
   z.object({ ...base, type: z.literal("social") }),
 ]);
@@ -133,11 +138,17 @@ export const ManifestSchema = z.object({
         mlkem: z.string().regex(/^[0-9a-f]+$/),
         x25519: z.string().regex(/^[0-9a-f]{64}$/),
         /** The pass this key belongs to (spec 5.12). */
-        passId: z.string().regex(/^[A-Za-z0-9_-]{6,40}$/).optional(),
+        passId: z
+          .string()
+          .regex(/^[A-Za-z0-9_-]{6,40}$/)
+          .optional(),
         /** Items dated in [from, until) are sealed to this key too; kinds limit which items. */
         from: z.iso.datetime().optional(),
         until: z.iso.datetime().optional(),
-        kinds: z.array(z.enum(["messages", "payments", "forms", "invoices"])).max(4).optional(),
+        kinds: z
+          .array(z.enum(["messages", "payments", "forms", "invoices"]))
+          .max(4)
+          .optional(),
       }),
     )
     .max(16)

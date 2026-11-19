@@ -23,7 +23,11 @@ export interface RoomOnChain {
 }
 
 export async function readRoom(roomId: Hex): Promise<RoomOnChain> {
-  const [owner, epoch, membershipHash, distributionHash, closed] = await publicClient().readContract({ ...reg, functionName: "rooms", args: [roomId] });
+  const [owner, epoch, membershipHash, distributionHash, closed] = await publicClient().readContract({
+    ...reg,
+    functionName: "rooms",
+    args: [roomId],
+  });
   return { owner: /^0x0{40}$/i.test(owner) ? null : owner, epoch, membershipHash, distributionHash, closed };
 }
 
@@ -31,10 +35,26 @@ export async function roleOnChain(roomId: Hex, member: Address): Promise<number>
   return await publicClient().readContract({ ...reg, functionName: "roleOf", args: [roomId, member] });
 }
 
-export async function createRoomOnChain(owner: Owner, roomId: Hex, membershipHash: Hex, distributionHash: Hex): Promise<Hex> {
+export async function createRoomOnChain(
+  owner: Owner,
+  roomId: Hex,
+  membershipHash: Hex,
+  distributionHash: Hex,
+): Promise<Hex> {
   await ensureWindow(owner, 1);
-  const sig = await signAction(owner, CONTRACTS.registry, mizuhikiRegistryAbi, Action.createRoom(roomId, membershipHash, distributionHash));
-  return (await writeContract(owner, { ...reg, functionName: "createRoom", args: [owner.evm, roomId, membershipHash, distributionHash, sig] })).txHash;
+  const sig = await signAction(
+    owner,
+    CONTRACTS.registry,
+    mizuhikiRegistryAbi,
+    Action.createRoom(roomId, membershipHash, distributionHash),
+  );
+  return (
+    await writeContract(owner, {
+      ...reg,
+      functionName: "createRoom",
+      args: [owner.evm, roomId, membershipHash, distributionHash, sig],
+    })
+  ).txHash;
 }
 
 export async function rotateRoomOnChain(
@@ -47,20 +67,34 @@ export async function rotateRoomOnChain(
 ): Promise<Hex> {
   await ensureWindow(actor, 1);
   const r = bytes32Text(reason.slice(0, 32));
-  const sig = await signAction(actor, CONTRACTS.registry, mizuhikiRegistryAbi, Action.rotateRoom(roomId, newEpoch, membershipHash, distributionHash, r));
-  return (await writeContract(actor, { ...reg, functionName: "rotateRoom", args: [actor.evm, roomId, newEpoch, membershipHash, distributionHash, r, sig] })).txHash;
+  const sig = await signAction(
+    actor,
+    CONTRACTS.registry,
+    mizuhikiRegistryAbi,
+    Action.rotateRoom(roomId, newEpoch, membershipHash, distributionHash, r),
+  );
+  return (
+    await writeContract(actor, {
+      ...reg,
+      functionName: "rotateRoom",
+      args: [actor.evm, roomId, newEpoch, membershipHash, distributionHash, r, sig],
+    })
+  ).txHash;
 }
 
 export async function setRoleOnChain(actor: Owner, roomId: Hex, member: Address, role: number): Promise<Hex> {
   await ensureWindow(actor, 1);
   const sig = await signAction(actor, CONTRACTS.registry, mizuhikiRegistryAbi, Action.setRole(roomId, member, role));
-  return (await writeContract(actor, { ...reg, functionName: "setRole", args: [actor.evm, roomId, member, role, sig] })).txHash;
+  return (await writeContract(actor, { ...reg, functionName: "setRole", args: [actor.evm, roomId, member, role, sig] }))
+    .txHash;
 }
 
 export async function transferRoomOnChain(owner: Owner, roomId: Hex, newOwner: Address): Promise<Hex> {
   await ensureWindow(owner, 1);
   const sig = await signAction(owner, CONTRACTS.registry, mizuhikiRegistryAbi, Action.transferRoom(roomId, newOwner));
-  return (await writeContract(owner, { ...reg, functionName: "transferRoom", args: [owner.evm, roomId, newOwner, sig] })).txHash;
+  return (
+    await writeContract(owner, { ...reg, functionName: "transferRoom", args: [owner.evm, roomId, newOwner, sig] })
+  ).txHash;
 }
 
 export async function closeRoomOnChain(owner: Owner, roomId: Hex): Promise<Hex> {

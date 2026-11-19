@@ -47,21 +47,39 @@ export function ProductTab(props: EditorProps) {
               maxLength={48}
               spellCheck={false}
               autoCapitalize="none"
-              onChange={(e) => patch({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 48) }, "slug")}
+              onChange={(e) =>
+                patch(
+                  {
+                    slug: e.target.value
+                      .toLowerCase()
+                      .replace(/[^a-z0-9-]/g, "-")
+                      .slice(0, 48),
+                  },
+                  "slug",
+                )
+              }
               onBlur={() => {
                 const clean = slugify(def.slug);
                 if (clean && clean !== def.slug) patch({ slug: clean });
               }}
               error={slugBad ?? slugError ?? undefined}
-              hint={props.row.record && props.row.record.body.slug !== def.slug ? "Changing the link breaks the old one once you publish." : undefined}
+              hint={
+                props.row.record && props.row.record.body.slug !== def.slug
+                  ? "Changing the link breaks the old one once you publish."
+                  : undefined
+              }
             />
             <div className={s.linkLine}>
               <CopyValue
                 value={link}
                 label="product link"
-                onCopied={(ok) => toast.show(ok ? "Link copied" : "Copy is not allowed here", ok ? {} : { tone: "error" })}
+                onCopied={(ok) =>
+                  toast.show(ok ? "Link copied" : "Copy is not allowed here", ok ? {} : { tone: "error" })
+                }
               />
-              {!props.row.record || props.row.status !== "published" ? <small className={s.muted}>Live once you publish.</small> : null}
+              {!props.row.record || props.row.status !== "published" ? (
+                <small className={s.muted}>Live once you publish.</small>
+              ) : null}
             </div>
           </div>
         </div>
@@ -155,22 +173,49 @@ function Details({ def, patch }: { def: ProductDef; patch: EditorProps["patch"] 
     <div className={s.stack}>
       <div className={s.subHead}>
         <b>What&rsquo;s included</b>
-        <small>Call out the features that help people decide to buy, like &ldquo;Files: 22&rdquo; or &ldquo;Updates: Lifetime&rdquo;.</small>
+        <small>
+          Call out the features that help people decide to buy, like &ldquo;Files: 22&rdquo; or &ldquo;Updates:
+          Lifetime&rdquo;.
+        </small>
       </div>
       {def.details.length ? (
         <ul className={s.kvList}>
           {def.details.map((d, i) => (
             <li key={i} className={s.kvRow}>
-              <TextField label="Detail" hideLabel placeholder="Attribute" value={d.k} maxLength={40} onChange={(e) => set(i, { k: e.target.value })} error={d.k.trim() ? undefined : "Name it"} />
-              <TextField label="Value" hideLabel placeholder="Value" value={d.v} maxLength={80} onChange={(e) => set(i, { v: e.target.value })} />
-              <IconButton icon="trash" label={`Remove ${d.k || "detail"}`} onClick={() => patch({ details: def.details.filter((_, j) => j !== i) })} />
+              <TextField
+                label="Detail"
+                hideLabel
+                placeholder="Attribute"
+                value={d.k}
+                maxLength={40}
+                onChange={(e) => set(i, { k: e.target.value })}
+                error={d.k.trim() ? undefined : "Name it"}
+              />
+              <TextField
+                label="Value"
+                hideLabel
+                placeholder="Value"
+                value={d.v}
+                maxLength={80}
+                onChange={(e) => set(i, { v: e.target.value })}
+              />
+              <IconButton
+                icon="trash"
+                label={`Remove ${d.k || "detail"}`}
+                onClick={() => patch({ details: def.details.filter((_, j) => j !== i) })}
+              />
             </li>
           ))}
         </ul>
       ) : null}
       {def.details.length < 12 ? (
         <div>
-          <Button size="sm" variant="line" icon="plus" onClick={() => patch({ details: [...def.details, { k: "", v: "" }] })}>
+          <Button
+            size="sm"
+            variant="line"
+            icon="plus"
+            onClick={() => patch({ details: [...def.details, { k: "", v: "" }] })}
+          >
             Add detail
           </Button>
         </div>
@@ -224,15 +269,26 @@ function Images({ draft, patch, tokened }: EditorProps) {
           continue;
         }
         const dim = await sizeOf(f);
-        if (dim && where === "cover" && (dim.w < 1280 || dim.h < 720)) warnings.push(`${f.name} is ${dim.w}×${dim.h}; it may look soft. At least 1280×720 looks sharp.`);
+        if (dim && where === "cover" && (dim.w < 1280 || dim.h < 720))
+          warnings.push(`${f.name} is ${dim.w}×${dim.h}; it may look soft. At least 1280×720 looks sharp.`);
         if (dim && where === "thumb" && (dim.w < 600 || dim.h < 600 || Math.abs(dim.w - dim.h) > 2))
-          warnings.push(`${f.name} is ${dim.w}×${dim.h}. A square of at least 600×600 looks best; it is cropped to a square.`);
+          warnings.push(
+            `${f.name} is ${dim.w}×${dim.h}. A square of at least 600×600 looks best; it is cropped to a square.`,
+          );
         added.push(await uploadImage(await tokened(), f));
       }
-      if (list.length > room) warnings.push(where === "cover" ? "Eight covers is the most; the rest were skipped." : "One thumbnail; the first image was used.");
+      if (list.length > room)
+        warnings.push(
+          where === "cover"
+            ? "Eight covers is the most; the rest were skipped."
+            : "One thumbnail; the first image was used.",
+        );
       if (where === "cover" && added.length) patch({ covers: [...def.covers, ...added].slice(0, 8) });
       if (where === "thumb" && added[0]) patch({ thumbnail: added[0] });
-      if (added.length) toast.show(where === "cover" ? (added.length === 1 ? "Cover added" : `${added.length} covers added`) : "Thumbnail added");
+      if (added.length)
+        toast.show(
+          where === "cover" ? (added.length === 1 ? "Cover added" : `${added.length} covers added`) : "Thumbnail added",
+        );
     } catch (e) {
       warnings.push(e instanceof ApiFailure ? e.message : "The image did not upload. Nothing was added.");
     } finally {
@@ -246,7 +302,9 @@ function Images({ draft, patch, tokened }: EditorProps) {
       <div className={s.stack}>
         <div className={s.subHead}>
           <b>Cover</b>
-          <small>Horizontal images, at least 1280×720. Several make a carousel; the first one leads. Images are public.</small>
+          <small>
+            Horizontal images, at least 1280×720. Several make a carousel; the first one leads. Images are public.
+          </small>
         </div>
         <ul className={s.covers}>
           {def.covers.map((c, i) => (
@@ -254,22 +312,49 @@ function Images({ draft, patch, tokened }: EditorProps) {
               <img src={mediaUrl(c.hash)} alt={`Cover ${i + 1}`} />
               {i === 0 ? <span className={s.coverBadge}>First</span> : null}
               <div className={s.coverTools}>
-                <IconButton icon="back" label="Move earlier" disabled={i === 0} onClick={() => patch({ covers: move(def.covers, i, i - 1) })} />
-                <IconButton icon="arrow" label="Move later" disabled={i === def.covers.length - 1} onClick={() => patch({ covers: move(def.covers, i, i + 1) })} />
-                <IconButton icon="trash" label={`Remove cover ${i + 1}`} onClick={() => patch({ covers: def.covers.filter((_, j) => j !== i) })} />
+                <IconButton
+                  icon="back"
+                  label="Move earlier"
+                  disabled={i === 0}
+                  onClick={() => patch({ covers: move(def.covers, i, i - 1) })}
+                />
+                <IconButton
+                  icon="arrow"
+                  label="Move later"
+                  disabled={i === def.covers.length - 1}
+                  onClick={() => patch({ covers: move(def.covers, i, i + 1) })}
+                />
+                <IconButton
+                  icon="trash"
+                  label={`Remove cover ${i + 1}`}
+                  onClick={() => patch({ covers: def.covers.filter((_, j) => j !== i) })}
+                />
               </div>
             </li>
           ))}
           {def.covers.length < 8 ? (
             <li>
-              <button type="button" className={s.addImage} onClick={() => coverIn.current?.click()} disabled={busy === "cover"} aria-busy={busy === "cover"}>
+              <button
+                type="button"
+                className={s.addImage}
+                onClick={() => coverIn.current?.click()}
+                disabled={busy === "cover"}
+                aria-busy={busy === "cover"}
+              >
                 {busy === "cover" ? <span className={s.spinner} aria-hidden="true" /> : <Icon name="image" size={26} />}
                 <span>{busy === "cover" ? "Uploading…" : "Upload images"}</span>
               </button>
             </li>
           ) : null}
         </ul>
-        <input ref={coverIn} type="file" accept={IMAGE_TYPES.join(",")} multiple hidden onChange={(e) => void upload(e.target.files, "cover").then(() => (e.target.value = ""))} />
+        <input
+          ref={coverIn}
+          type="file"
+          accept={IMAGE_TYPES.join(",")}
+          multiple
+          hidden
+          onChange={(e) => void upload(e.target.files, "cover").then(() => (e.target.value = ""))}
+        />
         {note.cover ? <p className={s.warn}>{note.cover}</p> : null}
 
         <div className={s.thumbRow}>
@@ -285,10 +370,19 @@ function Images({ draft, patch, tokened }: EditorProps) {
           <div className={s.stack}>
             <div className={s.subHead}>
               <b>Thumbnail</b>
-              <small>Shows in your Shop section and the buyer&rsquo;s library. Square, at least 600×600. Without one, the first cover is cropped to fit.</small>
+              <small>
+                Shows in your Shop section and the buyer&rsquo;s library. Square, at least 600×600. Without one, the
+                first cover is cropped to fit.
+              </small>
             </div>
             <div className={s.rowActions}>
-              <Button size="sm" variant="line" icon="upload" busy={busy === "thumb"} onClick={() => thumbIn.current?.click()}>
+              <Button
+                size="sm"
+                variant="line"
+                icon="upload"
+                busy={busy === "thumb"}
+                onClick={() => thumbIn.current?.click()}
+              >
                 {def.thumbnail ? "Replace" : "Upload"}
               </Button>
               {def.thumbnail ? (
@@ -299,7 +393,13 @@ function Images({ draft, patch, tokened }: EditorProps) {
             </div>
           </div>
         </div>
-        <input ref={thumbIn} type="file" accept={IMAGE_TYPES.join(",")} hidden onChange={(e) => void upload(e.target.files, "thumb").then(() => (e.target.value = ""))} />
+        <input
+          ref={thumbIn}
+          type="file"
+          accept={IMAGE_TYPES.join(",")}
+          hidden
+          onChange={(e) => void upload(e.target.files, "thumb").then(() => (e.target.value = ""))}
+        />
         {note.thumb ? <p className={s.warn}>{note.thumb}</p> : null}
       </div>
     </Panel>

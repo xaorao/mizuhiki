@@ -80,7 +80,9 @@ export function EditInfoSheet({ room, open, onClose }: { room: RoomState; open: 
       let facts = info.photo ?? undefined;
       if (photo) {
         setBusy("Sealing the photo on this device…");
-        facts = await sealRoomFile(a, photo, (p) => setBusy(`Sealing the photo on this device… ${Math.round(p * 100)}%`));
+        facts = await sealRoomFile(a, photo, (p) =>
+          setBusy(`Sealing the photo on this device… ${Math.round(p * 100)}%`),
+        );
       }
       setBusy("Sending the new info to the room…");
       await saveInfo(a, roomId, { name, description, type, photo: facts });
@@ -98,9 +100,19 @@ export function EditInfoSheet({ room, open, onClose }: { room: RoomState; open: 
     <Sheet open={open} onClose={() => (busy ? undefined : onClose())} title="Edit room info" dismissable={!busy}>
       <div className={s.sheetBody}>
         <div className={s.photoPick}>
-          {preview ? <Avatar name={name || "Room"} src={preview} size={72} tone={toneOf(roomId)} /> : <RoomAvatar name={name} photo={info.photo} roomId={roomId} size={72} />}
+          {preview ? (
+            <Avatar name={name || "Room"} src={preview} size={72} tone={toneOf(roomId)} />
+          ) : (
+            <RoomAvatar name={name} photo={info.photo} roomId={roomId} size={72} />
+          )}
           <div style={{ display: "grid", gap: 6, justifyItems: "start" }}>
-            <input ref={fileRef} type="file" accept="image/*" aria-label="Room photo" onChange={(e) => pick(e.target.files?.[0])} />
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              aria-label="Room photo"
+              onChange={(e) => pick(e.target.files?.[0])}
+            />
             <Button variant="line" size="sm" icon="image" onClick={() => fileRef.current?.click()} disabled={!!busy}>
               {info.photo || photo ? "Change photo" : "Add a photo"}
             </Button>
@@ -135,7 +147,13 @@ export function EditInfoSheet({ room, open, onClose }: { room: RoomState; open: 
           </span>
           <div className={s.typeGrid} role="radiogroup" aria-labelledby="room-type-label">
             {ROOM_TYPES.map((t) => (
-              <ChoiceCard key={t} selected={type === t} onSelect={() => setType(t)} title={ROOM_TEMPLATES[t].label} tone={t === "deal" ? "sora" : t === "payroll" ? "butter" : t === "team" ? "matcha" : "sakura"} />
+              <ChoiceCard
+                key={t}
+                selected={type === t}
+                onSelect={() => setType(t)}
+                title={ROOM_TEMPLATES[t].label}
+                tone={t === "deal" ? "sora" : t === "payroll" ? "butter" : t === "team" ? "matcha" : "sakura"}
+              />
             ))}
           </div>
           <small className={s.help}>The type is a label. It does not change who can read or the settings below.</small>

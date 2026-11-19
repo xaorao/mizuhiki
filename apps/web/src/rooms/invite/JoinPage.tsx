@@ -146,12 +146,21 @@ export function JoinPage({ id }: { id: string }) {
       const r = await joinWithInvite(await acct.token(), id, seed);
       await rememberRoomCard(acct.account, r.roomId, load.card);
       await refresh();
-      if (r.status === "pending") toast.show(load.preview.approval ? "Request sent to the admins" : "You are on the list");
+      if (r.status === "pending")
+        toast.show(load.preview.approval ? "Request sent to the admins" : "You are on the list");
     } catch (e) {
       const code = e instanceof ApiFailure ? e.code : "";
       if (code === "NO_ACCOUNT")
-        setActionError({ title: "Your account is not finished", detail: "Finish setting up your account first, so the room key can be sealed to you. You have not joined.", setup: true });
-      else setActionError({ title: "You have not joined", detail: e instanceof Error ? e.message : "Something went wrong. Nothing changed." });
+        setActionError({
+          title: "Your account is not finished",
+          detail: "Finish setting up your account first, so the room key can be sealed to you. You have not joined.",
+          setup: true,
+        });
+      else
+        setActionError({
+          title: "You have not joined",
+          detail: e instanceof Error ? e.message : "Something went wrong. Nothing changed.",
+        });
       if (e instanceof ApiFailure && (e.status === 410 || e.status === 403)) void refresh();
     } finally {
       setBusy(null);
@@ -167,7 +176,10 @@ export function JoinPage({ id }: { id: string }) {
       await refresh();
       toast.show("Request cancelled");
     } catch (e) {
-      setActionError({ title: "Not cancelled", detail: `${e instanceof Error ? e.message : "Something went wrong."} Your request is still waiting.` });
+      setActionError({
+        title: "Not cancelled",
+        detail: `${e instanceof Error ? e.message : "Something went wrong."} Your request is still waiting.`,
+      });
     } finally {
       setBusy(null);
     }
@@ -188,7 +200,8 @@ export function JoinPage({ id }: { id: string }) {
           </div>
         ) : load.s === "damaged" ? (
           <Problem face="worried" title="This link is damaged" jp="あれ？">
-            Invite links carry their key after the # sign, and this one is missing or cut short. Ask for the full link again. Nothing was opened.
+            Invite links carry their key after the # sign, and this one is missing or cut short. Ask for the full link
+            again. Nothing was opened.
           </Problem>
         ) : load.s === "not-found" ? (
           <Problem face="sleepy" title="There is no invite at this link" jp="あれ？">
@@ -227,7 +240,9 @@ export function JoinPage({ id }: { id: string }) {
             ) : you === "blocked" ? (
               <p className={s.warn}>
                 <Icon name="alert" size={18} />
-                <span>An admin removed you from this room and blocked you from joining again. Only an admin can undo that.</span>
+                <span>
+                  An admin removed you from this room and blocked you from joining again. Only an admin can undo that.
+                </span>
               </p>
             ) : waiting ? (
               <div className={s.state}>
@@ -235,7 +250,9 @@ export function JoinPage({ id }: { id: string }) {
                   <Musubi face="sleepy" size={72} bob />
                 </div>
                 <Kicker>ちょっと待ってね</Kicker>
-                <h2 className={s.stateTitle}>{load.preview.approval ? "Waiting for an admin to let you in" : "Waiting for an admin’s device"}</h2>
+                <h2 className={s.stateTitle}>
+                  {load.preview.approval ? "Waiting for an admin to let you in" : "Waiting for an admin’s device"}
+                </h2>
                 <p className={s.muted}>
                   {load.preview.approval
                     ? "The room key is sealed to you only when they do. This page updates by itself, and the room will also appear in your rooms."
@@ -249,14 +266,19 @@ export function JoinPage({ id }: { id: string }) {
               <Skeleton lines={2} />
             ) : acct.status === "elsewhere" ? (
               <div className={s.state}>
-                <p className={s.muted}>Mizuhiki is open in another tab of this browser. Your key is unlocked in one tab at a time.</p>
+                <p className={s.muted}>
+                  Mizuhiki is open in another tab of this browser. Your key is unlocked in one tab at a time.
+                </p>
                 <Button variant="cord" size="lg" full onClick={acct.takeOver}>
                   Use it here instead
                 </Button>
               </div>
             ) : acct.status === "none" ? (
               <div className={s.state}>
-                <p className={s.muted}>Joining needs your own Mizuhiki key, so the room key can be sealed to you. Making one takes a minute and is free.</p>
+                <p className={s.muted}>
+                  Joining needs your own Mizuhiki key, so the room key can be sealed to you. Making one takes a minute
+                  and is free.
+                </p>
                 <ButtonLink href={`/signup?next=${encodeURIComponent(next)}`} variant="cord" size="lg" full icon="key">
                   Create your account
                 </ButtonLink>
@@ -285,7 +307,14 @@ export function JoinPage({ id }: { id: string }) {
                     <span>You left this room before. Asking again sends a new request.</span>
                   </p>
                 ) : null}
-                <Button variant="cord" size="lg" full icon={load.preview.approval ? "send" : "users"} busy={busy === "join"} onClick={() => void join()}>
+                <Button
+                  variant="cord"
+                  size="lg"
+                  full
+                  icon={load.preview.approval ? "send" : "users"}
+                  busy={busy === "join"}
+                  onClick={() => void join()}
+                >
                   {you === "request-declined" ? "Ask again" : load.preview.approval ? "Ask to join" : "Join"}
                 </Button>
                 <p className={s.fine}>
@@ -316,7 +345,19 @@ export function JoinPage({ id }: { id: string }) {
   );
 }
 
-function Problem({ face, title, jp, children, action }: { face: MusubiFace; title: string; jp: string; children: React.ReactNode; action?: React.ReactNode }) {
+function Problem({
+  face,
+  title,
+  jp,
+  children,
+  action,
+}: {
+  face: MusubiFace;
+  title: string;
+  jp: string;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
   return (
     <div className={[s.invite, s.problem].join(" ")}>
       <Musubi face={face} size={110} />
@@ -366,7 +407,9 @@ function InviteCardView({
   const stopped = preview.state !== "ok";
   // The card was opened from the link, not checked against a schema: an unknown type reads as a plain room.
   const type = (ROOM_TEMPLATES as Partial<Record<string, { label: string }>>)[card.type]?.label ?? "Private";
-  const inviter = card.invitedBy.startsWith("@") ? card.invitedBy : `${card.invitedBy.slice(0, 8)}…${card.invitedBy.slice(-4)}`;
+  const inviter = card.invitedBy.startsWith("@")
+    ? card.invitedBy
+    : `${card.invitedBy.slice(0, 8)}…${card.invitedBy.slice(-4)}`;
   return (
     <article className={[s.invite, stopped ? s.stopped : ""].join(" ")} aria-labelledby="invite-name">
       <div className={s.ribbon} aria-hidden="true" />
@@ -392,7 +435,10 @@ function InviteCardView({
         Invited by <b>{inviter}</b>
       </p>
       <div className={s.cta}>{children}</div>
-      <LockLine>Messages in this room are sealed to its members. Your key is added only when an admin’s device seals the room key to you.</LockLine>
+      <LockLine>
+        Messages in this room are sealed to its members. Your key is added only when an admin’s device seals the room
+        key to you.
+      </LockLine>
     </article>
   );
 }
@@ -417,7 +463,14 @@ function UnlockHere() {
       }}
     >
       <p className={s.muted}>Unlock Mizuhiki on this device to answer the invite. Your key stays here.</p>
-      <TextField label="Device passphrase" type="password" value={pass} onChange={(e) => setPass(e.target.value)} error={err} autoComplete="current-password" />
+      <TextField
+        label="Device passphrase"
+        type="password"
+        value={pass}
+        onChange={(e) => setPass(e.target.value)}
+        error={err}
+        autoComplete="current-password"
+      />
       <Button type="submit" variant="cord" size="lg" full icon="key" busy={busy === "pass"} disabled={!pass}>
         Unlock
       </Button>

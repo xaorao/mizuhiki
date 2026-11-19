@@ -54,7 +54,13 @@ export const PassInviteSchema = z.object({
 });
 export type PassInvite = z.infer<typeof PassInviteSchema>;
 
-export const PassAcceptSchema = z.object({ v: z.literal(1), type: z.literal("accept"), id, holder: addr, at: z.iso.datetime() });
+export const PassAcceptSchema = z.object({
+  v: z.literal(1),
+  type: z.literal("accept"),
+  id,
+  holder: addr,
+  at: z.iso.datetime(),
+});
 export type PassAccept = z.infer<typeof PassAcceptSchema>;
 
 /** The scoped key index of a period pass: one per pass, never shared between holders. */
@@ -70,7 +76,9 @@ function fmtDate(iso: string): string {
 /** The boundary, in plain words, for the invite and every place the pass is shown. */
 export function boundaryText(scope: PassScope, expiresAt: string | null): string {
   // The last day covered, in UTC like the period (an expiry at midnight means the day before is the last one).
-  const lasts = expiresAt ? ` New items are covered through ${fmtDate(new Date(Date.parse(expiresAt) - 1).toISOString())}.` : "";
+  const lasts = expiresAt
+    ? ` New items are covered through ${fmtDate(new Date(Date.parse(expiresAt) - 1).toISOString())}.`
+    : "";
   switch (scope.kind) {
     case "period": {
       const last = new Date(new Date(scope.until).getTime() - 1).toISOString();

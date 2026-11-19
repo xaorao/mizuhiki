@@ -8,7 +8,16 @@ import { Button, ToggleRow, useToast } from "@mizuhiki/ui";
 import { Pills } from "./Pills";
 import { saveSettings } from "../engine";
 import type { RoomState } from "../useRoom";
-import { AUTO_PRESETS, autoDeleteChoice, autoDeleteText, customSeconds, isAdminRole, splitCustom, type AutoChoice, type CustomUnit } from "./model";
+import {
+  AUTO_PRESETS,
+  autoDeleteChoice,
+  autoDeleteText,
+  customSeconds,
+  isAdminRole,
+  splitCustom,
+  type AutoChoice,
+  type CustomUnit,
+} from "./model";
 import { InlineError } from "./Progress";
 import s from "./info.module.css";
 
@@ -48,16 +57,30 @@ export function SettingsSection({ room }: { room: RoomState }) {
   };
 
   const custom = d.auto === "custom" ? customSeconds(d.amount, d.unit) : null;
-  const seconds = d.auto === "custom" ? (custom && "seconds" in custom ? custom.seconds : null) : (AUTO_PRESETS.find((p) => p.value === d.auto)?.seconds ?? 0);
+  const seconds =
+    d.auto === "custom"
+      ? custom && "seconds" in custom
+        ? custom.seconds
+        : null
+      : (AUTO_PRESETS.find((p) => p.value === d.auto)?.seconds ?? 0);
   const dirty =
-    !!draft && (d.approval !== info.approval || d.historyDefault !== info.historyDefault || d.restrictSaving !== info.restrictSaving || seconds !== info.autoDeleteSeconds);
+    !!draft &&
+    (d.approval !== info.approval ||
+      d.historyDefault !== info.historyDefault ||
+      d.restrictSaving !== info.restrictSaving ||
+      seconds !== info.autoDeleteSeconds);
 
   const save = async () => {
     if (!room.detail || seconds === null) return;
     setBusy(true);
     setErr(null);
     try {
-      await saveSettings(await room.acct(), room.detail.id, { approval: d.approval, autoDeleteSeconds: seconds, restrictSaving: d.restrictSaving, historyDefault: d.historyDefault });
+      await saveSettings(await room.acct(), room.detail.id, {
+        approval: d.approval,
+        autoDeleteSeconds: seconds,
+        restrictSaving: d.restrictSaving,
+        historyDefault: d.historyDefault,
+      });
       toast.show("Settings saved. The room was told.");
       setDraft(null);
       void room.reload();
@@ -93,7 +116,9 @@ export function SettingsSection({ room }: { room: RoomState }) {
             <dd>{info.restrictSaving ? "On" : "Off"}</dd>
           </div>
         </dl>
-        {info.restrictSaving ? <p className={s.help}>The admins ask you not to save or forward what is said here.</p> : null}
+        {info.restrictSaving ? (
+          <p className={s.help}>The admins ask you not to save or forward what is said here.</p>
+        ) : null}
       </section>
     );
 
@@ -112,7 +137,12 @@ export function SettingsSection({ room }: { room: RoomState }) {
             onChange={(v) => set({ approval: v })}
             disabled={busy}
           />
-          {!d.approval ? <p className={s.help}>People with an invite link join without waiting; the next admin device that opens the room seals the key to them.</p> : null}
+          {!d.approval ? (
+            <p className={s.help}>
+              People with an invite link join without waiting; the next admin device that opens the room seals the key
+              to them.
+            </p>
+          ) : null}
         </div>
         <div className={s.settingBlock}>
           <b>New members see</b>
@@ -125,7 +155,9 @@ export function SettingsSection({ room }: { room: RoomState }) {
               { value: "hide", label: "Only new messages" },
             ]}
           />
-          <p className={s.help}>Used when invites join automatically. When you approve someone, you choose for that person.</p>
+          <p className={s.help}>
+            Used when invites join automatically. When you approve someone, you choose for that person.
+          </p>
         </div>
         <div className={s.settingBlock}>
           <b>Auto-delete</b>
@@ -134,7 +166,10 @@ export function SettingsSection({ room }: { room: RoomState }) {
             label="Auto-delete new messages after"
             value={d.auto}
             onChange={(v) => set({ auto: v })}
-            options={[...AUTO_PRESETS.map((p) => ({ value: p.value, label: p.label })), { value: "custom" as const, label: "Custom" }]}
+            options={[
+              ...AUTO_PRESETS.map((p) => ({ value: p.value, label: p.label })),
+              { value: "custom" as const, label: "Custom" },
+            ]}
           />
           {d.auto === "custom" ? (
             <div className={s.customRow}>
@@ -162,7 +197,8 @@ export function SettingsSection({ room }: { room: RoomState }) {
           ) : null}
           {custom && "error" in custom ? <InlineError>{custom.error}</InlineError> : null}
           <p className={s.help}>
-            Applies to new messages only. It deletes the sealed copy from storage, not copies members already opened on their devices.
+            Applies to new messages only. It deletes the sealed copy from storage, not copies members already opened on
+            their devices.
           </p>
         </div>
         <div className={s.settingBlock}>

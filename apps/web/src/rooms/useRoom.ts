@@ -186,7 +186,10 @@ export function useRoom(roomId: string): RoomState {
   // Mark what is on screen as read.
   const lastSeq = derived?.lastSeq ?? 0n;
   useEffect(() => {
-    if (lastSeq > 0n && detail?.me.status === "active") void acct().then((a) => markRead(a, roomId, lastSeq)).catch(() => undefined);
+    if (lastSeq > 0n && detail?.me.status === "active")
+      void acct()
+        .then((a) => markRead(a, roomId, lastSeq))
+        .catch(() => undefined);
   }, [lastSeq, detail?.me.status, acct, roomId]);
 
   // Admin chores. They run once at a time and say what they are doing.
@@ -204,7 +207,9 @@ export function useRoom(roomId: string): RoomState {
           setChore("Someone left. Changing the room key so they cannot read new messages…");
           await rotateAfterLeave(a, roomId);
         } else if (waitingAuto) {
-          setChore(`Letting ${requests.length === 1 ? "1 person" : `${requests.length} people`} in from an invite link…`);
+          setChore(
+            `Letting ${requests.length === 1 ? "1 person" : `${requests.length} people`} in from an invite link…`,
+          );
           await admitWaiting(a, roomId, derived.info.historyDefault);
         }
       } catch (e) {
@@ -226,7 +231,10 @@ export function useRoom(roomId: string): RoomState {
       return;
     }
     const active = detail.members.filter((m) => m.status === "active");
-    const key = `${detail.epoch}:${active.map((m) => m.address).sort().join(",")}`;
+    const key = `${detail.epoch}:${active
+      .map((m) => m.address)
+      .sort()
+      .join(",")}`;
     if (checkedFor.current === key) return;
     let alive = true;
     void readRoom(roomIdBytes32(roomId)).then(

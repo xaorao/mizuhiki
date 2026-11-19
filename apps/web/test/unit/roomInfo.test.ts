@@ -49,7 +49,10 @@ describe("who may do what", () => {
     expect(removeCheck(owner, owner)).toEqual({ allowed: false, reason: "To go, use Leave room at the bottom." });
     expect(removeCheck(admin, member).allowed).toBe(true);
     expect(removeCheck(admin, owner)).toEqual({ allowed: false, reason: "The owner cannot be removed." });
-    expect(removeCheck(admin, row(D, "admin"))).toEqual({ allowed: false, reason: "Only the owner can remove an admin." });
+    expect(removeCheck(admin, row(D, "admin"))).toEqual({
+      allowed: false,
+      reason: "Only the owner can remove an admin.",
+    });
     expect(removeCheck(member, row(D, "member")).allowed).toBe(false);
     expect(removeCheck(owner, row(D, "member", { status: "left" })).allowed).toBe(false);
   });
@@ -69,11 +72,16 @@ describe("who may do what", () => {
 describe("ownership transfer gate", () => {
   it("needs an admin and the exact room name", () => {
     expect(transferGate({ typed: "Deal", roomName: "Deal", target: undefined }).allowed).toBe(false);
-    expect(transferGate({ typed: "Deal", roomName: "Deal", target: member })).toEqual({ allowed: false, reason: "Only an admin of this room can become its owner." });
+    expect(transferGate({ typed: "Deal", roomName: "Deal", target: member })).toEqual({
+      allowed: false,
+      reason: "Only an admin of this room can become its owner.",
+    });
     expect(transferGate({ typed: "deal", roomName: "Deal", target: admin }).allowed).toBe(false);
     expect(transferGate({ typed: "  Deal ", roomName: "Deal", target: admin }).allowed).toBe(true);
     expect(transferGate({ typed: "", roomName: " ", target: admin }).allowed).toBe(false);
-    expect(transferGate({ typed: "Deal", roomName: "Deal", target: row(B, "admin", { status: "left" }) }).allowed).toBe(false);
+    expect(transferGate({ typed: "Deal", roomName: "Deal", target: row(B, "admin", { status: "left" }) }).allowed).toBe(
+      false,
+    );
   });
 });
 
@@ -136,11 +144,28 @@ describe("lists", () => {
 });
 
 describe("derive: rights announced in the room", () => {
-  const epochs: EpochRow[] = [{ epoch: 1, distribution: "d", membershipHash: "m", txHash: "0xabc", by: A, reason: "created", at: "2026-11-01T10:00:00.000Z" }];
+  const epochs: EpochRow[] = [
+    {
+      epoch: 1,
+      distribution: "d",
+      membershipHash: "m",
+      txHash: "0xabc",
+      by: A,
+      reason: "created",
+      at: "2026-11-01T10:00:00.000Z",
+    },
+  ];
   let seq = 0n;
   const line = (author: string, body: RoomBody): Line => {
     seq += 1n;
-    return { seq, hash: `h${seq}`, epoch: 1, at: "2026-11-01T10:00:00.000Z", expiresAt: null, msg: { id: `msg${seq}xyz`, author, sentAt: `2026-11-01T10:00:0${seq}.000Z`, body } };
+    return {
+      seq,
+      hash: `h${seq}`,
+      epoch: 1,
+      at: "2026-11-01T10:00:00.000Z",
+      expiresAt: null,
+      msg: { id: `msg${seq}xyz`, author, sentAt: `2026-11-01T10:00:0${seq}.000Z`, body },
+    };
   };
   const base = () => [
     line(A, { kind: "created", members: [C] }),
@@ -148,7 +173,11 @@ describe("derive: rights announced in the room", () => {
   ];
 
   it("a member with the info right can rename the room", () => {
-    const d = derive([...base(), line(C, { kind: "info", name: "Renamed", description: "x", type: "team" })], [owner, member], epochs);
+    const d = derive(
+      [...base(), line(C, { kind: "info", name: "Renamed", description: "x", type: "team" })],
+      [owner, member],
+      epochs,
+    );
     expect(d.info.name).toBe("Renamed");
     expect(d.actions[0]?.text).toEqual([{ who: C }, " renamed the room to “Renamed”"]);
   });
@@ -195,7 +224,23 @@ describe("derive: rights announced in the room", () => {
     for (const p of problems) expect(p.line.problem).toBe("not-member");
   });
   it("settings still count only from admins", () => {
-    const lines = [...base(), line(A, { kind: "settings", approval: true, autoDeleteSeconds: 0, restrictSaving: false, historyDefault: "hide" }), line(C, { kind: "settings", approval: false, autoDeleteSeconds: 0, restrictSaving: false, historyDefault: "share" })];
+    const lines = [
+      ...base(),
+      line(A, {
+        kind: "settings",
+        approval: true,
+        autoDeleteSeconds: 0,
+        restrictSaving: false,
+        historyDefault: "hide",
+      }),
+      line(C, {
+        kind: "settings",
+        approval: false,
+        autoDeleteSeconds: 0,
+        restrictSaving: false,
+        historyDefault: "share",
+      }),
+    ];
     expect(derive(lines, [owner, member], epochs).info.approval).toBe(true);
   });
 });

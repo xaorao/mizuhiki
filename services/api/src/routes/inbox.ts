@@ -190,25 +190,23 @@ export const inboxRoutes =
             expiresAt: note?.expiresAt?.toISOString() ?? null,
           };
         }),
-        ...reqs.map(
-          (r): InboxRow => ({
-            id: `room:${r.roomId}:${r.address}`,
-            type: "request",
-            kind: "request",
-            envelope: null,
-            size: 0,
-            readers: 0,
-            at: r.at.toISOString(),
-            read: false,
-            archived: false,
-            ref: `room:${r.roomId}`,
-            sender: { address: r.address, name: nameOf(r.address), how: "request" },
-            senderSig: null,
-            to: null,
-            payment: null,
-            expiresAt: null,
-          }),
-        ),
+        ...reqs.map((r): InboxRow => ({
+          id: `room:${r.roomId}:${r.address}`,
+          type: "request",
+          kind: "request",
+          envelope: null,
+          size: 0,
+          readers: 0,
+          at: r.at.toISOString(),
+          read: false,
+          archived: false,
+          ref: `room:${r.roomId}`,
+          sender: { address: r.address, name: nameOf(r.address), how: "request" },
+          senderSig: null,
+          to: null,
+          payment: null,
+          expiresAt: null,
+        })),
       ].sort((a, b) => b.at.localeCompare(a.at));
       return { rows: rows.slice(0, q.data.limit), unread: rows.filter((r) => !r.read).length };
     });

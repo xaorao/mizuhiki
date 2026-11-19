@@ -12,19 +12,35 @@ import { pillString } from "../people";
 import { whenLabel } from "./model";
 import s from "./info.module.css";
 
-export function ActionsTab({ actions, names, me }: { actions: ActionEntry[]; names: Record<string, string | null>; me: string }) {
+export function ActionsTab({
+  actions,
+  names,
+  me,
+}: {
+  actions: ActionEntry[];
+  names: Record<string, string | null>;
+  me: string;
+}) {
   if (actions.length === 0)
     return (
       <EmptyState title="Nothing has changed yet" face="sleepy">
-        Who joins, leaves, is removed or becomes an admin is listed here, with the QoreChain record behind every room key change.
+        Who joins, leaves, is removed or becomes an admin is listed here, with the QoreChain record behind every room
+        key change.
       </EmptyState>
     );
   return (
     <>
-      <p className={s.help}>Signed by the person who made each change and checked on this device. Key changes link to their record on QoreChain.</p>
+      <p className={s.help}>
+        Signed by the person who made each change and checked on this device. Key changes link to their record on
+        QoreChain.
+      </p>
       <ol className={s.log}>
         {actions.map((a, i) => (
-          <li key={`${a.key}:${i}`} className={a.txHash ? s.keyed : undefined} style={{ "--i": Math.min(i, 14) } as CSSProperties}>
+          <li
+            key={`${a.key}:${i}`}
+            className={a.txHash ? s.keyed : undefined}
+            style={{ "--i": Math.min(i, 14) } as CSSProperties}
+          >
             <p className={s.logText}>{pillString(a.text, names, me)}</p>
             <p className={s.logMeta}>
               <time dateTime={a.at}>{whenLabel(a.at)}</time>

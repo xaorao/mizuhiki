@@ -239,7 +239,10 @@ export function OwnerProvider({ account, children }: { account: Account; childre
       await api.put("/pages", { record }, { token: t });
       setPublished(body);
       // Keep unfinished blocks in the draft; only the version moves.
-      const next = { ...d, manifest: { ...d.manifest, periodKeys: body.periodKeys, version: body.version, updatedAt: body.updatedAt } };
+      const next = {
+        ...d,
+        manifest: { ...d.manifest, periodKeys: body.periodKeys, version: body.version, updatedAt: body.updatedAt },
+      };
       setDraft(next);
       latest.current = next;
       await saveDraft(account, t, next);
@@ -261,11 +264,20 @@ export function OwnerProvider({ account, children }: { account: Account; childre
       version: Math.max(live.version, d?.manifest.version ?? 0) + 1,
       updatedAt: new Date().toISOString(),
     });
-    const record = signRecord({ kind: "manifest", body, signer: account.owner.address, classical: account.keys.classical, pq: account.keys.pq });
+    const record = signRecord({
+      kind: "manifest",
+      body,
+      signer: account.owner.address,
+      classical: account.keys.classical,
+      pq: account.keys.pq,
+    });
     await api.put("/pages", { record }, { token: t });
     setPublished(body);
     if (d) {
-      const next = { ...d, manifest: { ...d.manifest, periodKeys: body.periodKeys, version: body.version, updatedAt: body.updatedAt } };
+      const next = {
+        ...d,
+        manifest: { ...d.manifest, periodKeys: body.periodKeys, version: body.version, updatedAt: body.updatedAt },
+      };
       setDraft(next);
       latest.current = next;
       await saveDraft(account, t, next);

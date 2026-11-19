@@ -27,7 +27,18 @@ import {
   useToast,
   type StepItem,
 } from "@mizuhiki/ui";
-import { canonicalJson, decryptFile, formatAmount, isValidPhrase, normalizePhrase, sha256Hex, utf8, type Content, type FileFacts, type ProductDef } from "@mizuhiki/core";
+import {
+  canonicalJson,
+  decryptFile,
+  formatAmount,
+  isValidPhrase,
+  normalizePhrase,
+  sha256Hex,
+  utf8,
+  type Content,
+  type FileFacts,
+  type ProductDef,
+} from "@mizuhiki/core";
 import { explorerTx } from "@mizuhiki/chain";
 import type { SealKeyPair } from "@qorechain/qoreseal";
 import { useAccount } from "@/account/AccountProvider";
@@ -53,7 +64,12 @@ import { RichText, ShopBar, Stars, Thumb, keysForOrder, slotLabel } from "./part
 import { localOrder, onStoreChange, rememberOrder, rememberReview } from "./store";
 import s from "./buyer.module.css";
 
-type Load = { state: "loading" } | { state: "missing" } | { state: "error"; message: string } | { state: "bad"; message: string } | { state: "ok"; o: OrderView; defs: Map<string, ProductDef> };
+type Load =
+  | { state: "loading" }
+  | { state: "missing" }
+  | { state: "error"; message: string }
+  | { state: "bad"; message: string }
+  | { state: "ok"; o: OrderView; defs: Map<string, ProductDef> };
 
 /** Read an order and check every product record it was priced with against its seller's key on chain. */
 export async function loadOrder(ref: string): Promise<{ o: OrderView; defs: Map<string, ProductDef> }> {
@@ -90,13 +106,17 @@ export function OrderPage({ orderRef, manual }: { orderRef: string; manual: bool
       // Report a transaction this device sent that the server has not seen yet.
       const cur = load.o;
       const unseen = sent.find((h) => h !== cur.depositTx?.toUpperCase() && h !== cur.balanceTx?.toUpperCase());
-      const o = unseen && (cur.status === "awaiting" || cur.status === "in_progress") ? await reportTx(orderRef, unseen) : await getOrder(orderRef);
+      const o =
+        unseen && (cur.status === "awaiting" || cur.status === "in_progress")
+          ? await reportTx(orderRef, unseen)
+          : await getOrder(orderRef);
       setLoad({ state: "ok", o, defs: load.defs });
       return o;
     } catch (e) {
       if (e instanceof ApiFailure && e.status === 404) setLoad({ state: "missing" });
       else if (e instanceof ApiFailure) setLoad((l) => (l.state === "ok" ? l : { state: "error", message: e.message }));
-      else setLoad({ state: "bad", message: (e as Error).message || "A product record in this order did not check out." });
+      else
+        setLoad({ state: "bad", message: (e as Error).message || "A product record in this order did not check out." });
       return null;
     }
   }, [orderRef, load, sent]);
@@ -147,8 +167,16 @@ export function OrderPage({ orderRef, manual }: { orderRef: string; manual: bool
           </div>
         ) : load.state === "error" ? (
           <div className={s.card}>
-            <Oops title="This order could not be loaded" action={<Button variant="line" onClick={() => (setLoad({ state: "loading" }))}>Try again</Button>}>
-              {load.message} If you paid, your payment is safe on QoreChain and this page picks it up once Mizuhiki answers.
+            <Oops
+              title="This order could not be loaded"
+              action={
+                <Button variant="line" onClick={() => setLoad({ state: "loading" })}>
+                  Try again
+                </Button>
+              }
+            >
+              {load.message} If you paid, your payment is safe on QoreChain and this page picks it up once Mizuhiki
+              answers.
             </Oops>
           </div>
         ) : load.state === "bad" ? (
@@ -170,7 +198,19 @@ export function OrderPage({ orderRef, manual }: { orderRef: string; manual: bool
 
 // ---- before delivery ---------------------------------------------------------------------------
 
-function Track({ o, defs, sent, manual, onChanged }: { o: OrderView; defs: Map<string, ProductDef>; sent: string[]; manual: boolean; onChanged: () => void }) {
+function Track({
+  o,
+  defs,
+  sent,
+  manual,
+  onChanged,
+}: {
+  o: OrderView;
+  defs: Map<string, ProductDef>;
+  sent: string[];
+  manual: boolean;
+  onChanged: () => void;
+}) {
   const lines = o.request.lines.map((l) => ({ l, d: defs.get(l.productId) }));
   const first = lines[0]?.d;
   const name = first?.name ?? "";
@@ -182,9 +222,19 @@ function Track({ o, defs, sent, manual, onChanged }: { o: OrderView; defs: Map<s
     {
       title: "Submitted",
       state: st[0] ?? "waiting",
-      detail: tx ? <TxLink hash={tx} /> : o.status === "expired" ? "The hold ended before a payment arrived." : "Waiting for your payment.",
+      detail: tx ? (
+        <TxLink hash={tx} />
+      ) : o.status === "expired" ? (
+        "The hold ended before a payment arrived."
+      ) : (
+        "Waiting for your payment."
+      ),
     },
-    { title: "Confirmed on QoreChain", state: st[1] ?? "waiting", detail: o.depositTx ? <TxLink hash={o.depositTx} /> : "QoreChain confirms a payment in a few seconds." },
+    {
+      title: "Confirmed on QoreChain",
+      state: st[1] ?? "waiting",
+      detail: o.depositTx ? <TxLink hash={o.depositTx} /> : "QoreChain confirms a payment in a few seconds.",
+    },
     {
       title: "Preparing your copy",
       state: st[2] ?? "waiting",
@@ -227,7 +277,8 @@ function Track({ o, defs, sent, manual, onChanged }: { o: OrderView; defs: Map<s
               ) : undefined
             }
           >
-            The order was held for an hour and no payment with its memo reached QoreChain, so the items went back on sale.
+            The order was held for an hour and no payment with its memo reached QoreChain, so the items went back on
+            sale.
           </Oops>
         ) : (
           <Stepper steps={steps} />
@@ -267,7 +318,10 @@ function Track({ o, defs, sent, manual, onChanged }: { o: OrderView; defs: Map<s
       {o.status === "awaiting" && !tx ? (
         <section className={s.card} aria-label="Pay for this order">
           <h2 className={s.colTitle}>Pay {formatAmount(o.dueNow, o.token)}</h2>
-          <p className={s.fine}>Held for you for {holdLeft(o.expiresAt)} more. Pay any of these ways; this page checks QoreChain every few seconds.</p>
+          <p className={s.fine}>
+            Held for you for {holdLeft(o.expiresAt)} more. Pay any of these ways; this page checks QoreChain every few
+            seconds.
+          </p>
           <ManualBox o={o} amount={BigInt(o.dueNow)} memo={o.memo} open={manual} />
           <PayPanel
             token={o.token}
@@ -336,7 +390,10 @@ function ManualBox({ o, amount, memo, open }: { o: OrderView; amount: bigint; me
           </dd>
         </div>
       </dl>
-      <p className={s.fine}>Without the memo the money still reaches the seller, but this order will not see it. Send the exact amount or more.</p>
+      <p className={s.fine}>
+        Without the memo the money still reaches the seller, but this order will not see it. Send the exact amount or
+        more.
+      </p>
       <p className={s.waitLine} aria-live="polite">
         <span className={s.spin} aria-hidden="true" /> Watching QoreChain for {memo}…
       </p>
@@ -365,7 +422,9 @@ function OrderSummary({ o, defs }: { o: OrderView; defs: Map<string, ProductDef>
             <span>
               <b>{d.title}</b>
               <small>
-                {[v?.name, l.quantity > 1 ? `× ${l.quantity}` : null, l.slot ? slotLabel(l.slot) : null].filter(Boolean).join(" · ") || `@${d.name}`}
+                {[v?.name, l.quantity > 1 ? `× ${l.quantity}` : null, l.slot ? slotLabel(l.slot) : null]
+                  .filter(Boolean)
+                  .join(" · ") || `@${d.name}`}
               </small>
             </span>
           </li>
@@ -381,7 +440,12 @@ function OrderSummary({ o, defs }: { o: OrderView; defs: Map<string, ProductDef>
 
 // ---- after delivery: the content page ------------------------------------------------------------
 
-type Opening = { state: "finding" } | { state: "need" } | { state: "opening" } | { state: "open"; p: OpenedPurchase; keys: SealKeyPair } | { state: "failed"; why: string };
+type Opening =
+  | { state: "finding" }
+  | { state: "need" }
+  | { state: "opening" }
+  | { state: "open"; p: OpenedPurchase; keys: SealKeyPair }
+  | { state: "failed"; why: string };
 
 function Purchase({ o, defs }: { o: OrderView; defs: Map<string, ProductDef> }) {
   const acct = useAccount();
@@ -419,8 +483,8 @@ function Purchase({ o, defs }: { o: OrderView; defs: Map<string, ProductDef> }) 
           <div className={s.card}>
             <b className={s.sideHead}>Make it a Mizuhiki account</b>
             <p className={s.fine}>
-              Your 12 words can also be a full Mizuhiki account: a private page, an inbox and every purchase in one place. Log in with
-              &ldquo;Use your recovery phrase&rdquo; and type the same words.
+              Your 12 words can also be a full Mizuhiki account: a private page, an inbox and every purchase in one
+              place. Log in with &ldquo;Use your recovery phrase&rdquo; and type the same words.
             </p>
             <ButtonLink variant="line" icon="key" href={`/login?next=${encodeURIComponent(`/library/${o.ref}`)}`}>
               Use my 12 words
@@ -446,7 +510,16 @@ function Purchase({ o, defs }: { o: OrderView; defs: Map<string, ProductDef> }) 
         {o.status === "refunded" ? (
           <p className={s.note}>
             <Icon name="undo" size={18} />
-            <span>This order was refunded{o.refundTx ? <> · <TxLink hash={o.refundTx} /></> : null}.</span>
+            <span>
+              This order was refunded
+              {o.refundTx ? (
+                <>
+                  {" "}
+                  · <TxLink hash={o.refundTx} />
+                </>
+              ) : null}
+              .
+            </span>
           </p>
         ) : null}
       </aside>
@@ -457,7 +530,9 @@ function Purchase({ o, defs }: { o: OrderView; defs: Map<string, ProductDef> }) 
             <Skeleton lines={6} />
             <p className={s.checking}>
               <span className={s.spin} aria-hidden="true" />
-              {open.state === "finding" ? "Looking for the key that opens it on this device…" : "Opening it on this device…"}
+              {open.state === "finding"
+                ? "Looking for the key that opens it on this device…"
+                : "Opening it on this device…"}
             </p>
           </div>
         ) : open.state === "need" ? (
@@ -465,8 +540,8 @@ function Purchase({ o, defs }: { o: OrderView; defs: Map<string, ProductDef> }) 
         ) : open.state === "failed" ? (
           <div className={s.card}>
             <Oops title="It did not open here">
-              {open.why} Your copy is unchanged on Mizuhiki; nothing was opened or sent. If the seller sealed it to an older key, message them with the order
-              reference {o.ref}.
+              {open.why} Your copy is unchanged on Mizuhiki; nothing was opened or sent. If the seller sealed it to an
+              older key, message them with the order reference {o.ref}.
             </Oops>
           </div>
         ) : (
@@ -507,14 +582,24 @@ function NeedKey({ o, onKey }: { o: OrderView; onKey: (k: BuyerKey) => void }) {
                 .finally(() => setBusy(false));
             }}
           >
-            <TextField label="Device passphrase" type="password" value={pass} onChange={(e) => setPass(e.target.value)} error={err} autoComplete="current-password" />
+            <TextField
+              label="Device passphrase"
+              type="password"
+              value={pass}
+              onChange={(e) => setPass(e.target.value)}
+              error={err}
+              autoComplete="current-password"
+            />
             <Button type="submit" variant="cord" icon="key" busy={busy} disabled={!pass}>
               Unlock
             </Button>
           </form>
         ) : acct.status === "unlocked" ? (
           <Oops title="This is not the account it is sealed to">
-            You are using {acct.account?.owner.address.slice(0, 12)}…. {o.request.gift ? "It was a gift for the account above; only they can open it." : "Log in with the account above on this device."}
+            You are using {acct.account?.owner.address.slice(0, 12)}….{" "}
+            {o.request.gift
+              ? "It was a gift for the account above; only they can open it."
+              : "Log in with the account above on this device."}
           </Oops>
         ) : (
           <ButtonLink variant="cord" icon="key" href={`/login?next=${encodeURIComponent(`/library/${o.ref}`)}`}>
@@ -533,7 +618,8 @@ function NeedKey({ o, onKey }: { o: OrderView; onKey: (k: BuyerKey) => void }) {
         setErr(undefined);
         if (!isValidPhrase(text) || words !== 12) return setErr("Type all 12 words of your buyer key, in order.");
         const k = buyerKeyFrom(text);
-        if (k.recipient.mlkem !== r.mlkem || k.recipient.x25519 !== r.x25519) return setErr("These words are a different buyer key than the one this purchase is sealed to.");
+        if (k.recipient.mlkem !== r.mlkem || k.recipient.x25519 !== r.x25519)
+          return setErr("These words are a different buyer key than the one this purchase is sealed to.");
         setBusy(true);
         void (keep ? rememberBuyerKey(k) : Promise.resolve())
           .catch(() => undefined)
@@ -544,10 +630,18 @@ function NeedKey({ o, onKey }: { o: OrderView; onKey: (k: BuyerKey) => void }) {
       <Kicker>封</Kicker>
       <h1 className={s.pageTitle}>Open with my 12 words</h1>
       <p className={s.fine}>
-        This purchase is sealed to buyer key <code className={s.mono}>{fingerprint(keyHashOf(r), 16)}</code>. Type its words; they are checked on this
-        device and never sent.
+        This purchase is sealed to buyer key <code className={s.mono}>{fingerprint(keyHashOf(r), 16)}</code>. Type its
+        words; they are checked on this device and never sent.
       </p>
-      <TextArea label="Your 12 words, in order" rows={3} value={text} onChange={(e) => setText(e.target.value)} error={err} autoComplete="off" spellCheck={false} />
+      <TextArea
+        label="Your 12 words, in order"
+        rows={3}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        error={err}
+        autoComplete="off"
+        spellCheck={false}
+      />
       <label className={s.check}>
         <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} /> Keep the key on this device
       </label>
@@ -599,7 +693,8 @@ function Opened({ o, p }: { o: OrderView; p: OpenedPurchase }) {
         <p className={s.note}>
           <Icon name="calendar" size={18} />
           <span>
-            <b>Your call: {slotLabel(line.slot)}</b> ({prod.def.booking?.minutes ?? 30} min, your time zone).{prod.def.booking?.place ? ` Where: ${prod.def.booking.place}` : ""}
+            <b>Your call: {slotLabel(line.slot)}</b> ({prod.def.booking?.minutes ?? 30} min, your time zone).
+            {prod.def.booking?.place ? ` Where: ${prod.def.booking.place}` : ""}
           </span>
         </p>
       ) : null}
@@ -644,7 +739,14 @@ export function ContentReader({ content }: { content: Content | null }) {
           ) : b.t === "heading" ? (
             <h3 key={i}>{b.text}</h3>
           ) : b.t === "link" ? (
-            <ButtonLink key={i} variant="line" iconRight="share" href={b.url} target="_blank" rel="noopener noreferrer nofollow">
+            <ButtonLink
+              key={i}
+              variant="line"
+              iconRight="share"
+              href={b.url}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+            >
               {b.label || new URL(b.url).host}
             </ButtonLink>
           ) : (
@@ -656,7 +758,12 @@ export function ContentReader({ content }: { content: Content | null }) {
             <Button variant="ghost" icon="back" disabled={page === 0} onClick={() => setPage((x) => x - 1)}>
               Previous
             </Button>
-            <Button variant="line" iconRight="arrow" disabled={page >= pages.length - 1} onClick={() => setPage((x) => x + 1)}>
+            <Button
+              variant="line"
+              iconRight="arrow"
+              disabled={page >= pages.length - 1}
+              onClick={() => setPage((x) => x + 1)}
+            >
               Next
             </Button>
           </div>
@@ -669,12 +776,16 @@ export function ContentReader({ content }: { content: Content | null }) {
 function isFileFacts(f: unknown): f is FileFacts {
   if (typeof f !== "object" || f === null) return false;
   const x = f as FileFacts;
-  return typeof x.name === "string" && Array.isArray(x.chunks) && typeof x.key === "string" && typeof x.size === "number";
+  return (
+    typeof x.name === "string" && Array.isArray(x.chunks) && typeof x.key === "string" && typeof x.size === "number"
+  );
 }
 
 /** A sealed file: "Decrypt and download" with progress (the inbox's FileItem, for purchases). */
 function FileCard({ f }: { f: FileFacts }) {
-  const [st, setSt] = useState<{ s: "idle" } | { s: "busy"; p: number } | { s: "ready"; url: string } | { s: "failed"; why: string }>({ s: "idle" });
+  const [st, setSt] = useState<
+    { s: "idle" } | { s: "busy"; p: number } | { s: "ready"; url: string } | { s: "failed"; why: string }
+  >({ s: "idle" });
   useEffect(
     () => () => {
       if (st.s === "ready") URL.revokeObjectURL(st.url);
@@ -687,11 +798,18 @@ function FileCard({ f }: { f: FileFacts }) {
     if (!url) {
       setSt({ s: "busy", p: 0 });
       try {
-        const parts = await decryptFile({ facts: f, fetchChunk: (h) => api.bytes(`/blobs/${h}`), onProgress: (d, t) => setSt({ s: "busy", p: d / Math.max(1, t) }) });
+        const parts = await decryptFile({
+          facts: f,
+          fetchChunk: (h) => api.bytes(`/blobs/${h}`),
+          onProgress: (d, t) => setSt({ s: "busy", p: d / Math.max(1, t) }),
+        });
         url = URL.createObjectURL(new Blob(parts as BlobPart[], { type: f.type || "application/octet-stream" }));
         setSt({ s: "ready", url });
       } catch {
-        setSt({ s: "failed", why: "This file could not be decrypted. A piece is missing or was changed. Nothing was saved." });
+        setSt({
+          s: "failed",
+          why: "This file could not be decrypted. A piece is missing or was changed. Nothing was saved.",
+        });
         return;
       }
     }
@@ -709,16 +827,30 @@ function FileCard({ f }: { f: FileFacts }) {
       <span className={s.fileText}>
         <b>{f.name}</b>
         <small>
-          {f.type || "File"} · {fmtBytes(f.size)} · {st.s === "busy" ? `Decrypting ${pct}%` : st.s === "ready" ? "Decrypted on this device" : "Sealed"}
+          {f.type || "File"} · {fmtBytes(f.size)} ·{" "}
+          {st.s === "busy" ? `Decrypting ${pct}%` : st.s === "ready" ? "Decrypted on this device" : "Sealed"}
         </small>
         {st.s === "busy" ? (
-          <span className={s.progress} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`Decrypting ${f.name}`}>
+          <span
+            className={s.progress}
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={pct}
+            aria-label={`Decrypting ${f.name}`}
+          >
             <i style={{ transform: `scaleX(${st.p})` }} />
           </span>
         ) : null}
         {st.s === "failed" ? <span className={s.lineWarn}>{st.why}</span> : null}
       </span>
-      <Button variant={st.s === "ready" ? "line" : "cord"} size="sm" icon="download" busy={st.s === "busy"} onClick={() => void save()}>
+      <Button
+        variant={st.s === "ready" ? "line" : "cord"}
+        size="sm"
+        icon="download"
+        busy={st.s === "busy"}
+        onClick={() => void save()}
+      >
         {st.s === "ready" ? "Download again" : "Decrypt and download"}
       </Button>
     </div>
@@ -749,7 +881,12 @@ function RateBox({ o, defs, keys }: { o: OrderView; defs: Map<string, ProductDef
   return (
     <div className={[s.card, s.rateBox].join(" ")}>
       {items.length > 1 ? (
-        <select className={s.select} value={pid} onChange={(e) => (setPid(e.target.value), setEditing(false), setRating(0), setText(""))} aria-label="Product to rate">
+        <select
+          className={s.select}
+          value={pid}
+          onChange={(e) => (setPid(e.target.value), setEditing(false), setRating(0), setText(""))}
+          aria-label="Product to rate"
+        >
           {items.map((d) => (
             <option key={d.id} value={d.id}>
               {d.title}
@@ -767,11 +904,22 @@ function RateBox({ o, defs, keys }: { o: OrderView; defs: Map<string, ProductDef
             postReview(o.ref, reviewSecret(keys, o.request.nonce), pid, rating, text)
               .then(() => {
                 setPosted((p) => ({ ...p, [pid]: { rating, text: text.trim() } }));
-                rememberReview({ ref: o.ref, productId: pid, name: def.name, slug: def.slug, title: def.title, rating, text: text.trim(), at: new Date().toISOString() });
+                rememberReview({
+                  ref: o.ref,
+                  productId: pid,
+                  name: def.name,
+                  slug: def.slug,
+                  title: def.title,
+                  rating,
+                  text: text.trim(),
+                  at: new Date().toISOString(),
+                });
                 setEditing(false);
                 toast.show("Review posted");
               })
-              .catch((x: unknown) => setErr(x instanceof ApiFailure ? x.message : "The review was not posted. Try again."))
+              .catch((x: unknown) =>
+                setErr(x instanceof ApiFailure ? x.message : "The review was not posted. Try again."),
+              )
               .finally(() => setBusy(false));
           }}
         >
@@ -792,7 +940,15 @@ function RateBox({ o, defs, keys }: { o: OrderView; defs: Map<string, ProductDef
               </button>
             ))}
           </div>
-          <TextArea label="Want to leave a written review?" hideLabel placeholder="Want to leave a written review?" rows={3} maxLength={2000} value={text} onChange={(e) => setText(e.target.value)} />
+          <TextArea
+            label="Want to leave a written review?"
+            hideLabel
+            placeholder="Want to leave a written review?"
+            rows={3}
+            maxLength={2000}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
           {err ? <p className={s.problem}>{err}</p> : null}
           <Button type="submit" variant="cord" full busy={busy} disabled={!rating}>
             Post review
@@ -821,4 +977,3 @@ function RateBox({ o, defs, keys }: { o: OrderView; defs: Map<string, ProductDef
     </div>
   );
 }
-

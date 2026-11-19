@@ -31,7 +31,10 @@ export function CheckoutPage({ name, seller }: { name: string; seller: { display
     return onStoreChange(read);
   }, [name]);
 
-  const defs = useMemo(() => new Map(shop.state === "ok" ? shop.items.map((x) => [x.def.id, x.def] as const) : []), [shop]);
+  const defs = useMemo(
+    () => new Map(shop.state === "ok" ? shop.items.map((x) => [x.def.id, x.def] as const) : []),
+    [shop],
+  );
   const [code, setCode] = useState("");
   const [discount, setDiscount] = useState<{ code: string; d: Discount } | null>(null);
   const [codeErr, setCodeErr] = useState<string | undefined>();
@@ -49,12 +52,23 @@ export function CheckoutPage({ name, seller }: { name: string; seller: { display
   const lineDefs = cart ? cart.lines.map((l) => defs.get(l.productId)).filter((d): d is ProductDef => !!d) : [];
   const allowCode = lineDefs.some((d) => d.discountField === "available");
   const allowTip = lineDefs.some((d) => d.tips);
-  const base = cart && shop.state === "ok" && missing.length === 0 ? liveTotal({ seller: cart.seller, token, lines, tip: 0n, discountCode: null }, lineDefs, discount?.d ?? null) : null;
+  const base =
+    cart && shop.state === "ok" && missing.length === 0
+      ? liveTotal({ seller: cart.seller, token, lines, tip: 0n, discountCode: null }, lineDefs, discount?.d ?? null)
+      : null;
   const afterDiscount = base?.ok ? base.total.subtotal - base.total.discount : 0n;
-  const tip = !allowTip ? 0n : tipPct >= 0 ? (afterDiscount * BigInt(tipPct)) / 100n : (parseAmount(tipCustom, token) ?? 0n);
+  const tip = !allowTip
+    ? 0n
+    : tipPct >= 0
+      ? (afterDiscount * BigInt(tipPct)) / 100n
+      : (parseAmount(tipCustom, token) ?? 0n);
   const priced =
     cart && shop.state === "ok" && missing.length === 0
-      ? liveTotal({ seller: cart.seller, token, lines, tip, discountCode: discount?.code ?? null }, lineDefs, discount?.d ?? null)
+      ? liveTotal(
+          { seller: cart.seller, token, lines, tip, discountCode: discount?.code ?? null },
+          lineDefs,
+          discount?.d ?? null,
+        )
       : null;
   const t = priced?.ok ? priced.total : null;
   const deposit = t && t.dueLater > 0n;
@@ -72,8 +86,15 @@ export function CheckoutPage({ name, seller }: { name: string; seller: { display
 
   const obtain = async (): Promise<OrderView> => {
     if (!cart || !seal || !t) throw new Error("The order is not ready yet. Nothing was charged.");
-    const key = JSON.stringify({ lines, r: seal.recipient, g: seal.gift, tip: tip.toString(), code: discount?.code ?? null });
-    if (placed.current?.key === key && new Date(placed.current.order.expiresAt).getTime() > Date.now() + 60_000) return placed.current.order;
+    const key = JSON.stringify({
+      lines,
+      r: seal.recipient,
+      g: seal.gift,
+      tip: tip.toString(),
+      code: discount?.code ?? null,
+    });
+    if (placed.current?.key === key && new Date(placed.current.order.expiresAt).getTime() > Date.now() + 60_000)
+      return placed.current.order;
     const { request } = buildRequest({
       seller: cart.seller,
       token,
@@ -86,7 +107,9 @@ export function CheckoutPage({ name, seller }: { name: string; seller: { display
     });
     const order = await placeOrder(request);
     if (order.total !== t.total.toString())
-      throw new Error(`The shop priced this at ${formatAmount(order.total, token)}, not ${formatAmount(t.total, token)}. Reload to see why. Nothing was charged.`);
+      throw new Error(
+        `The shop priced this at ${formatAmount(order.total, token)}, not ${formatAmount(t.total, token)}. Reload to see why. Nothing was charged.`,
+      );
     placed.current = { key, order };
     return order;
   };
@@ -139,7 +162,9 @@ export function CheckoutPage({ name, seller }: { name: string; seller: { display
           <div className={s.checkoutGrid}>
             <section className={s.cartCol} aria-label="Your cart">
               <div className={s.card}>
-                {shop.state === "error" ? <Oops title="The shop could not be checked">{shop.message} Nothing was charged.</Oops> : null}
+                {shop.state === "error" ? (
+                  <Oops title="The shop could not be checked">{shop.message} Nothing was charged.</Oops>
+                ) : null}
                 <ul className={s.cartLines}>
                   {cart.lines.map((l, i) => {
                     const d = defs.get(l.productId);
@@ -173,8 +198,14 @@ export function CheckoutPage({ name, seller }: { name: string; seller: { display
                               <b>Deposit:</b> {d.commission.depositPercent}% now, the rest when it is done
                             </small>
                           ) : null}
-                          {shop.state === "ok" && !d ? <span className={s.lineWarn}>No longer offered. Remove it to continue.</span> : null}
-                          {changed.includes(i) ? <span className={s.lineWarn}>The seller changed this since you added it. Check the price.</span> : null}
+                          {shop.state === "ok" && !d ? (
+                            <span className={s.lineWarn}>No longer offered. Remove it to continue.</span>
+                          ) : null}
+                          {changed.includes(i) ? (
+                            <span className={s.lineWarn}>
+                              The seller changed this since you added it. Check the price.
+                            </span>
+                          ) : null}
                           <span className={s.lineActions}>
                             {d ? (
                               <ButtonLink size="sm" variant="line" href={`/@${name}/p/${l.slug}?line=${i}`}>
@@ -186,7 +217,13 @@ export function CheckoutPage({ name, seller }: { name: string; seller: { display
                             </Button>
                           </span>
                         </div>
-                        <b className={s.linePrice}>{tl ? formatAmount(tl.subtotal, token) : l.chosen ? formatAmount(BigInt(l.chosen) * BigInt(l.quantity), token) : "…"}</b>
+                        <b className={s.linePrice}>
+                          {tl
+                            ? formatAmount(tl.subtotal, token)
+                            : l.chosen
+                              ? formatAmount(BigInt(l.chosen) * BigInt(l.quantity), token)
+                              : "…"}
+                        </b>
                       </li>
                     );
                   })}
@@ -209,7 +246,9 @@ export function CheckoutPage({ name, seller }: { name: string; seller: { display
                           setCodeErr("That code is not valid for this order.");
                         } else setDiscount({ code: c, d });
                       })
-                      .catch((x: unknown) => setCodeErr(x instanceof ApiFailure ? x.message : "The code could not be checked. Try again."))
+                      .catch((x: unknown) =>
+                        setCodeErr(x instanceof ApiFailure ? x.message : "The code could not be checked. Try again."),
+                      )
                       .finally(() => setChecking(false));
                   }}
                 >
@@ -223,7 +262,11 @@ export function CheckoutPage({ name, seller }: { name: string; seller: { display
                     autoCapitalize="characters"
                     autoComplete="off"
                     error={codeErr}
-                    ok={discount ? `${discount.code} applied${discount.d.percent !== null ? `: ${discount.d.percent}% off` : ""}` : undefined}
+                    ok={
+                      discount
+                        ? `${discount.code} applied${discount.d.percent !== null ? `: ${discount.d.percent}% off` : ""}`
+                        : undefined
+                    }
                   />
                   {discount ? (
                     <Button variant="ghost" onClick={() => (setDiscount(null), setCode(""))}>
@@ -314,8 +357,8 @@ export function CheckoutPage({ name, seller }: { name: string; seller: { display
                       <p key={d.id}>
                         <Icon name="undo" size={16} />
                         <span>
-                          <b>{d.title}:</b> refund within {d.refund?.days} days, sent back by the seller from their wallet.{" "}
-                          {d.refund?.finePrint}
+                          <b>{d.title}:</b> refund within {d.refund?.days} days, sent back by the seller from their
+                          wallet. {d.refund?.finePrint}
                         </span>
                       </p>
                     ))}
@@ -341,7 +384,8 @@ export function CheckoutPage({ name, seller }: { name: string; seller: { display
                   onManual={(o) => done(o, null)}
                 />
                 <p className={s.fine}>
-                  Paying holds your order for an hour. {t && t.dueNow > 0n ? `The memo mzk:ord:… ties your payment to it on QoreChain.` : ""}
+                  Paying holds your order for an hour.{" "}
+                  {t && t.dueNow > 0n ? `The memo mzk:ord:… ties your payment to it on QoreChain.` : ""}
                 </p>
               </div>
             </section>
@@ -351,4 +395,3 @@ export function CheckoutPage({ name, seller }: { name: string; seller: { display
     </div>
   );
 }
-

@@ -34,49 +34,59 @@ const BUYER = "qor1qqqsyqcyq5rqwzqfpg9scrgwpugpzysnzs23v7";
 
 const draft = (): ProductDraft => ({
   v: 1,
-  def: ProductDefSchema.parse({ v: 1, id: "pr0123456789", owner: SELLER, name: "aria", slug: "brand-kit", kind: "file", title: "Brand kit", price: { token: "fUSD", amount: "12500000" }, version: 1, updatedAt: "now" }),
+  def: ProductDefSchema.parse({
+    v: 1,
+    id: "pr0123456789",
+    owner: SELLER,
+    name: "aria",
+    slug: "brand-kit",
+    kind: "file",
+    title: "Brand kit",
+    price: { token: "fUSD", amount: "12500000" },
+    version: 1,
+    updatedAt: "now",
+  }),
   content: { v: 1, pages: [{ id: "pg0000001", title: "", blocks: [{ t: "text", text: "" }] }] },
   key: "k",
   savedAt: "now",
 });
 
-const order = (o: Partial<OrderView> = {}): OrderView =>
-  ({
-    ref: "abcdefghijklmnopqrstuv",
+const order = (o: Partial<OrderView> = {}): OrderView => ({
+  ref: "abcdefghijklmnopqrstuv",
+  seller: SELLER,
+  request: {
+    v: 1,
     seller: SELLER,
-    request: {
-      v: 1,
-      seller: SELLER,
-      token: "fUSD",
-      lines: [{ productId: "pr0123456789", productVersion: 1, versionId: null, quantity: 1, chosen: null, slot: null }],
-      recipient: { kind: "account", address: BUYER },
-      gift: false,
-      tip: "0",
-      discountCode: null,
-      reviewHash: "0".repeat(64),
-      nonce: "AAAAAAAAAAAAAAAAAAAAAA",
-    },
-    records: [],
     token: "fUSD",
-    total: "10000000",
-    dueNow: "10000000",
-    dueLater: "0",
-    status: "paid",
-    payer: BUYER,
-    depositTx: "A".repeat(64),
-    balanceTx: null,
-    refundTx: null,
-    delivery: null,
-    deliveredBy: null,
-    balanceRequested: false,
-    createdAt: "2026-11-19T10:00:00Z",
-    paidAt: null,
-    deliveredAt: null,
-    expiresAt: "2026-11-19T11:00:00Z",
-    payTo: SELLER,
-    memo: "",
-    ...o,
-  });
+    lines: [{ productId: "pr0123456789", productVersion: 1, versionId: null, quantity: 1, chosen: null, slot: null }],
+    recipient: { kind: "account", address: BUYER },
+    gift: false,
+    tip: "0",
+    discountCode: null,
+    reviewHash: "0".repeat(64),
+    nonce: "AAAAAAAAAAAAAAAAAAAAAA",
+  },
+  records: [],
+  token: "fUSD",
+  total: "10000000",
+  dueNow: "10000000",
+  dueLater: "0",
+  status: "paid",
+  payer: BUYER,
+  depositTx: "A".repeat(64),
+  balanceTx: null,
+  refundTx: null,
+  delivery: null,
+  deliveredBy: null,
+  balanceRequested: false,
+  createdAt: "2026-11-19T10:00:00Z",
+  paidAt: null,
+  deliveredAt: null,
+  expiresAt: "2026-11-19T11:00:00Z",
+  payTo: SELLER,
+  memo: "",
+  ...o,
+});
 
 describe("description subset", () => {
   it("splits paragraphs and reads bold, italic and links", () => {
@@ -107,9 +117,17 @@ describe("amounts and files", () => {
   it("labels prices, pay what you want and tip jars", () => {
     const d = draft();
     expect(priceLabel(d.def)).toBe("12.5 fUSD");
-    expect(priceLabel({ ...d.def, price: { ...d.def.price, pwyw: { min: "3000000", suggested: "5000000" } } })).toBe("3 fUSD+");
+    expect(priceLabel({ ...d.def, price: { ...d.def.price, pwyw: { min: "3000000", suggested: "5000000" } } })).toBe(
+      "3 fUSD+",
+    );
     expect(amountInput("12500000", "fUSD")).toBe("12.5");
-    expect(sumByToken([{ amount: "1000000", token: "fUSD" }, { amount: "2000000", token: "QOR" }, { amount: "500000", token: "fUSD" }])).toBe("1.5 fUSD · 2 QOR");
+    expect(
+      sumByToken([
+        { amount: "1000000", token: "fUSD" },
+        { amount: "2000000", token: "QOR" },
+        { amount: "500000", token: "fUSD" },
+      ]),
+    ).toBe("1.5 fUSD · 2 QOR");
     expect(sumByToken([])).toBe("0 fUSD");
   });
   it("writes Gumroad's upload line", () => {
@@ -132,7 +150,10 @@ describe("working copy", () => {
     const bad = {
       ...d,
       def: { ...d.def, versions: [{ id: "vr00000001", name: " ", description: "", extra: "0", max: null }] },
-      content: { v: 1 as const, pages: [{ id: "pg0000001", title: "", blocks: [{ t: "link" as const, url: "https://", label: "" }] }] },
+      content: {
+        v: 1 as const,
+        pages: [{ id: "pg0000001", title: "", blocks: [{ t: "link" as const, url: "https://", label: "" }] }],
+      },
     };
     expect(contentProblems(bad.content)).toEqual(["a link needs a full address, starting with https://"]);
     expect(allProblems([], bad)).toContain("Name every version.");
@@ -148,7 +169,15 @@ describe("booking hours", () => {
   it("catches backwards, short and overlapping ranges", () => {
     expect(hoursProblems([{ day: 1, from: 600, to: 540 }], 30)[0]).toMatch(/Monday: the end time/);
     expect(hoursProblems([{ day: 2, from: 600, to: 615 }], 30)[0]).toMatch(/shorter than one 30-minute call/);
-    expect(hoursProblems([{ day: 3, from: 540, to: 720 }, { day: 3, from: 700, to: 800 }], 30)).toContain("Wednesday: two ranges overlap.");
+    expect(
+      hoursProblems(
+        [
+          { day: 3, from: 540, to: 720 },
+          { day: 3, from: 700, to: 800 },
+        ],
+        30,
+      ),
+    ).toContain("Wednesday: two ranges overlap.");
     expect(hoursProblems([{ day: 1, from: 540, to: 1020 }], 30)).toEqual([]);
   });
 });
@@ -184,7 +213,16 @@ describe("orders", () => {
   });
   it("reads lines from the records the order was priced with", () => {
     const d = draft();
-    const o = order({ records: [{ kind: "product", signer: SELLER, body: { ...d.def, id: "pr0123456789", version: 1 }, signature: {} } as unknown as OrderView["records"][number]] });
+    const o = order({
+      records: [
+        {
+          kind: "product",
+          signer: SELLER,
+          body: { ...d.def, id: "pr0123456789", version: 1 },
+          signature: {},
+        } as unknown as OrderView["records"][number],
+      ],
+    });
     expect(orderLines(o)[0]?.title).toBe("Brand kit");
     expect(orderLines(order())[0]?.title).toBe("A product that is no longer listed");
   });
@@ -197,7 +235,9 @@ describe("discounts", () => {
     const now = new Date("2026-11-19T12:00:00Z");
     expect(discountState({ active: true, expiresAt: null, maxUses: null, uses: 0 }, now).label).toBe("Active");
     expect(discountState({ active: false, expiresAt: null, maxUses: null, uses: 0 }, now).label).toBe("Off");
-    expect(discountState({ active: true, expiresAt: "2026-11-18T00:00:00Z", maxUses: null, uses: 0 }, now).label).toBe("Expired");
+    expect(discountState({ active: true, expiresAt: "2026-11-18T00:00:00Z", maxUses: null, uses: 0 }, now).label).toBe(
+      "Expired",
+    );
     expect(discountState({ active: true, expiresAt: null, maxUses: 3, uses: 3 }, now).label).toBe("Used up");
   });
   it("checks codes the way the server does", () => {

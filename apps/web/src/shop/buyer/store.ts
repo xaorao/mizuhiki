@@ -34,7 +34,11 @@ export function getCart(name: string): Cart | null {
     return null;
   }
 }
-export function putInCart(base: { name: string; seller: string; token: ShopToken }, line: CartLine, replace?: number): AddResult {
+export function putInCart(
+  base: { name: string; seller: string; token: ShopToken },
+  line: CartLine,
+  replace?: number,
+): AddResult {
   const r = addToCart(getCart(base.name), base, line, replace);
   if (r.ok) write(cartKey(base.name), r.cart);
   return r;
@@ -75,7 +79,10 @@ export const isSaved = (productId: string) => savedProducts().some((p) => p.prod
 export function toggleSaved(p: Omit<SavedProduct, "savedAt">): boolean {
   const all = savedProducts();
   if (all.some((x) => x.productId === p.productId)) {
-    write(SAVED, all.filter((x) => x.productId !== p.productId));
+    write(
+      SAVED,
+      all.filter((x) => x.productId !== p.productId),
+    );
     return false;
   }
   write(SAVED, [{ ...p, savedAt: new Date().toISOString() }, ...all].slice(0, 200));
@@ -97,7 +104,10 @@ export interface PostedReview {
 const REVIEWS = "mzk:shop:reviews";
 export const postedReviews = (): PostedReview[] => read<PostedReview[]>(REVIEWS, []);
 export function rememberReview(r: PostedReview): void {
-  write(REVIEWS, [r, ...postedReviews().filter((x) => !(x.ref === r.ref && x.productId === r.productId))].slice(0, 500));
+  write(
+    REVIEWS,
+    [r, ...postedReviews().filter((x) => !(x.ref === r.ref && x.productId === r.productId))].slice(0, 500),
+  );
 }
 
 // ---- orders placed on this device --------------------------------------------------------------

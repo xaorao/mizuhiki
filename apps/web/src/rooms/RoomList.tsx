@@ -33,10 +33,12 @@ export function RoomList({ list, activeId }: { list: ListState; activeId?: strin
     [list.summaries],
   );
   const names = useNames(authors);
-  const shown = list.rooms.filter((r) => r.status !== "blocked").filter((r) => {
-    const n = list.summaries[r.id]?.name ?? "";
-    return !q.trim() || n.toLowerCase().includes(q.trim().toLowerCase());
-  });
+  const shown = list.rooms
+    .filter((r) => r.status !== "blocked")
+    .filter((r) => {
+      const n = list.summaries[r.id]?.name ?? "";
+      return !q.trim() || n.toLowerCase().includes(q.trim().toLowerCase());
+    });
 
   const cancel = async (roomId: string) => {
     if (!account) return;
@@ -117,7 +119,9 @@ export function RoomList({ list, activeId }: { list: ListState; activeId?: strin
                 <RoomAvatar name={card?.name ?? "Room"} photo={card?.photo} roomId={w.roomId} size={48} />
                 <span className={s.rowText}>
                   <b>{card?.name || "A room you asked to join"}</b>
-                  <small>{w.status === "declined" ? "An admin declined your request." : "Waiting for an admin to let you in"}</small>
+                  <small>
+                    {w.status === "declined" ? "An admin declined your request." : "Waiting for an admin to let you in"}
+                  </small>
                 </span>
                 <button type="button" className={s.rowAction} onClick={() => void cancel(w.roomId)}>
                   {w.status === "declined" ? "Dismiss" : "Cancel"}
@@ -141,7 +145,12 @@ export function RoomList({ list, activeId }: { list: ListState; activeId?: strin
             const todo = r.requests > 0 ? `${r.requests} to approve` : null;
             return (
               <li key={r.id}>
-                <Link href={`/app/rooms/${r.id}`} className={s.row} data-active={activeId === r.id || undefined} data-state={r.status}>
+                <Link
+                  href={`/app/rooms/${r.id}`}
+                  className={s.row}
+                  data-active={activeId === r.id || undefined}
+                  data-state={r.status}
+                >
                   <RoomAvatar name={name} photo={sum?.photo} roomId={r.id} size={48} />
                   <span className={s.rowText}>
                     <b>

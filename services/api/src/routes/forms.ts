@@ -246,7 +246,10 @@ export const formRoutes =
       const owner = await sessionAddress(db, req);
       if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
       const { id } = req.params as { id: string };
-      const [f] = await db.select().from(forms).where(and(eq(forms.id, id), eq(forms.owner, owner)));
+      const [f] = await db
+        .select()
+        .from(forms)
+        .where(and(eq(forms.id, id), eq(forms.owner, owner)));
       if (!f) return fail(reply, 404, "NOT_FOUND", "No such form.");
       return { record: f.record ?? null, version: f.version, slug: f.slug, draftEnvelope: f.draftEnvelope };
     });

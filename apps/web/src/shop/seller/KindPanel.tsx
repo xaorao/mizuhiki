@@ -23,7 +23,8 @@ export function KindPanel(props: EditorProps) {
     return (
       <Panel title="Tip jar" kicker="ありがとう">
         <p className={s.help}>
-          Supporters choose any amount from your smallest tip up. After paying they get the thank-you page you write in Content, sealed to them, so you can share something only supporters see.
+          Supporters choose any amount from your smallest tip up. After paying they get the thank-you page you write in
+          Content, sealed to them, so you can share something only supporters see.
         </p>
       </Panel>
     );
@@ -39,17 +40,29 @@ const zones = (): string[] => {
 };
 
 function CallPanel({ draft, patch }: EditorProps) {
-  const b = draft.def.booking ?? { minutes: 30, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, hours: [], place: "" };
+  const b = draft.def.booking ?? {
+    minutes: 30,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    hours: [],
+    place: "",
+  };
   const set = (p: Partial<NonNullable<ProductDef["booking"]>>, key?: string) => patch({ booking: { ...b, ...p } }, key);
   const all = useMemo(zones, []);
   const problems = hoursProblems(b.hours, b.minutes);
-  const setRange = (idx: number, p: Partial<{ from: number; to: number }>) => set({ hours: b.hours.map((h, j) => (j === idx ? { ...h, ...p } : h)) }, `h-${idx}`);
+  const setRange = (idx: number, p: Partial<{ from: number; to: number }>) =>
+    set({ hours: b.hours.map((h, j) => (j === idx ? { ...h, ...p } : h)) }, `h-${idx}`);
 
   return (
     <Panel title="Booking" kicker="よやく">
       <div className={s.stack}>
         <div className={s.fieldRow}>
-          <CountField label="Call length in minutes" value={b.minutes} min={10} max={480} onChange={(minutes) => minutes !== null && set({ minutes }, "minutes")} />
+          <CountField
+            label="Call length in minutes"
+            value={b.minutes}
+            min={10}
+            max={480}
+            onChange={(minutes) => minutes !== null && set({ minutes }, "minutes")}
+          />
           <label className={s.selectField}>
             <span>Your time zone</span>
             <select value={b.timezone} onChange={(e) => set({ timezone: e.target.value })}>
@@ -63,7 +76,10 @@ function CallPanel({ draft, patch }: EditorProps) {
         </div>
         <div className={s.subHead}>
           <b>Weekly hours</b>
-          <small>Buyers pick a free slot inside these hours, shown in their own time zone. A booked slot is held for an hour while they pay.</small>
+          <small>
+            Buyers pick a free slot inside these hours, shown in their own time zone. A booked slot is held for an hour
+            while they pay.
+          </small>
         </div>
         <ul className={s.week}>
           {WEEKDAYS.map((day, d) => {
@@ -96,7 +112,12 @@ function CallPanel({ draft, patch }: EditorProps) {
                           if (m !== null) setRange(i, { to: m === 1439 ? 1440 : m });
                         }}
                       />
-                      <IconButton icon="x" size="sm" label={`Remove ${day} ${toTime(h.from)}`} onClick={() => set({ hours: b.hours.filter((_, j) => j !== i) })} />
+                      <IconButton
+                        icon="x"
+                        size="sm"
+                        label={`Remove ${day} ${toTime(h.from)}`}
+                        onClick={() => set({ hours: b.hours.filter((_, j) => j !== i) })}
+                      />
                     </div>
                   ))}
                 </div>
@@ -155,10 +176,18 @@ function CommissionPanel({ draft, patch }: EditorProps) {
           <span>
             Deposit up front: <b>{c.depositPercent}%</b>
           </span>
-          <input type="range" min={10} max={90} step={5} value={c.depositPercent} onChange={(e) => patch({ commission: { depositPercent: Number(e.target.value) } }, "deposit")} />
+          <input
+            type="range"
+            min={10}
+            max={90}
+            step={5}
+            value={c.depositPercent}
+            onChange={(e) => patch({ commission: { depositPercent: Number(e.target.value) } }, "deposit")}
+          />
         </label>
         <p className={s.help}>
-          The buyer pays {formatAmount(now, p.token)} now and {formatAmount(BigInt(p.amount) - now, p.token)} when you ask for the rest from Sales. What they get in Content is sealed to them after the second payment.
+          The buyer pays {formatAmount(now, p.token)} now and {formatAmount(BigInt(p.amount) - now, p.token)} when you
+          ask for the rest from Sales. What they get in Content is sealed to them after the second payment.
         </p>
       </div>
     </Panel>
@@ -174,9 +203,15 @@ function BundlePanel({ draft, patch, tokened }: EditorProps) {
       try {
         const a = await tokened();
         const rows = await listMyProducts(a);
-        const pub = rows.filter((r) => r.status === "published" && r.record && r.id !== draft.def.id && r.kind !== "bundle");
+        const pub = rows.filter(
+          (r) => r.status === "published" && r.record && r.id !== draft.def.id && r.kind !== "bundle",
+        );
         // Titles from the working copy when it opens here; else the public record.
-        setMine(await Promise.all(pub.map(async (r) => (await openDraft(a, r).catch(() => null))?.def ?? (r.record?.body as ProductDef))));
+        setMine(
+          await Promise.all(
+            pub.map(async (r) => (await openDraft(a, r).catch(() => null))?.def ?? (r.record?.body as ProductDef)),
+          ),
+        );
       } catch (e) {
         setErr(e instanceof ApiFailure ? e.message : "Your products could not be loaded.");
       }
@@ -191,17 +226,24 @@ function BundlePanel({ draft, patch, tokened }: EditorProps) {
     <Panel title="In this bundle" kicker="セット">
       <div className={s.stack}>
         <p className={s.help}>
-          Pick two or more of your published products. A buyer gets each one sealed to them, for the bundle&rsquo;s price. A welcome note in Content is optional; if you add one, it opens first.
+          Pick two or more of your published products. A buyer gets each one sealed to them, for the bundle&rsquo;s
+          price. A welcome note in Content is optional; if you add one, it opens first.
         </p>
         {err ? <p className={s.fieldErr}>{err}</p> : null}
         {mine === null && !err ? <Skeleton lines={2} /> : null}
-        {mine && mine.length === 0 ? <p className={s.muted}>Publish two products first, then bundle them here.</p> : null}
+        {mine && mine.length === 0 ? (
+          <p className={s.muted}>Publish two products first, then bundle them here.</p>
+        ) : null}
         {mine && mine.length ? (
           <ul className={s.pickList}>
             {mine.map((m) => (
               <li key={m.id}>
                 <label className={s.pick}>
-                  <input type="checkbox" checked={picked.includes(m.id)} onChange={(e) => toggle(m.id, e.target.checked)} />
+                  <input
+                    type="checkbox"
+                    checked={picked.includes(m.id)}
+                    onChange={(e) => toggle(m.id, e.target.checked)}
+                  />
                   <Thumb def={m} size={36} />
                   <span>
                     <b>{m.title}</b>
@@ -213,11 +255,15 @@ function BundlePanel({ draft, patch, tokened }: EditorProps) {
           </ul>
         ) : null}
         {picked.some((id) => mine && !mine.some((m) => m.id === id)) ? (
-          <p className={s.warn}>A product in this bundle is no longer published, so the bundle cannot be published until you untick it or publish it again.</p>
+          <p className={s.warn}>
+            A product in this bundle is no longer published, so the bundle cannot be published until you untick it or
+            publish it again.
+          </p>
         ) : null}
         {chosen.length >= 2 ? (
           <p className={s.note}>
-            Bought separately: {sumByToken(chosen.map((m) => ({ amount: m.price.amount, token: m.price.token })))}. The bundle: {formatAmount(draft.def.price.amount, draft.def.price.token)}.
+            Bought separately: {sumByToken(chosen.map((m) => ({ amount: m.price.amount, token: m.price.token })))}. The
+            bundle: {formatAmount(draft.def.price.amount, draft.def.price.token)}.
           </p>
         ) : null}
         {picked.length && mine

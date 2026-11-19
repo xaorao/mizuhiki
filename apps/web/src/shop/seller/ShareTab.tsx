@@ -6,7 +6,19 @@
  */
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { Button, ButtonLink, CopyValue, EmptyState, Icon, Kicker, Musubi, Oops, Panel, Skeleton, useToast } from "@mizuhiki/ui";
+import {
+  Button,
+  ButtonLink,
+  CopyValue,
+  EmptyState,
+  Icon,
+  Kicker,
+  Musubi,
+  Oops,
+  Panel,
+  Skeleton,
+  useToast,
+} from "@mizuhiki/ui";
 import { newId, type Block } from "@mizuhiki/core";
 import { useOwner } from "@/owner/OwnerProvider";
 import { updateBlock } from "@/editor/blocks";
@@ -36,7 +48,8 @@ export function ShareTab({ draft, row, name, publish, publishing }: EditorProps)
               </Button>
             }
           >
-            Publishing signs the product with your key. Then you get a link, a QR code and a way to show it on your page.
+            Publishing signs the product with your key. Then you get a link, a QR code and a way to show it on your
+            page.
           </EmptyState>
         </Panel>
       </div>
@@ -55,7 +68,16 @@ export function ShareTab({ draft, row, name, publish, publishing }: EditorProps)
       <Panel title="Share the link" kicker="リンク">
         <div className={s.stack}>
           <div className={s.linkLine}>
-            <CopyValue value={link} label="product link" onCopied={(ok) => toast.show(ok ? "Link copied and ready to share" : "Copy is not allowed here", ok ? {} : { tone: "error" })} />
+            <CopyValue
+              value={link}
+              label="product link"
+              onCopied={(ok) =>
+                toast.show(
+                  ok ? "Link copied and ready to share" : "Copy is not allowed here",
+                  ok ? {} : { tone: "error" },
+                )
+              }
+            />
             <ButtonLink href={link} target="_blank" rel="noopener" size="sm" variant="line" iconRight="arrow">
               Open
             </ButtonLink>
@@ -73,7 +95,12 @@ function Qr({ link, slug }: { link: string; slug: string }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     let alive = true;
-    QRCode.toDataURL(link, { margin: 2, width: 1024, errorCorrectionLevel: "M", color: { dark: "#2b2340", light: "#ffffff" } }).then(
+    QRCode.toDataURL(link, {
+      margin: 2,
+      width: 1024,
+      errorCorrectionLevel: "M",
+      color: { dark: "#2b2340", light: "#ffffff" },
+    }).then(
       (u) => alive && (setQr(u), setFailed(false)),
       () => alive && setFailed(true),
     );
@@ -83,11 +110,17 @@ function Qr({ link, slug }: { link: string; slug: string }) {
   }, [link]);
   return (
     <div className={s.qrWrap}>
-      {qr ? <img className={s.qr} src={qr} alt="QR code for the product link" /> : failed ? null : <Skeleton height={160} />}
+      {qr ? (
+        <img className={s.qr} src={qr} alt="QR code for the product link" />
+      ) : failed ? null : (
+        <Skeleton height={160} />
+      )}
       <div className={s.stack}>
         <b>QR code</b>
         <p className={s.help}>
-          {failed ? "The QR code could not be drawn in this browser. The link above works the same." : "For a stall, a poster or the last slide of a talk. Scanning it opens the same link."}
+          {failed
+            ? "The QR code could not be drawn in this browser. The link above works the same."
+            : "For a stall, a poster or the last slide of a talk. Scanning it opens the same link."}
         </p>
         {qr ? (
           <div>
@@ -114,7 +147,10 @@ function ShowOnPage({ productId, title }: { productId: string; title: string }) 
     setQueued(null);
     o.publish().then(
       () => toast.show(done),
-      (e: unknown) => setError(`${e instanceof Error ? e.message : "Your page was not published."} The change is saved in your page draft.`),
+      (e: unknown) =>
+        setError(
+          `${e instanceof Error ? e.message : "Your page was not published."} The change is saved in your page draft.`,
+        ),
     );
   }, [queued, o, toast]);
 
@@ -128,17 +164,23 @@ function ShowOnPage({ productId, title }: { productId: string; title: string }) 
   if (o.loadError || !d)
     return (
       <Panel title="Show on my page" kicker="おみせ">
-        <Oops title="Your page did not open">{o.loadError ?? "Your page draft is not available."} The product link still works on its own.</Oops>
+        <Oops title="Your page did not open">
+          {o.loadError ?? "Your page draft is not available."} The product link still works on its own.
+        </Oops>
       </Panel>
     );
 
   const blocks = d.manifest.blocks;
-  const button = blocks.find((b): b is Extract<Block, { type: "product" }> => b.type === "product" && b.productId === productId);
+  const button = blocks.find(
+    (b): b is Extract<Block, { type: "product" }> => b.type === "product" && b.productId === productId,
+  );
   const sections = blocks.filter((b): b is Extract<Block, { type: "shopSection" }> => b.type === "shopSection");
   const inSection = sections.find((b) => b.productIds.includes(productId));
   const pub = o.published?.blocks ?? [];
   const buttonLive = pub.some((b) => b.type === "product" && b.productId === productId && b.on && !b.archived);
-  const sectionLive = pub.some((b) => b.type === "shopSection" && b.productIds.includes(productId) && b.on && !b.archived);
+  const sectionLive = pub.some(
+    (b) => b.type === "shopSection" && b.productIds.includes(productId) && b.on && !b.archived,
+  );
   const busy = o.publishing || queued !== null;
 
   const run = (fn: Parameters<typeof o.edit>[0], message: string) => {
@@ -148,17 +190,43 @@ function ShowOnPage({ productId, title }: { productId: string; title: string }) 
   };
   const addButton = () =>
     run((x) => {
-      const b: Block = { id: newId(), type: "product", productId, title: title.slice(0, 80) || "My product", subtitle: "Sealed to each buyer", on: true, archived: false };
+      const b: Block = {
+        id: newId(),
+        type: "product",
+        productId,
+        title: title.slice(0, 80) || "My product",
+        subtitle: "Sealed to each buyer",
+        on: true,
+        archived: false,
+      };
       return markChecklist({ ...x, manifest: { ...x.manifest, blocks: [...x.manifest.blocks, b] } }, "block", "done");
     }, "Added to your page and published");
   const addToSection = () =>
-    run((x) => {
-      const first = x.manifest.blocks.find((b): b is Extract<Block, { type: "shopSection" }> => b.type === "shopSection" && !b.archived);
-      if (first)
-        return updateBlock(x, first.id, { productIds: [...first.productIds.filter((p) => p !== productId), productId].slice(0, 48), on: true });
-      const b: Block = { id: newId(), type: "shopSection", productIds: [productId], title: "Shop", subtitle: "", on: true, archived: false };
-      return markChecklist({ ...x, manifest: { ...x.manifest, blocks: [...x.manifest.blocks, b] } }, "block", "done");
-    }, sections.length ? "Added to your Shop section and published" : "Shop section made, with this product, and published");
+    run(
+      (x) => {
+        const first = x.manifest.blocks.find(
+          (b): b is Extract<Block, { type: "shopSection" }> => b.type === "shopSection" && !b.archived,
+        );
+        if (first)
+          return updateBlock(x, first.id, {
+            productIds: [...first.productIds.filter((p) => p !== productId), productId].slice(0, 48),
+            on: true,
+          });
+        const b: Block = {
+          id: newId(),
+          type: "shopSection",
+          productIds: [productId],
+          title: "Shop",
+          subtitle: "",
+          on: true,
+          archived: false,
+        };
+        return markChecklist({ ...x, manifest: { ...x.manifest, blocks: [...x.manifest.blocks, b] } }, "block", "done");
+      },
+      sections.length
+        ? "Added to your Shop section and published"
+        : "Shop section made, with this product, and published",
+    );
 
   const removeFrom = (kind: "button" | "section") =>
     run(
@@ -172,13 +240,20 @@ function ShowOnPage({ productId, title }: { productId: string; title: string }) 
     );
 
   const line = (isIn: boolean, isLive: boolean, hidden: boolean) =>
-    !isIn ? null : hidden ? "On your page but switched off or archived." : isLive ? "On your page and live." : "In your page draft, not published yet.";
+    !isIn
+      ? null
+      : hidden
+        ? "On your page but switched off or archived."
+        : isLive
+          ? "On your page and live."
+          : "In your page draft, not published yet.";
 
   return (
     <Panel title="Show on my page" kicker="おみせ">
       <div className={s.stack}>
         <p className={s.note}>
-          <Icon name="info" size={15} /> Publishing a product does not put it on your page. Add it as a button, or to a Shop section, here.
+          <Icon name="info" size={15} /> Publishing a product does not put it on your page. Add it as a button, or to a
+          Shop section, here.
         </p>
         <div className={s.showRow}>
           <span className={s.showIcon}>
@@ -186,18 +261,35 @@ function ShowOnPage({ productId, title }: { productId: string; title: string }) 
           </span>
           <div className={s.showText}>
             <b>A button for this product</b>
-            <small>{line(!!button, buttonLive, !!button && (!button.on || button.archived)) ?? `A “${title.slice(0, 40)}” button on your page.`}</small>
+            <small>
+              {line(!!button, buttonLive, !!button && (!button.on || button.archived)) ??
+                `A “${title.slice(0, 40)}” button on your page.`}
+            </small>
           </div>
           {!button ? (
             <Button size="sm" variant="cord" icon="plus" busy={busy} onClick={addButton}>
               Add button
             </Button>
           ) : !button.on || button.archived ? (
-            <Button size="sm" variant="cord" icon="check" busy={busy} onClick={() => run((x) => updateBlock(x, button.id, { on: true, archived: false }), "The button is back on your page")}>
+            <Button
+              size="sm"
+              variant="cord"
+              icon="check"
+              busy={busy}
+              onClick={() =>
+                run((x) => updateBlock(x, button.id, { on: true, archived: false }), "The button is back on your page")
+              }
+            >
               Show it
             </Button>
           ) : !buttonLive ? (
-            <Button size="sm" variant="cord" icon="send" busy={busy} onClick={() => run((x) => x, "Your page is published")}>
+            <Button
+              size="sm"
+              variant="cord"
+              icon="send"
+              busy={busy}
+              onClick={() => run((x) => x, "Your page is published")}
+            >
               Publish my page
             </Button>
           ) : (
@@ -211,10 +303,18 @@ function ShowOnPage({ productId, title }: { productId: string; title: string }) 
             <Icon name="folder" size={20} />
           </span>
           <div className={s.showText}>
-            <b>{inSection ? `In “${inSection.title}”` : sections.length ? `Add to “${sections[0]?.title ?? "Shop"}”` : "A Shop section"}</b>
+            <b>
+              {inSection
+                ? `In “${inSection.title}”`
+                : sections.length
+                  ? `Add to “${sections[0]?.title ?? "Shop"}”`
+                  : "A Shop section"}
+            </b>
             <small>
               {line(!!inSection, sectionLive, !!inSection && (!inSection.on || inSection.archived)) ??
-                (sections.length ? "A grid of products on your page, with thumbnails and prices." : "You have no Shop section yet. This makes one with this product in it.")}
+                (sections.length
+                  ? "A grid of products on your page, with thumbnails and prices."
+                  : "You have no Shop section yet. This makes one with this product in it.")}
             </small>
           </div>
           {!inSection ? (
@@ -222,7 +322,21 @@ function ShowOnPage({ productId, title }: { productId: string; title: string }) 
               {sections.length ? "Add" : "Make section"}
             </Button>
           ) : !sectionLive ? (
-            <Button size="sm" variant="cord" icon="send" busy={busy} onClick={() => run((x) => (inSection.on && !inSection.archived ? x : updateBlock(x, inSection.id, { on: true, archived: false })), "Your page is published")}>
+            <Button
+              size="sm"
+              variant="cord"
+              icon="send"
+              busy={busy}
+              onClick={() =>
+                run(
+                  (x) =>
+                    inSection.on && !inSection.archived
+                      ? x
+                      : updateBlock(x, inSection.id, { on: true, archived: false }),
+                  "Your page is published",
+                )
+              }
+            >
               Publish my page
             </Button>
           ) : (
@@ -231,7 +345,9 @@ function ShowOnPage({ productId, title }: { productId: string; title: string }) 
             </Button>
           )}
         </div>
-        {o.dirty ? <p className={s.help}>Publishing your page also puts your other unpublished page changes live.</p> : null}
+        {o.dirty ? (
+          <p className={s.help}>Publishing your page also puts your other unpublished page changes live.</p>
+        ) : null}
         {error ? <Oops title="Your page was not published">{error}</Oops> : null}
       </div>
     </Panel>

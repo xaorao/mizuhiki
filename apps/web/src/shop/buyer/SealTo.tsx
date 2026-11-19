@@ -8,13 +8,28 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { Button, ButtonLink, ChoiceCard, CopyValue, Icon, LockLine, Oops, TextField, useToast } from "@mizuhiki/ui";
-import { cardHash, isPhraseWord, isValidPhrase, normalizePhrase, type OrderRequest, type RecipientCard } from "@mizuhiki/core";
+import {
+  cardHash,
+  isPhraseWord,
+  isValidPhrase,
+  normalizePhrase,
+  type OrderRequest,
+  type RecipientCard,
+} from "@mizuhiki/core";
 import type { SealKeyPair } from "@qorechain/qoreseal";
 import { useAccount } from "@/account/AccountProvider";
 import { api, ApiFailure } from "@/lib/api";
 import { SITE_HOST } from "@/lib/site";
 import { downloadBytes } from "@/lib/sparekey";
-import { buyerKeyFrom, buyerKeys, cardOf, forgetBuyerKey, newBuyerKey, rememberBuyerKey, type BuyerKey } from "../engine";
+import {
+  buyerKeyFrom,
+  buyerKeys,
+  cardOf,
+  forgetBuyerKey,
+  newBuyerKey,
+  rememberBuyerKey,
+  type BuyerKey,
+} from "../engine";
 import { buildBuyerKeySheet } from "./buyerKeySheet";
 import { fingerprint } from "./model";
 import s from "./buyer.module.css";
@@ -29,7 +44,15 @@ export interface SealChoice {
 
 type Mode = "account" | "key" | "gift";
 
-export function SealTo({ shop, next, onChange }: { shop: string; next: string; onChange: (c: SealChoice | null) => void }) {
+export function SealTo({
+  shop,
+  next,
+  onChange,
+}: {
+  shop: string;
+  next: string;
+  onChange: (c: SealChoice | null) => void;
+}) {
   const acct = useAccount();
   const [mode, setMode] = useState<Mode | null>(null);
   const [keys, setKeys] = useState<BuyerKey[] | null>(null);
@@ -55,9 +78,20 @@ export function SealTo({ shop, next, onChange }: { shop: string; next: string; o
         reviewKeys: acct.account.keys.seal,
         summary: `your account ${acct.account.owner.address}`,
       };
-    if (mode === "key" && picked) return { recipient: picked.recipient, gift: false, reviewKeys: picked.keys, summary: `buyer key ${fingerprint(picked.hash, 16)}` };
+    if (mode === "key" && picked)
+      return {
+        recipient: picked.recipient,
+        gift: false,
+        reviewKeys: picked.keys,
+        summary: `buyer key ${fingerprint(picked.hash, 16)}`,
+      };
     if (mode === "gift" && gift)
-      return { recipient: { kind: "account", address: gift.address }, gift: true, reviewKeys: null, summary: `${gift.name ? `@${gift.name}` : gift.address} (a gift)` };
+      return {
+        recipient: { kind: "account", address: gift.address },
+        gift: true,
+        reviewKeys: null,
+        summary: `${gift.name ? `@${gift.name}` : gift.address} (a gift)`,
+      };
     return null;
   }, [mode, acct.status, acct.account, picked, gift]);
   useEffect(() => onChange(choice), [choice, onChange]);
@@ -69,7 +103,13 @@ export function SealTo({ shop, next, onChange }: { shop: string; next: string; o
           selected={mode === "account"}
           onSelect={() => setMode("account")}
           title="My Mizuhiki account"
-          detail={acct.status === "unlocked" ? "Opens wherever you use Mizuhiki." : acct.status === "locked" ? "Unlock it here; your key stays on this device." : "Log in or make one; you come back here."}
+          detail={
+            acct.status === "unlocked"
+              ? "Opens wherever you use Mizuhiki."
+              : acct.status === "locked"
+                ? "Unlock it here; your key stays on this device."
+                : "Log in or make one; you come back here."
+          }
           icon={<Icon name="key" />}
           tone="sakura"
         />
@@ -122,7 +162,11 @@ export function SealTo({ shop, next, onChange }: { shop: string; next: string; o
           ) : (
             <code className={s.fp}>{fingerprint(picked?.hash ?? "", 32)}</code>
           )}
-          <b>{choice.recipient.kind === "account" ? "This is the only wallet that can open it." : "This is the only key that can open it."}</b>
+          <b>
+            {choice.recipient.kind === "account"
+              ? "This is the only wallet that can open it."
+              : "This is the only key that can open it."}
+          </b>
           {choice.gift ? <small>You pay; they open it. You will not be able to open it yourself.</small> : null}
         </div>
       ) : null}
@@ -174,7 +218,14 @@ function AccountChoice({ next }: { next: string }) {
           .finally(() => setBusy(null));
       }}
     >
-      <TextField label="Device passphrase" type="password" value={pass} onChange={(e) => setPass(e.target.value)} error={err} autoComplete="current-password" />
+      <TextField
+        label="Device passphrase"
+        type="password"
+        value={pass}
+        onChange={(e) => setPass(e.target.value)}
+        error={err}
+        autoComplete="current-password"
+      />
       <div className={s.rowWrap}>
         <Button type="submit" variant="line" icon="key" busy={busy === "pass"} disabled={!pass}>
           Unlock
@@ -249,7 +300,10 @@ function KeyChoice({
       ) : flow === "new" ? (
         <NewKey shop={shop} onDone={(k) => (onAdded(k), setFlow("list"))} onRestore={() => setFlow("restore")} />
       ) : (
-        <RestoreKey onDone={(k) => (onAdded(k), setFlow("list"))} onBack={() => setFlow(keys.length ? "list" : "new")} />
+        <RestoreKey
+          onDone={(k) => (onAdded(k), setFlow("list"))}
+          onBack={() => setFlow(keys.length ? "list" : "new")}
+        />
       )}
     </div>
   );
@@ -281,7 +335,10 @@ function NewKey({ shop, onDone, onRestore }: { shop: string; onDone: (k: BuyerKe
     return (
       <>
         <p className={s.subHead}>Your buyer key</p>
-        <p className={s.fine}>These 12 words open what you buy. Write them down or save the PDF. They are shown once and never sent anywhere.</p>
+        <p className={s.fine}>
+          These 12 words open what you buy. Write them down or save the PDF. They are shown once and never sent
+          anywhere.
+        </p>
         <ol className={s.words} aria-label="Your 12 words">
           {words.map((w, i) => (
             <li key={i}>
@@ -297,9 +354,17 @@ function NewKey({ shop, onDone, onRestore }: { shop: string; onDone: (k: BuyerKe
             busy={busy === "pdf"}
             onClick={() => {
               setBusy("pdf");
-              void buildBuyerKeySheet({ phrase: key.phrase, fingerprint: fingerprint(key.hash, 32), shop, site: SITE_HOST, createdAt: new Date() })
+              void buildBuyerKeySheet({
+                phrase: key.phrase,
+                fingerprint: fingerprint(key.hash, 32),
+                shop,
+                site: SITE_HOST,
+                createdAt: new Date(),
+              })
                 .then((b) => downloadBytes(b, "mizuhiki-buyer-key.pdf"))
-                .catch(() => toast.show("The PDF could not be made here. Write the words down instead.", { tone: "error" }))
+                .catch(() =>
+                  toast.show("The PDF could not be made here. Write the words down instead.", { tone: "error" }),
+                )
                 .finally(() => setBusy(null));
             }}
           >
@@ -323,7 +388,9 @@ function NewKey({ shop, onDone, onRestore }: { shop: string; onDone: (k: BuyerKe
         setErr(null);
         rememberBuyerKey(key)
           .then(() => onDone(key))
-          .catch(() => setErr("This browser would not keep the key. Your words still work; use them to open your purchase."))
+          .catch(() =>
+            setErr("This browser would not keep the key. Your words still work; use them to open your purchase."),
+          )
           .finally(() => setBusy(null));
       }}
       className={s.checkWords}
@@ -452,7 +519,9 @@ function GiftChoice({
         name = (await api.get<{ name: string | null }>(`/names/of/${address}`).catch(() => ({ name: null }))).name;
       } else {
         const n = raw.replace(/^@/, "").toLowerCase();
-        const r = await api.get<{ available: boolean; owner?: string; problem?: string }>(`/names/${encodeURIComponent(n)}`);
+        const r = await api.get<{ available: boolean; owner?: string; problem?: string }>(
+          `/names/${encodeURIComponent(n)}`,
+        );
         if (!r.owner) throw new Error(`Nobody has @${n} yet. Check the name, or paste their qor1 address.`);
         address = r.owner;
         name = n;

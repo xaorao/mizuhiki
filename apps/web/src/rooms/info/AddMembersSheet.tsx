@@ -56,7 +56,11 @@ export function AddMembersSheet({ room, open, onClose }: { room: RoomState; open
     try {
       const found = await lookupPerson(parsed.kind === "address" ? parsed.address : parsed.name);
       if (!found) {
-        setInputErr(parsed.kind === "name" ? `Nobody has @${parsed.name}. Check the spelling.` : "That address has no Mizuhiki account yet.");
+        setInputErr(
+          parsed.kind === "name"
+            ? `Nobody has @${parsed.name}. Check the spelling.`
+            : "That address has no Mizuhiki account yet.",
+        );
         return;
       }
       if (found.address === me.address) {
@@ -72,7 +76,11 @@ export function AddMembersSheet({ room, open, onClose }: { room: RoomState; open
         setInputErr(`${found.name ? `@${found.name}` : "They"} are blocked. Unblock them under Removed people first.`);
         return;
       }
-      setPeople((cur) => (cur.some((p) => p.address === found.address) ? cur : [...cur, { address: found.address, history: historyDefault }]));
+      setPeople((cur) =>
+        cur.some((p) => p.address === found.address)
+          ? cur
+          : [...cur, { address: found.address, history: historyDefault }],
+      );
       setInput("");
     } catch (e) {
       setInputErr(`That person could not be looked up. ${(e as Error).message}`);
@@ -90,10 +98,22 @@ export function AddMembersSheet({ room, open, onClose }: { room: RoomState; open
       const a = await room.acct();
       if (admin) {
         await changeMembers(a, detail.id, { add: people, reason: "added" }, steps.onStep);
-        toast.show(people.length === 1 ? `${label(people[0]?.address ?? "", names)} is in. Room key changed.` : `${people.length} people are in. Room key changed.`);
+        toast.show(
+          people.length === 1
+            ? `${label(people[0]?.address ?? "", names)} is in. Room key changed.`
+            : `${people.length} people are in. Room key changed.`,
+        );
       } else {
-        await suggestMembers(a, detail.id, people.map((p) => p.address));
-        toast.show(people.length === 1 ? "Suggested. An admin lets them in." : `${people.length} people suggested. An admin lets them in.`);
+        await suggestMembers(
+          a,
+          detail.id,
+          people.map((p) => p.address),
+        );
+        toast.show(
+          people.length === 1
+            ? "Suggested. An admin lets them in."
+            : `${people.length} people suggested. An admin lets them in.`,
+        );
       }
       setBusy(false);
       clear();
@@ -148,14 +168,22 @@ export function AddMembersSheet({ room, open, onClose }: { room: RoomState; open
                     <PersonAvatar address={p.address} names={names} size={30} />
                     <b>{label(p.address, names)}</b>
                   </span>
-                  <IconButton icon="x" label={`Take ${label(p.address, names)} off the list`} size="sm" disabled={busy} onClick={() => setPeople((cur) => cur.filter((x) => x.address !== p.address))} />
+                  <IconButton
+                    icon="x"
+                    label={`Take ${label(p.address, names)} off the list`}
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => setPeople((cur) => cur.filter((x) => x.address !== p.address))}
+                  />
                 </div>
                 {admin ? (
                   <>
                     <Pills
                       label={`What ${label(p.address, names)} can read`}
                       value={p.history}
-                      onChange={(h) => setPeople((cur) => cur.map((x) => (x.address === p.address ? { ...x, history: h } : x)))}
+                      onChange={(h) =>
+                        setPeople((cur) => cur.map((x) => (x.address === p.address ? { ...x, history: h } : x)))
+                      }
                       options={[
                         { value: "share", label: "Share past messages" },
                         { value: "hide", label: "Only new messages" },
@@ -170,7 +198,9 @@ export function AddMembersSheet({ room, open, onClose }: { room: RoomState; open
                 ) : null}
               </div>
             ))}
-            {admin ? <p className={s.consequence}>It cannot be undone: past messages are sealed to them or never shared.</p> : null}
+            {admin ? (
+              <p className={s.consequence}>It cannot be undone: past messages are sealed to them or never shared.</p>
+            ) : null}
           </div>
         ) : null}
 
@@ -181,7 +211,15 @@ export function AddMembersSheet({ room, open, onClose }: { room: RoomState; open
             Cancel
           </Button>
           <Button variant="cord" icon="users" busy={busy} disabled={people.length === 0} onClick={() => void submit()}>
-            {busy ? (admin ? "Changing the room key…" : "Suggesting…") : admin ? (people.length > 1 ? `Add ${people.length} people` : "Add to room") : "Suggest"}
+            {busy
+              ? admin
+                ? "Changing the room key…"
+                : "Suggesting…"
+              : admin
+                ? people.length > 1
+                  ? `Add ${people.length} people`
+                  : "Add to room"
+                : "Suggest"}
           </Button>
         </div>
       </div>

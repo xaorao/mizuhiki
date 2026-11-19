@@ -65,10 +65,14 @@ describe("use slider", () => {
 describe("link state and labels", () => {
   it("follows the server's order: revoked, expired, used up", () => {
     expect(linkState(row, now)).toBe("active");
-    expect(linkState({ ...row, revoked: true, expiresAt: "2020-01-01T00:00:00Z", maxUses: 1, uses: 1 }, now)).toBe("revoked");
+    expect(linkState({ ...row, revoked: true, expiresAt: "2020-01-01T00:00:00Z", maxUses: 1, uses: 1 }, now)).toBe(
+      "revoked",
+    );
     expect(linkState({ ...row, expiresAt: "2020-01-01T00:00:00Z", maxUses: 1, uses: 1 }, now)).toBe("expired");
     expect(linkState({ ...row, maxUses: 3, uses: 3 }, now)).toBe("used-up");
-    expect(linkState({ ...row, maxUses: 3, uses: 2, expiresAt: new Date(now.getTime() + 1000).toISOString() }, now)).toBe("active");
+    expect(
+      linkState({ ...row, maxUses: 3, uses: 2, expiresAt: new Date(now.getTime() + 1000).toISOString() }, now),
+    ).toBe("active");
   });
   it("formats dates like Telegram, adding the year only when it differs", () => {
     expect(fmtWhen(new Date(2026, 10, 24, 21, 34), now)).toBe("Nov 24 at 21:34");

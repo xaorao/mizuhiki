@@ -30,7 +30,12 @@ import s from "./rooms.module.css";
 
 type Phase = "kind" | "members" | "details" | "sealing" | "failed";
 const AUTO_DELETE = [0, 86_400, 604_800, 2_592_000] as const;
-const ICON: Record<RoomType, "invoice" | "coin" | "users" | "heart"> = { deal: "invoice", payroll: "coin", team: "users", family: "heart" };
+const ICON: Record<RoomType, "invoice" | "coin" | "users" | "heart"> = {
+  deal: "invoice",
+  payroll: "coin",
+  team: "users",
+  family: "heart",
+};
 
 export function CreateRoom() {
   const router = useRouter();
@@ -99,7 +104,7 @@ export function CreateRoom() {
     const order = Object.keys(STEP_LABEL) as Step[];
     return order.map((k) => ({
       title: STEP_LABEL[k],
-      state: (order.indexOf(k) < order.indexOf(step) ? "done" : k === step ? "running" : "waiting"),
+      state: order.indexOf(k) < order.indexOf(step) ? "done" : k === step ? "running" : "waiting",
     }));
   }, [step]);
 
@@ -110,7 +115,17 @@ export function CreateRoom() {
     try {
       const id = await createRoom(
         withToken(account, await token()),
-        { name, description, type, members, approval, historyDefault: history, autoDeleteSeconds: autoDelete, restrictSaving: restrict, photo: photo ?? undefined },
+        {
+          name,
+          description,
+          type,
+          members,
+          approval,
+          historyDefault: history,
+          autoDeleteSeconds: autoDelete,
+          restrictSaving: restrict,
+          photo: photo ?? undefined,
+        },
         setStep,
       );
       router.push(`/app/rooms/${id}?new=1`);
@@ -123,10 +138,28 @@ export function CreateRoom() {
   return (
     <div className={s.create}>
       <header className={s.createHead}>
-        <IconButton icon="back" label="Back to rooms" onClick={() => (phase === "kind" || phase === "sealing" ? router.push("/app/rooms") : setPhase(phase === "details" || phase === "failed" ? "members" : "kind"))} />
+        <IconButton
+          icon="back"
+          label="Back to rooms"
+          onClick={() =>
+            phase === "kind" || phase === "sealing"
+              ? router.push("/app/rooms")
+              : setPhase(phase === "details" || phase === "failed" ? "members" : "kind")
+          }
+        />
         <div>
           <p className={s.kicker}>あたらしいへや · New room</p>
-          <h1>{phase === "kind" ? "What is this room for?" : phase === "members" ? "Who would you like to add?" : phase === "sealing" ? "Sealing your room" : phase === "failed" ? "The room was not made" : "Name your room"}</h1>
+          <h1>
+            {phase === "kind"
+              ? "What is this room for?"
+              : phase === "members"
+                ? "Who would you like to add?"
+                : phase === "sealing"
+                  ? "Sealing your room"
+                  : phase === "failed"
+                    ? "The room was not made"
+                    : "Name your room"}
+          </h1>
         </div>
       </header>
       {phase !== "sealing" && phase !== "failed" ? (
@@ -170,7 +203,11 @@ export function CreateRoom() {
                 <li key={a} className={s.chip}>
                   <PersonAvatar address={a} names={names} size={28} />
                   <span>{names[a] ? `@${names[a]}` : `${a.slice(0, 10)}…`}</span>
-                  <button type="button" aria-label={`Remove ${names[a] ?? a}`} onClick={() => setMembers((m) => m.filter((x) => x !== a))}>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${names[a] ?? a}`}
+                    onClick={() => setMembers((m) => m.filter((x) => x !== a))}
+                  >
                     <Icon name="x" size={14} />
                   </button>
                 </li>
@@ -203,9 +240,7 @@ export function CreateRoom() {
               </button>
             ) : null}
           </div>
-          <p className={s.note}>
-            You can also skip this and invite people with a link after the room is made.
-          </p>
+          <p className={s.note}>You can also skip this and invite people with a link after the room is made.</p>
           <div className={s.actions}>
             <Button variant="cord" iconRight="arrow" onClick={() => setPhase("details")}>
               {members.length ? `Next · ${members.length + 1} people` : "Skip for now"}
@@ -217,7 +252,12 @@ export function CreateRoom() {
       {phase === "details" ? (
         <div className={s.pane}>
           <div className={s.nameRow}>
-            <button type="button" className={s.photoPick} onClick={() => fileRef.current?.click()} aria-label={photo ? "Change room photo" : "Add room photo"}>
+            <button
+              type="button"
+              className={s.photoPick}
+              onClick={() => fileRef.current?.click()}
+              aria-label={photo ? "Change room photo" : "Add room photo"}
+            >
               {photoUrl ? <img src={photoUrl} alt="" /> : <Icon name="image" size={26} />}
             </button>
             <input
@@ -232,9 +272,24 @@ export function CreateRoom() {
                 e.target.value = "";
               }}
             />
-            <TextField label="Room name" placeholder={`${ROOM_TEMPLATES[type].label} room`} value={name} onChange={(e) => setName(e.target.value)} maxLength={80} counter />
+            <TextField
+              label="Room name"
+              placeholder={`${ROOM_TEMPLATES[type].label} room`}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={80}
+              counter
+            />
           </div>
-          <TextArea label="Description (optional)" placeholder="What the room is for" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} rows={2} hint="Only members and people you invite can read it." />
+          <TextArea
+            label="Description (optional)"
+            placeholder="What the room is for"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            maxLength={500}
+            rows={2}
+            hint="Only members and people you invite can read it."
+          />
 
           <div className={s.rules}>
             <ToggleRow
@@ -261,7 +316,10 @@ export function CreateRoom() {
             <div className={s.ruleRow}>
               <span>
                 <b>Auto-delete</b>
-                <small>Automatically delete new messages after a while. It removes the sealed copy from storage, not copies a member already opened.</small>
+                <small>
+                  Automatically delete new messages after a while. It removes the sealed copy from storage, not copies a
+                  member already opened.
+                </small>
               </span>
               <Segmented
                 label="Auto-delete"
@@ -277,7 +335,10 @@ export function CreateRoom() {
               onChange={setRestrict}
             />
           </div>
-          <LockLine>Everything said in this room is sealed to its members on their devices. QoreChain records only that the room exists and who is in it, as a hash.</LockLine>
+          <LockLine>
+            Everything said in this room is sealed to its members on their devices. QoreChain records only that the room
+            exists and who is in it, as a hash.
+          </LockLine>
           <div className={s.actions}>
             <Button variant="cord" icon="lock" onClick={() => void seal()} disabled={!name.trim()}>
               Seal and create room
@@ -296,7 +357,10 @@ export function CreateRoom() {
       {phase === "failed" ? (
         <div className={s.pane} role="alert">
           <p className={s.failText}>{error}</p>
-          <p className={s.note}>Nothing readable left your device. If the room was recorded on QoreChain before the failure, it stays empty and unused.</p>
+          <p className={s.note}>
+            Nothing readable left your device. If the room was recorded on QoreChain before the failure, it stays empty
+            and unused.
+          </p>
           <div className={s.actions}>
             <Button variant="line" onClick={() => setPhase("details")}>
               Back

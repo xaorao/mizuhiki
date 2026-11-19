@@ -28,8 +28,10 @@ export function autoDeleteChoice(seconds: number): AutoChoice {
 
 /** A custom value split back into the biggest whole unit, to prefill the custom field. */
 export function splitCustom(seconds: number): { amount: string; unit: CustomUnit } {
-  if (seconds > 0 && seconds % UNIT_SECONDS.weeks === 0) return { amount: String(seconds / UNIT_SECONDS.weeks), unit: "weeks" };
-  if (seconds > 0 && seconds % UNIT_SECONDS.days === 0) return { amount: String(seconds / UNIT_SECONDS.days), unit: "days" };
+  if (seconds > 0 && seconds % UNIT_SECONDS.weeks === 0)
+    return { amount: String(seconds / UNIT_SECONDS.weeks), unit: "weeks" };
+  if (seconds > 0 && seconds % UNIT_SECONDS.days === 0)
+    return { amount: String(seconds / UNIT_SECONDS.days), unit: "days" };
   if (seconds > 0) return { amount: String(Math.max(1, Math.round(seconds / UNIT_SECONDS.hours))), unit: "hours" };
   return { amount: "2", unit: "days" };
 }
@@ -60,7 +62,8 @@ export function matchesQuery(address: string, name: string | null | undefined, q
   return address.toLowerCase().includes(q) || (name ?? "").toLowerCase().includes(q);
 }
 
-export const isAdminRole = (m: MemberRow | undefined): boolean => !!m && m.status === "active" && (m.role === "owner" || m.role === "admin");
+export const isAdminRole = (m: MemberRow | undefined): boolean =>
+  !!m && m.status === "active" && (m.role === "owner" || m.role === "admin");
 
 export type Check = { allowed: true } | { allowed: false; reason: string };
 const no = (reason: string): Check => ({ allowed: false, reason });
@@ -101,7 +104,8 @@ export function permissionsCheck(me: MemberRow, target: MemberRow): Check {
  */
 export function transferGate(args: { typed: string; roomName: string; target: MemberRow | undefined }): Check {
   if (!args.target) return no("Pick the admin who becomes the owner.");
-  if (args.target.status !== "active" || args.target.role !== "admin") return no("Only an admin of this room can become its owner.");
+  if (args.target.status !== "active" || args.target.role !== "admin")
+    return no("Only an admin of this room can become its owner.");
   const want = args.roomName.trim();
   if (!want) return no("This room has no name to type yet. Give it one first.");
   if (args.typed.trim() !== want) return no("Type the room name exactly as it is shown.");
@@ -109,20 +113,30 @@ export function transferGate(args: { typed: string; roomName: string; target: Me
 }
 
 /** Saved safety words against the words worked out now. */
-export function verifyState(saved: string | undefined, current: string | null): "never" | "match" | "changed" | "saved" {
+export function verifyState(
+  saved: string | undefined,
+  current: string | null,
+): "never" | "match" | "changed" | "saved" {
   if (!saved) return "never";
   if (current === null) return "saved";
   return saved === current ? "match" : "changed";
 }
 
-export type PersonInput = { kind: "address"; address: string } | { kind: "name"; name: string } | { kind: "bad"; error: string };
+export type PersonInput =
+  { kind: "address"; address: string } | { kind: "name"; name: string } | { kind: "bad"; error: string };
 const ADDRESS = /^qor1[02-9ac-hj-np-z]{38}$/;
 
 /** "@ana", "ana" or a qor1 address typed into the add-people field. */
 export function parsePerson(raw: string): PersonInput {
   const t = raw.trim();
   if (!t) return { kind: "bad", error: "Type an @name or a qor1 address." };
-  if (/^qor1/i.test(t)) return ADDRESS.test(t.toLowerCase()) ? { kind: "address", address: t.toLowerCase() } : { kind: "bad", error: "That address is not complete. A QoreChain address starts with qor1 and has 42 characters." };
+  if (/^qor1/i.test(t))
+    return ADDRESS.test(t.toLowerCase())
+      ? { kind: "address", address: t.toLowerCase() }
+      : {
+          kind: "bad",
+          error: "That address is not complete. A QoreChain address starts with qor1 and has 42 characters.",
+        };
   const name = normalizeNameInput(t);
   if (name.length < 3) return { kind: "bad", error: "Names have at least 3 letters or numbers." };
   return { kind: "name", name };
@@ -144,10 +158,12 @@ export const FILE_FILTERS: { value: FileFilter; label: string }[] = [
   { value: "doc", label: "Docs" },
   { value: "audio", label: "Audio" },
 ];
-export const filterFiles = (files: SharedFile[], f: FileFilter): SharedFile[] => (f === "all" ? files : files.filter((x) => x.kind === f));
+export const filterFiles = (files: SharedFile[], f: FileFilter): SharedFile[] =>
+  f === "all" ? files : files.filter((x) => x.kind === f);
 
 // ---- dates -------------------------------------------------------------------------------
 
-export const dayLabel = (iso: string): string => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+export const dayLabel = (iso: string): string =>
+  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 export const whenLabel = (iso: string): string =>
   new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });

@@ -27,7 +27,16 @@ import { ApiFailure } from "@/lib/api";
 import { useDebounced, useRoomEvents } from "@/rooms/useRoom";
 import { listSales, refund, requestBalance, withToken, type OrderView } from "../engine";
 import { deliverNow, useDelivering, useOutcomes } from "./delivery";
-import { amountInput, buyerLabel, canAskRest, canDeliver, canRefund, orderLines, orderStatus, paidSoFar } from "./model";
+import {
+  amountInput,
+  buyerLabel,
+  canAskRest,
+  canDeliver,
+  canRefund,
+  orderLines,
+  orderStatus,
+  paidSoFar,
+} from "./model";
 import { when } from "./bits";
 import s from "./seller.module.css";
 
@@ -87,7 +96,8 @@ export function SalesTab({ onWaiting }: { onWaiting?: (n: number) => void }) {
     setBusy(o.ref);
     try {
       const done = await deliverNow(await tokened(), { only: o.ref });
-      if (!done.some((d) => d.ref === o.ref)) toast.show("This order is not waiting to be sealed any more.", { tone: "info" });
+      if (!done.some((d) => d.ref === o.ref))
+        toast.show("This order is not waiting to be sealed any more.", { tone: "info" });
       await load();
     } finally {
       setBusy(null);
@@ -125,7 +135,14 @@ export function SalesTab({ onWaiting }: { onWaiting?: (n: number) => void }) {
 
   if (error && !orders)
     return (
-      <Oops title="Not loaded" action={<Button variant="line" icon="undo" onClick={() => void load()}>Try again</Button>}>
+      <Oops
+        title="Not loaded"
+        action={
+          <Button variant="line" icon="undo" onClick={() => void load()}>
+            Try again
+          </Button>
+        }
+      >
         {error}
       </Oops>
     );
@@ -141,7 +158,8 @@ export function SalesTab({ onWaiting }: { onWaiting?: (n: number) => void }) {
     return (
       <div className={s.emptyWrap}>
         <EmptyState title="No sales yet" face="sleepy" jp="まだ">
-          When someone orders, it shows up here at once. Paid orders are sealed to the buyer from this device while your dashboard is open.
+          When someone orders, it shows up here at once. Paid orders are sealed to the buyer from this device while your
+          dashboard is open.
         </EmptyState>
       </div>
     );
@@ -212,7 +230,13 @@ export function SalesTab({ onWaiting }: { onWaiting?: (n: number) => void }) {
                       {l.slot ? (
                         <small className={s.slot}>
                           <Icon name="calendar" size={14} />{" "}
-                          {new Date(l.slot).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          {new Date(l.slot).toLocaleString("en-GB", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </small>
                       ) : null}
                       {l.chosen ? <small className={s.slot}>They chose {l.chosen}</small> : null}
@@ -221,11 +245,14 @@ export function SalesTab({ onWaiting }: { onWaiting?: (n: number) => void }) {
                 </ul>
                 {commission ? (
                   <p className={s.orderNote}>
-                    Deposit {formatAmount(o.dueNow, o.token)} {o.depositTx ? "paid" : "due"} · the rest {formatAmount(o.dueLater, o.token)}{" "}
+                    Deposit {formatAmount(o.dueNow, o.token)} {o.depositTx ? "paid" : "due"} · the rest{" "}
+                    {formatAmount(o.dueLater, o.token)}{" "}
                     {o.balanceTx ? "paid" : o.balanceRequested ? "asked for" : "when the work is done"}
                   </p>
                 ) : null}
-                {BigInt(o.request.tip) > 0n ? <p className={s.orderNote}>Includes a tip of {formatAmount(o.request.tip, o.token)}</p> : null}
+                {BigInt(o.request.tip) > 0n ? (
+                  <p className={s.orderNote}>Includes a tip of {formatAmount(o.request.tip, o.token)}</p>
+                ) : null}
                 {o.request.discountCode ? <p className={s.orderNote}>Code {o.request.discountCode}</p> : null}
                 <div className={s.txs}>
                   {o.depositTx ? <TxLink hash={o.depositTx} label={commission ? "Deposit" : "Payment"} /> : null}
@@ -256,12 +283,24 @@ export function SalesTab({ onWaiting }: { onWaiting?: (n: number) => void }) {
                 {canDeliver(o) || canAskRest(o) || canRefund(o) ? (
                   <div className={s.rowActions}>
                     {canDeliver(o) ? (
-                      <Button size="sm" variant="cord" icon="lock" busy={busy === o.ref || delivering} onClick={() => void deliverOne(o)}>
+                      <Button
+                        size="sm"
+                        variant="cord"
+                        icon="lock"
+                        busy={busy === o.ref || delivering}
+                        onClick={() => void deliverOne(o)}
+                      >
                         Deliver now
                       </Button>
                     ) : null}
                     {canAskRest(o) ? (
-                      <Button size="sm" variant={o.balanceRequested ? "line" : "cord"} icon="bell" busy={busy === o.ref} onClick={() => void askRest(o)}>
+                      <Button
+                        size="sm"
+                        variant={o.balanceRequested ? "line" : "cord"}
+                        icon="bell"
+                        busy={busy === o.ref}
+                        onClick={() => void askRest(o)}
+                      >
                         {o.balanceRequested ? "Ask again" : "Ask for the rest"}
                       </Button>
                     ) : null}
@@ -278,7 +317,8 @@ export function SalesTab({ onWaiting }: { onWaiting?: (n: number) => void }) {
         </ul>
       )}
       <LockLine>
-        Mizuhiki never holds the product key for an order. Your device checks each payment on QoreChain and seals the key to the buyer; we only see that it happened.
+        Mizuhiki never holds the product key for an order. Your device checks each payment on QoreChain and seals the
+        key to the buyer; we only see that it happened.
       </LockLine>
       {refunding ? (
         <RefundSheet
@@ -322,7 +362,13 @@ function RefundSheet({
   const [sure, setSure] = useState(false);
   const amount = parseAmount(text, order.token);
   const amountErr =
-    amount === null ? "Use a number, like 12.50." : amount <= 0n ? "Refund more than zero." : amount > paid ? `They paid ${formatAmount(paid, order.token)}. Refund up to that.` : null;
+    amount === null
+      ? "Use a number, like 12.50."
+      : amount <= 0n
+        ? "Refund more than zero."
+        : amount > paid
+          ? `They paid ${formatAmount(paid, order.token)}. Refund up to that.`
+          : null;
   const running = stage === "signing" || stage === "submitted" || stage === "confirmed";
 
   const go = async () => {
@@ -353,16 +399,28 @@ function RefundSheet({
   };
 
   const steps: StepItem[] = [
-    { title: "Sign with your keys", state: stage === "signing" ? "running" : stage === "idle" ? "waiting" : stage === "failed" && !tx ? "failed" : "done" },
-    { title: "Sent to QoreChain", state: stage === "submitted" ? "running" : ["confirmed", "recorded"].includes(stage) ? "done" : "waiting" },
-    { title: "Confirmed and recorded on the order", state: stage === "confirmed" ? "running" : stage === "recorded" ? "done" : "waiting" },
+    {
+      title: "Sign with your keys",
+      state:
+        stage === "signing" ? "running" : stage === "idle" ? "waiting" : stage === "failed" && !tx ? "failed" : "done",
+    },
+    {
+      title: "Sent to QoreChain",
+      state: stage === "submitted" ? "running" : ["confirmed", "recorded"].includes(stage) ? "done" : "waiting",
+    },
+    {
+      title: "Confirmed and recorded on the order",
+      state: stage === "confirmed" ? "running" : stage === "recorded" ? "done" : "waiting",
+    },
   ];
 
   return (
     <Sheet open onClose={onClose} title="Refund this order" dismissable={!running}>
       <div className={s.stack}>
         <p className={s.help}>
-          On-chain payments cannot be charged back, so a refund is your own transfer back to the buyer&rsquo;s wallet ({order.payer ? `${order.payer.slice(0, 12)}…` : "unknown"}), sent from your wallet with this order&rsquo;s refund note. The amount and both addresses are public on QoreChain.
+          On-chain payments cannot be charged back, so a refund is your own transfer back to the buyer&rsquo;s wallet (
+          {order.payer ? `${order.payer.slice(0, 12)}…` : "unknown"}), sent from your wallet with this order&rsquo;s
+          refund note. The amount and both addresses are public on QoreChain.
         </p>
         {stage === "idle" || stage === "failed" ? (
           <>
@@ -380,7 +438,8 @@ function RefundSheet({
             <label className={s.check}>
               <input type="checkbox" checked={sure} onChange={(e) => setSure(e.target.checked)} />
               <span>
-                Send {amount !== null && !amountErr ? formatAmount(amount, order.token) : "this amount"} back now. Their copy stays theirs; a refund cannot unseal it.
+                Send {amount !== null && !amountErr ? formatAmount(amount, order.token) : "this amount"} back now. Their
+                copy stays theirs; a refund cannot unseal it.
               </span>
             </label>
           </>
@@ -402,7 +461,13 @@ function RefundSheet({
               <Button variant="ghost" onClick={onClose} disabled={running}>
                 Cancel
               </Button>
-              <Button variant="danger" icon="undo" busy={running} disabled={!sure || amountErr !== null} onClick={() => void go()}>
+              <Button
+                variant="danger"
+                icon="undo"
+                busy={running}
+                disabled={!sure || amountErr !== null}
+                onClick={() => void go()}
+              >
                 {stage === "failed" ? "Try again" : "Send refund"}
               </Button>
             </>

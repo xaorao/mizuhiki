@@ -308,7 +308,9 @@ export const roomMembers = pgTable(
     firstEpoch: integer("first_epoch").notNull().default(1),
     /** Last epoch this person was a member of (set when they leave or are removed). */
     lastEpoch: integer("last_epoch"),
-    lastReadSeq: bigint("last_read_seq", { mode: "bigint" }).notNull().default(sql`0`),
+    lastReadSeq: bigint("last_read_seq", { mode: "bigint" })
+      .notNull()
+      .default(sql`0`),
     muted: boolean("muted").notNull().default(false),
     joinedAt: ts("joined_at").notNull().defaultNow(),
     updatedAt: ts("updated_at").notNull().defaultNow(),
@@ -535,7 +537,11 @@ export const passes = pgTable(
     confirmedAt: ts("confirmed_at"),
     revokedAt: ts("revoked_at"),
   },
-  (t) => [index("passes_owner").on(t.owner), index("passes_holder").on(t.holder), uniqueIndex("passes_owner_key").on(t.owner, t.keyIndex)],
+  (t) => [
+    index("passes_owner").on(t.owner),
+    index("passes_holder").on(t.holder),
+    uniqueIndex("passes_owner_key").on(t.owner, t.keyIndex),
+  ],
 );
 
 /** Items re-sealed to a pass by the owner's device (older items, or "Add a reader"). */

@@ -7,7 +7,20 @@
  * offers "Request a refund", a sealed message to the seller naming the order.
  */
 import { useEffect, useState } from "react";
-import { Avatar, Button, ButtonLink, EmptyState, Icon, Oops, Receipt, Sakura, Sheet, Skeleton, TextArea, useToast } from "@mizuhiki/ui";
+import {
+  Avatar,
+  Button,
+  ButtonLink,
+  EmptyState,
+  Icon,
+  Oops,
+  Receipt,
+  Sakura,
+  Sheet,
+  Skeleton,
+  TextArea,
+  useToast,
+} from "@mizuhiki/ui";
 import { canonicalJson, formatAmount, sha256Hex, utf8, type ProductDef } from "@mizuhiki/core";
 import { explorerTx } from "@mizuhiki/chain";
 import { useAccount } from "@/account/AccountProvider";
@@ -20,7 +33,12 @@ import { RichText, ShopBar, Thumb, sellerPage, slotLabel, when, type SellerPage 
 import s from "./buyer.module.css";
 
 export function ReceiptPage({ orderRef }: { orderRef: string }) {
-  const [load, setLoad] = useState<{ state: "loading" } | { state: "missing" } | { state: "error"; message: string } | { state: "ok"; o: OrderView; defs: Map<string, ProductDef> }>({
+  const [load, setLoad] = useState<
+    | { state: "loading" }
+    | { state: "missing" }
+    | { state: "error"; message: string }
+    | { state: "ok"; o: OrderView; defs: Map<string, ProductDef> }
+  >({
     state: "loading",
   });
   const [seller, setSeller] = useState<SellerPage | null>(null);
@@ -33,7 +51,11 @@ export function ReceiptPage({ orderRef }: { orderRef: string }) {
         if (n) void sellerPage(n).then(setSeller);
       },
       (e: unknown) =>
-        setLoad(e instanceof ApiFailure && e.status === 404 ? { state: "missing" } : { state: "error", message: (e as Error).message || "The receipt could not be loaded." }),
+        setLoad(
+          e instanceof ApiFailure && e.status === 404
+            ? { state: "missing" }
+            : { state: "error", message: (e as Error).message || "The receipt could not be loaded." },
+        ),
     );
   }, [orderRef]);
 
@@ -49,7 +71,15 @@ export function ReceiptPage({ orderRef }: { orderRef: string }) {
           </div>
         ) : load.state === "missing" ? (
           <div className={s.card}>
-            <EmptyState title="No order with this reference" face="sleepy" action={<ButtonLink variant="cord" href="/library">Open my library</ButtonLink>}>
+            <EmptyState
+              title="No order with this reference"
+              face="sleepy"
+              action={
+                <ButtonLink variant="cord" href="/library">
+                  Open my library
+                </ButtonLink>
+              }
+            >
               Check the link. Nothing was charged for orders that were never paid.
             </EmptyState>
           </div>
@@ -61,16 +91,35 @@ export function ReceiptPage({ orderRef }: { orderRef: string }) {
           <ReceiptBody o={load.o} defs={load.defs} name={name} seller={seller} onRefund={() => setRefund(true)} />
         )}
       </div>
-      {load.state === "ok" ? <RefundSheet open={refund} onClose={() => setRefund(false)} o={load.o} name={name} seller={seller} /> : null}
+      {load.state === "ok" ? (
+        <RefundSheet open={refund} onClose={() => setRefund(false)} o={load.o} name={name} seller={seller} />
+      ) : null}
     </div>
   );
 }
 
-function ReceiptBody({ o, defs, name, seller, onRefund }: { o: OrderView; defs: Map<string, ProductDef>; name: string; seller: SellerPage | null; onRefund: () => void }) {
+function ReceiptBody({
+  o,
+  defs,
+  name,
+  seller,
+  onRefund,
+}: {
+  o: OrderView;
+  defs: Map<string, ProductDef>;
+  name: string;
+  seller: SellerPage | null;
+  onRefund: () => void;
+}) {
   const toast = useToast();
-  const items = o.request.lines.map((l) => ({ l, d: defs.get(l.productId) })).filter((x): x is { l: (typeof o.request.lines)[number]; d: ProductDef } => !!x.d);
+  const items = o.request.lines
+    .map((l) => ({ l, d: defs.get(l.productId) }))
+    .filter((x): x is { l: (typeof o.request.lines)[number]; d: ProductDef } => !!x.d);
   const r = o.request.recipient;
-  const sealedTo = r.kind === "account" ? r.address : `buyer key ${fingerprint(sha256Hex(utf8(canonicalJson({ mlkem: r.mlkem, x25519: r.x25519 }))), 24)}`;
+  const sealedTo =
+    r.kind === "account"
+      ? r.address
+      : `buyer key ${fingerprint(sha256Hex(utf8(canonicalJson({ mlkem: r.mlkem, x25519: r.x25519 }))), 24)}`;
   const refundable = items.find((x) => x.d.refund);
   const paidAt = o.paidAt ? new Date(o.paidAt).getTime() : null;
   const refundUntil = refundable?.d.refund && paidAt ? paidAt + refundable.d.refund.days * 86_400_000 : null;
@@ -90,7 +139,10 @@ function ReceiptBody({ o, defs, name, seller, onRefund }: { o: OrderView; defs: 
           ...(BigInt(o.dueLater) > 0n
             ? [
                 { term: "Deposit", value: formatAmount(o.dueNow, o.token) },
-                { term: "Rest", value: `${formatAmount(o.dueLater, o.token)}${o.balanceTx ? ", paid" : ", not paid yet"}` },
+                {
+                  term: "Rest",
+                  value: `${formatAmount(o.dueLater, o.token)}${o.balanceTx ? ", paid" : ", not paid yet"}`,
+                },
               ]
             : []),
           { term: "Status", value: statusWord(o.status) },
@@ -108,7 +160,11 @@ function ReceiptBody({ o, defs, name, seller, onRefund }: { o: OrderView; defs: 
               <span>
                 <b>{d.title}</b>
                 <small>
-                  {[d.versions.find((v) => v.id === l.versionId)?.name, l.quantity > 1 ? `Quantity ${l.quantity}` : null, l.slot ? slotLabel(l.slot) : null]
+                  {[
+                    d.versions.find((v) => v.id === l.versionId)?.name,
+                    l.quantity > 1 ? `Quantity ${l.quantity}` : null,
+                    l.slot ? slotLabel(l.slot) : null,
+                  ]
                     .filter(Boolean)
                     .join(" · ") || `by @${d.name}`}
                 </small>
@@ -208,7 +264,11 @@ function ReceiptBody({ o, defs, name, seller, onRefund }: { o: OrderView; defs: 
       </div>
 
       <div className={[s.card, s.contact].join(" ")}>
-        <Avatar name={seller?.displayName ?? name} {...(seller?.avatar ? { src: mediaUrl(seller.avatar.hash) } : {})} size={52} />
+        <Avatar
+          name={seller?.displayName ?? name}
+          {...(seller?.avatar ? { src: mediaUrl(seller.avatar.hash) } : {})}
+          size={52}
+        />
         <span className={s.contactText}>
           <b>{seller?.displayName ?? `@${name}`}</b>
           <small>Questions about this order? Message the seller; it is sealed to them.</small>
@@ -224,9 +284,11 @@ function ReceiptBody({ o, defs, name, seller, onRefund }: { o: OrderView; defs: 
             <Icon name="undo" size={18} />
             <span>
               <b>
-                {refundable.d.title}: refund within {refundable.d.refund.days} {refundable.d.refund.days === 1 ? "day" : "days"}
+                {refundable.d.title}: refund within {refundable.d.refund.days}{" "}
+                {refundable.d.refund.days === 1 ? "day" : "days"}
               </b>
-              {refundUntil ? ` (until ${when(new Date(refundUntil).toISOString())})` : ""}. The seller sends refunds back from their own wallet.
+              {refundUntil ? ` (until ${when(new Date(refundUntil).toISOString())})` : ""}. The seller sends refunds
+              back from their own wallet.
             </span>
           </p>
           {refundUntil && Date.now() > refundUntil ? (
@@ -253,20 +315,34 @@ function statusWord(st: OrderView["status"]): string {
   }[st];
 }
 
-function RefundSheet({ open, onClose, o, name, seller }: { open: boolean; onClose: () => void; o: OrderView; name: string; seller: SellerPage | null }) {
+function RefundSheet({
+  open,
+  onClose,
+  o,
+  name,
+  seller,
+}: {
+  open: boolean;
+  onClose: () => void;
+  o: OrderView;
+  name: string;
+  seller: SellerPage | null;
+}) {
   const acct = useAccount();
   const toast = useToast();
   const [why, setWhy] = useState("");
   const [step, setStep] = useState<{ s: SendStep; p: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
-  const signer = acct.status === "unlocked" && acct.account && acct.account.owner.address === o.payer ? acct.account : undefined;
+  const signer =
+    acct.status === "unlocked" && acct.account && acct.account.owner.address === o.payer ? acct.account : undefined;
   return (
     <Sheet open={open} onClose={() => (step ? undefined : onClose())} title="Request a refund" dismissable={!step}>
       {sent ? (
         <div className={s.sheetBody}>
           <EmptyState title={`Request sent to @${name}`} face="happy" jp="できた！">
-            It is sealed to them and names order {o.ref}. Refunds come back from their wallet to {o.payer ?? "the paying wallet"}, and this receipt shows it.
+            It is sealed to them and names order {o.ref}. Refunds come back from their wallet to{" "}
+            {o.payer ?? "the paying wallet"}, and this receipt shows it.
           </EmptyState>
           <Button variant="cord" full onClick={onClose}>
             Done
@@ -293,14 +369,24 @@ function RefundSheet({ open, onClose, o, name, seller }: { open: boolean; onClos
                 setSent(true);
                 toast.show("Refund request sent");
               })
-              .catch((x: unknown) => setErr(x instanceof SendFailure ? x.message : "Not sent. Nothing left your device."))
+              .catch((x: unknown) =>
+                setErr(x instanceof SendFailure ? x.message : "Not sent. Nothing left your device."),
+              )
               .finally(() => setStep(null));
           }}
         >
           <p className={s.fine}>
-            This sends a sealed message to @{name} naming order <code className={s.mono}>{o.ref}</code>. Only they can read it.
+            This sends a sealed message to @{name} naming order <code className={s.mono}>{o.ref}</code>. Only they can
+            read it.
           </p>
-          <TextArea label="Why would you like a refund?" rows={4} maxLength={1000} counter value={why} onChange={(e) => setWhy(e.target.value)} />
+          <TextArea
+            label="Why would you like a refund?"
+            rows={4}
+            maxLength={1000}
+            counter
+            value={why}
+            onChange={(e) => setWhy(e.target.value)}
+          />
           {step ? (
             <p className={s.waitLine} aria-live="polite">
               <span className={s.spin} aria-hidden="true" /> {SEND_STEP_LABEL[step.s]}…

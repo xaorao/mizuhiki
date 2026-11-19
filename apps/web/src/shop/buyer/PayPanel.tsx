@@ -9,12 +9,30 @@ import Link from "next/link";
  * from QoreChain at once.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Button, ButtonLink, ChoiceCard, Icon, SealFailed, SealMoment, Sheet, TextField, type SealStep } from "@mizuhiki/ui";
+import {
+  Button,
+  ButtonLink,
+  ChoiceCard,
+  Icon,
+  SealFailed,
+  SealMoment,
+  Sheet,
+  TextField,
+  type SealStep,
+} from "@mizuhiki/ui";
 import { formatAmount, type ShopToken } from "@mizuhiki/core";
 import { denomBySymbol, explorerTx, fromBaseUnits } from "@mizuhiki/chain";
 import { useAccount } from "@/account/AccountProvider";
 import { ApiFailure } from "@/lib/api";
-import { PayFailure, payWithMizuhiki, payWithQorex, qorex, reviewMizuhiki, type PayStage, type PreparedPayment } from "@/lib/pay";
+import {
+  PayFailure,
+  payWithMizuhiki,
+  payWithQorex,
+  qorex,
+  reviewMizuhiki,
+  type PayStage,
+  type PreparedPayment,
+} from "@/lib/pay";
 import { orderPayment, reportTx, type OrderView } from "../engine";
 import { rememberOrder, rememberTx } from "./store";
 import s from "./buyer.module.css";
@@ -69,7 +87,12 @@ export function PayPanel({
   const [fee, setFee] = useState<{ fee: bigint | null; problem: string | null } | "checking" | null>(null);
   const [phase, setPhase] = useState<"idle" | "sending" | "failed">("idle");
   const [steps, setSteps] = useState<SealStep[]>([]);
-  const [failure, setFailure] = useState<{ title: string; detail: string; tx?: string | undefined; ref?: string | undefined } | null>(null);
+  const [failure, setFailure] = useState<{
+    title: string;
+    detail: string;
+    tx?: string | undefined;
+    ref?: string | undefined;
+  } | null>(null);
   const [pass, setPass] = useState("");
   const [unlockErr, setUnlockErr] = useState<string | undefined>();
   const [unlocking, setUnlocking] = useState(false);
@@ -107,7 +130,9 @@ export function PayPanel({
     setFee("checking");
     reviewMizuhiki(acct.account, seller, estimate).then(
       (r) => life.alive && setFee(r),
-      (e: unknown) => life.alive && setFee({ fee: null, problem: (e as Error).message || "The network fee could not be worked out." }),
+      (e: unknown) =>
+        life.alive &&
+        setFee({ fee: null, problem: (e as Error).message || "The network fee could not be worked out." }),
     );
     return () => {
       life.alive = false;
@@ -129,7 +154,10 @@ export function PayPanel({
       ...(free || method === "manual"
         ? []
         : [
-            { k: "signing" as const, label: method === "qorex" ? "Waiting for you in QoreX" : "Signing with your post-quantum key" },
+            {
+              k: "signing" as const,
+              label: method === "qorex" ? "Waiting for you in QoreX" : "Signing with your post-quantum key",
+            },
             { k: "submitted" as const, label: "Submitted to QoreChain" },
             { k: "confirmed" as const, label: "Confirmed on QoreChain" },
           ]),
@@ -193,9 +221,17 @@ export function PayPanel({
       await reportTx(placed.ref, r.txHash).catch(() => undefined);
       if (alive.current) onPaid(placed, r.txHash);
     } catch (e) {
-      const f = e instanceof PayFailure ? e : new PayFailure("The payment could not be sent. No money moved.", "unknown", sentHash);
+      const f =
+        e instanceof PayFailure
+          ? e
+          : new PayFailure("The payment could not be sent. No money moved.", "unknown", sentHash);
       setFailure({
-        title: f.moved === "no" ? "Not paid. No money moved." : f.moved === "yes" ? "Not paid. Only the network fee was spent." : "Not confirmed yet.",
+        title:
+          f.moved === "no"
+            ? "Not paid. No money moved."
+            : f.moved === "yes"
+              ? "Not paid. Only the network fee was spent."
+              : "Not confirmed yet.",
         detail:
           f.moved === "unknown"
             ? `${f.message} Your order is held for an hour; its page keeps checking QoreChain.`
@@ -229,7 +265,11 @@ export function PayPanel({
             selected={method === "qorex"}
             onSelect={() => hasQorex && setMethod("qorex")}
             title="Pay with QoreX"
-            detail={hasQorex ? "QoreX shows the payment and signs it with your post-quantum key." : "Install the QoreX extension, or open this page in the QoreX app's browser."}
+            detail={
+              hasQorex
+                ? "QoreX shows the payment and signs it with your post-quantum key."
+                : "Install the QoreX extension, or open this page in the QoreX app's browser."
+            }
             icon={<Icon name="wallet" />}
             tone="sora"
           />
@@ -250,14 +290,14 @@ export function PayPanel({
             tone="sakura"
           />
           {allowManual ? (
-          <ChoiceCard
-            selected={method === "manual"}
-            onSelect={() => setMethod("manual")}
-            title="Send it myself"
-            detail="Pay from any QoreChain wallet with the order's memo. The next page shows the address and waits for it."
-            icon={<Icon name="copy" />}
-            tone="butter"
-          />
+            <ChoiceCard
+              selected={method === "manual"}
+              onSelect={() => setMethod("manual")}
+              title="Send it myself"
+              detail="Pay from any QoreChain wallet with the order's memo. The next page shows the address and waits for it."
+              icon={<Icon name="copy" />}
+              tone="butter"
+            />
           ) : null}
         </div>
       )}
@@ -286,7 +326,12 @@ export function PayPanel({
       {method === "mizuhiki" && acct.status === "none" ? (
         <p className={s.fine}>
           No Mizuhiki account on this device. Pay with QoreX or send it yourself, or{" "}
-          <Link href={`/login?next=${encodeURIComponent(typeof window === "undefined" ? "/" : window.location.pathname)}`}>log in</Link>.
+          <Link
+            href={`/login?next=${encodeURIComponent(typeof window === "undefined" ? "/" : window.location.pathname)}`}
+          >
+            log in
+          </Link>
+          .
         </p>
       ) : null}
 
@@ -319,7 +364,9 @@ export function PayPanel({
         </div>
       </dl>
 
-      {method === "mizuhiki" && fee && fee !== "checking" && fee.problem ? <p className={s.problem}>{fee.problem}</p> : null}
+      {method === "mizuhiki" && fee && fee !== "checking" && fee.problem ? (
+        <p className={s.problem}>{fee.problem}</p>
+      ) : null}
       {blocked ? (
         <p className={s.blocked}>
           <Icon name="info" size={16} />
@@ -327,11 +374,23 @@ export function PayPanel({
         </p>
       ) : null}
 
-      <Button variant="cord" size="xl" full icon={free ? "download" : "coin"} disabled={!ready} onClick={() => void pay()}>
+      <Button
+        variant="cord"
+        size="xl"
+        full
+        icon={free ? "download" : "coin"}
+        disabled={!ready}
+        onClick={() => void pay()}
+      >
         {free ? "Get it" : method === "manual" ? `Continue to pay ${total}` : `Pay ${total}`}
       </Button>
 
-      <Sheet open={phase !== "idle"} onClose={() => phase === "failed" && setPhase("idle")} title={phase === "failed" ? "Payment" : "Paying"} dismissable={phase !== "sending"}>
+      <Sheet
+        open={phase !== "idle"}
+        onClose={() => phase === "failed" && setPhase("idle")}
+        title={phase === "failed" ? "Payment" : "Paying"}
+        dismissable={phase !== "sending"}
+      >
         {phase === "sending" ? (
           <SealMoment
             steps={steps}
@@ -341,7 +400,14 @@ export function PayPanel({
         ) : null}
         {phase === "failed" && failure ? (
           <>
-            <SealFailed title={failure.title} detail={failure.detail} txHash={failure.tx} onClose={() => setPhase("idle")} onRetry={() => setPhase("idle")} retryLabel="Back" />
+            <SealFailed
+              title={failure.title}
+              detail={failure.detail}
+              txHash={failure.tx}
+              onClose={() => setPhase("idle")}
+              onRetry={() => setPhase("idle")}
+              retryLabel="Back"
+            />
             <div className={s.failLinks}>
               {failure.tx ? (
                 <ButtonLink variant="ghost" icon="link" href={explorerTx(failure.tx)} target="_blank" rel="noreferrer">

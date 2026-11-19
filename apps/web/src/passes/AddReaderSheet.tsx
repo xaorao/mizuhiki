@@ -12,7 +12,15 @@ import { addItemToPass, ownedPasses, type PassView, type Tokened } from "./engin
 import { covers, scopeLine } from "./model";
 import s from "./passes.module.css";
 
-export function AddReaderSheet({ row, tokened, onClose }: { row: InboxRow; tokened: () => Promise<Tokened>; onClose: () => void }) {
+export function AddReaderSheet({
+  row,
+  tokened,
+  onClose,
+}: {
+  row: InboxRow;
+  tokened: () => Promise<Tokened>;
+  onClose: () => void;
+}) {
   const toast = useToast();
   const [passes, setPasses] = useState<(PassView & { who: string; outside: boolean })[] | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
@@ -51,7 +59,13 @@ export function AddReaderSheet({ row, tokened, onClose }: { row: InboxRow; token
     setBusy(true);
     setError(null);
     try {
-      await addItemToPass(await tokened(), chosen, { hash: row.envelope, kind: row.kind, ref: row.ref, at: row.at, envelope: row.envelope });
+      await addItemToPass(await tokened(), chosen, {
+        hash: row.envelope,
+        kind: row.kind,
+        ref: row.ref,
+        at: row.at,
+        envelope: row.envelope,
+      });
       toast.show(`Sealed to ${chosen.who}. They keep it even if the pass ends.`);
       onClose();
     } catch (e) {
@@ -84,8 +98,14 @@ export function AddReaderSheet({ row, tokened, onClose }: { row: InboxRow; token
             ))}
           </div>
         )}
-        {chosen?.outside ? <p className={s.hint}>This item is dated outside the pass&rsquo;s period. Sharing it lets {chosen.who} read this one item as well.</p> : null}
-        <LockLine>Sealed on this device to their key. Removing the pass later does not take back what they opened.</LockLine>
+        {chosen?.outside ? (
+          <p className={s.hint}>
+            This item is dated outside the pass&rsquo;s period. Sharing it lets {chosen.who} read this one item as well.
+          </p>
+        ) : null}
+        <LockLine>
+          Sealed on this device to their key. Removing the pass later does not take back what they opened.
+        </LockLine>
         {error ? (
           <p className={s.err} role="alert">
             {error}

@@ -34,7 +34,13 @@ export function ProductPreview({ def, name, displayName }: { def: ProductDef; na
         {def.covers.length > 1 ? (
           <div className={s.pvDots} role="group" aria-label="Cover images">
             {def.covers.map((c, i) => (
-              <button key={c.hash} type="button" aria-label={`Cover ${i + 1}`} aria-pressed={i === cover} onClick={() => setCover(i)} />
+              <button
+                key={c.hash}
+                type="button"
+                aria-label={`Cover ${i + 1}`}
+                aria-pressed={i === cover}
+                onClick={() => setCover(i)}
+              />
             ))}
           </div>
         ) : null}
@@ -42,7 +48,9 @@ export function ProductPreview({ def, name, displayName }: { def: ProductDef; na
       <div className={s.pvBody}>
         <h3 className={s.pvTitle}>{def.title || "Untitled product"}</h3>
         <div className={s.pvMeta}>
-          <span className={s.ribbon}>{def.versions.length && !def.price.pwyw ? formatAmount(base, def.price.token) : priceLabel(def)}</span>
+          <span className={s.ribbon}>
+            {def.versions.length && !def.price.pwyw ? formatAmount(base, def.price.token) : priceLabel(def)}
+          </span>
           <span className={s.pvCreator}>
             <span className={s.pvAvatar} aria-hidden="true">
               {(displayName || name || "?").slice(0, 1).toUpperCase()}
@@ -51,10 +59,16 @@ export function ProductPreview({ def, name, displayName }: { def: ProductDef; na
           </span>
           {def.limits.showSales ? <small className={s.muted}>0 sales</small> : null}
         </div>
-        {def.description.trim() ? <RichText text={def.description} className={s.pvDesc} /> : <p className={s.pvPlaceholder}>Your description shows here.</p>}
+        {def.description.trim() ? (
+          <RichText text={def.description} className={s.pvDesc} />
+        ) : (
+          <p className={s.pvPlaceholder}>Your description shows here.</p>
+        )}
         {def.kind === "call" && def.booking ? (
           <p className={s.pvFact}>
-            <Icon name="calendar" size={15} /> {def.booking.minutes}-minute call · {days.length ? days.map((d) => WEEKDAYS[d]?.slice(0, 3)).join(", ") : "no hours yet"} · times shown in the buyer&rsquo;s zone
+            <Icon name="calendar" size={15} /> {def.booking.minutes}-minute call ·{" "}
+            {days.length ? days.map((d) => WEEKDAYS[d]?.slice(0, 3)).join(", ") : "no hours yet"} · times shown in the
+            buyer&rsquo;s zone
           </p>
         ) : null}
         {def.kind === "commission" && def.commission ? (
@@ -70,8 +84,17 @@ export function ProductPreview({ def, name, displayName }: { def: ProductDef; na
         {def.versions.length ? (
           <div className={s.pvOptions} role="radiogroup" aria-label="Options">
             {def.versions.map((v) => (
-              <button key={v.id} type="button" role="radio" aria-checked={pick?.id === v.id} className={s.pvOption} onClick={() => setOption(v.id)}>
-                <span className={s.pvChip}>{formatAmount(BigInt(def.price.amount) + BigInt(v.extra), def.price.token)}</span>
+              <button
+                key={v.id}
+                type="button"
+                role="radio"
+                aria-checked={pick?.id === v.id}
+                className={s.pvOption}
+                onClick={() => setOption(v.id)}
+              >
+                <span className={s.pvChip}>
+                  {formatAmount(BigInt(def.price.amount) + BigInt(v.extra), def.price.token)}
+                </span>
                 <b>{v.name || "Untitled option"}</b>
                 {v.description ? <small>{v.description}</small> : null}
               </button>
@@ -168,7 +191,9 @@ export function ReceiptPreview({ def, name, displayName }: { def: ProductDef; na
         </div>
         <div>
           <dt>Content fingerprint</dt>
-          <dd className={def.content ? s.mono : undefined}>{def.content ? `${def.content.slice(0, 16)}…` : "Set when you publish"}</dd>
+          <dd className={def.content ? s.mono : undefined}>
+            {def.content ? `${def.content.slice(0, 16)}…` : "Set when you publish"}
+          </dd>
         </div>
       </dl>
       <p className={s.rcContact}>

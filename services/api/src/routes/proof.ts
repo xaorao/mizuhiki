@@ -31,15 +31,19 @@ export const proofRoutes =
 
     /** The account's Mizuhiki name (primary first). Clients confirm it on chain with `resolve`. */
     // Public directory lookups; a room or inbox resolves many names at once.
-    app.get("/names/of/:address", { config: { rateLimit: { max: 1200, timeWindow: "1 minute" } } }, async (req, reply) => {
-      const { address } = req.params as { address: string };
-      if (!isAddress(address)) return fail(reply, 400, "BAD_ADDRESS", "That is not a QoreChain address.");
-      const rows = await db
-        .select({ name: names.name, primary: names.primary })
-        .from(names)
-        .where(eq(names.address, address));
-      return { name: rows.find((r) => r.primary)?.name ?? rows[0]?.name ?? null };
-    });
+    app.get(
+      "/names/of/:address",
+      { config: { rateLimit: { max: 1200, timeWindow: "1 minute" } } },
+      async (req, reply) => {
+        const { address } = req.params as { address: string };
+        if (!isAddress(address)) return fail(reply, 400, "BAD_ADDRESS", "That is not a QoreChain address.");
+        const rows = await db
+          .select({ name: names.name, primary: names.primary })
+          .from(names)
+          .where(eq(names.address, address));
+        return { name: rows.find((r) => r.primary)?.name ?? rows[0]?.name ?? null };
+      },
+    );
 
     /** Anchors made by one account, newest first. */
     app.get("/proofs", async (req, reply) => {

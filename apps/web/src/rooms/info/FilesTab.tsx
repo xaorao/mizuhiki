@@ -36,7 +36,17 @@ function PhotoTile({ f, onOpen, i }: { f: SharedFile; onOpen: () => void; i: num
 }
 
 /** Unseal a shared file on this device and either show it or save it. */
-function Viewer({ f, names, me, onClose }: { f: SharedFile | null; names: Record<string, string | null>; me: string; onClose: () => void }) {
+function Viewer({
+  f,
+  names,
+  me,
+  onClose,
+}: {
+  f: SharedFile | null;
+  names: Record<string, string | null>;
+  me: string;
+  onClose: () => void;
+}) {
   const photo = useSealedPhoto(f?.kind === "photo" ? f.facts : null);
   const [progress, setProgress] = useState<number | null>(null);
   const [media, setMedia] = useState<{ id: string; url: string } | null>(null);
@@ -89,15 +99,27 @@ function Viewer({ f, names, me, onClose }: { f: SharedFile | null; names: Record
 
   const busy = progress !== null;
   return (
-    <Sheet open={!!f} onClose={close} title={f ? f.facts.name : "File"} wide={f?.kind === "photo" || f?.kind === "video"}>
+    <Sheet
+      open={!!f}
+      onClose={close}
+      title={f ? f.facts.name : "File"}
+      wide={f?.kind === "photo" || f?.kind === "video"}
+    >
       {f ? (
         <div className={s.viewer}>
-          {f.kind === "photo" ? photo ? <img src={photo} alt={f.caption || f.facts.name} /> : <span className={s.tileSkel} style={{ height: 240, borderRadius: 18 }} aria-hidden="true" /> : null}
+          {f.kind === "photo" ? (
+            photo ? (
+              <img src={photo} alt={f.caption || f.facts.name} />
+            ) : (
+              <span className={s.tileSkel} style={{ height: 240, borderRadius: 18 }} aria-hidden="true" />
+            )
+          ) : null}
           {f.kind === "video" && media?.id === f.key ? <video src={media.url} controls playsInline /> : null}
           {f.kind === "audio" && media?.id === f.key ? <audio src={media.url} controls /> : null}
           {f.caption ? <p>{f.caption}</p> : null}
           <p className={s.help}>
-            {KIND_WORD[f.kind]} · {fmtBytes(f.facts.size)} · shared by {label(f.author, names, me)} · {whenLabel(f.line.msg?.sentAt ?? f.line.at)}
+            {KIND_WORD[f.kind]} · {fmtBytes(f.facts.size)} · shared by {label(f.author, names, me)} ·{" "}
+            {whenLabel(f.line.msg?.sentAt ?? f.line.at)}
           </p>
           <p className={s.help}>Unsealed on this device only. Saving puts a readable copy on this device.</p>
           <InlineError>{err}</InlineError>
@@ -117,7 +139,15 @@ function Viewer({ f, names, me, onClose }: { f: SharedFile | null; names: Record
   );
 }
 
-export function FilesTab({ files, names, me }: { files: SharedFile[]; names: Record<string, string | null>; me: string }) {
+export function FilesTab({
+  files,
+  names,
+  me,
+}: {
+  files: SharedFile[];
+  names: Record<string, string | null>;
+  me: string;
+}) {
   const [filter, setFilter] = useState<FileFilter>("all");
   const [open, setOpen] = useState<SharedFile | null>(null);
   const list = filterFiles(files, filter);
@@ -161,7 +191,8 @@ export function FilesTab({ files, names, me }: { files: SharedFile[]; names: Rec
                     <span className={s.fileText}>
                       <b>{f.facts.name}</b>
                       <small>
-                        {fmtBytes(f.facts.size)} · {label(f.author, names, me)} · {whenLabel(f.line.msg?.sentAt ?? f.line.at)}
+                        {fmtBytes(f.facts.size)} · {label(f.author, names, me)} ·{" "}
+                        {whenLabel(f.line.msg?.sentAt ?? f.line.at)}
                       </small>
                     </span>
                     <Icon name="download" size={18} />

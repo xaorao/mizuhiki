@@ -19,11 +19,39 @@ export const ROOM_TYPES = ["deal", "payroll", "team", "family"] as const;
 export type RoomType = (typeof ROOM_TYPES)[number];
 
 /** Template defaults (spec: Deal = approval required, hidden history; Payroll = auditor key on). */
-export const ROOM_TEMPLATES: Record<RoomType, { label: string; approval: boolean; history: "share" | "hide"; auditor: boolean; blurb: string }> = {
-  deal: { label: "Deal", approval: true, history: "hide", auditor: false, blurb: "For a deal with a client or partner. New people need approval and don't see earlier messages." },
-  payroll: { label: "Payroll", approval: true, history: "hide", auditor: true, blurb: "For pay runs and payslips. New people need approval and don't see earlier messages. An accountant can be given a pass to read it." },
-  team: { label: "Team", approval: true, history: "share", auditor: false, blurb: "For a small team. New members can be shown the history." },
-  family: { label: "Family", approval: false, history: "share", auditor: false, blurb: "For family. Invites join without waiting for approval." },
+export const ROOM_TEMPLATES: Record<
+  RoomType,
+  { label: string; approval: boolean; history: "share" | "hide"; auditor: boolean; blurb: string }
+> = {
+  deal: {
+    label: "Deal",
+    approval: true,
+    history: "hide",
+    auditor: false,
+    blurb: "For a deal with a client or partner. New people need approval and don't see earlier messages.",
+  },
+  payroll: {
+    label: "Payroll",
+    approval: true,
+    history: "hide",
+    auditor: true,
+    blurb:
+      "For pay runs and payslips. New people need approval and don't see earlier messages. An accountant can be given a pass to read it.",
+  },
+  team: {
+    label: "Team",
+    approval: true,
+    history: "share",
+    auditor: false,
+    blurb: "For a small team. New members can be shown the history.",
+  },
+  family: {
+    label: "Family",
+    approval: false,
+    history: "share",
+    auditor: false,
+    blurb: "For family. Invites join without waiting for approval.",
+  },
 };
 
 export const PERMISSIONS = ["send", "files", "add", "info", "pin"] as const;
@@ -43,8 +71,18 @@ const id = z.string().regex(/^[A-Za-z0-9_-]{6,40}$/);
 
 /** The message kinds that travel in a room. System kinds are signed by the admin who made the change. */
 export const RoomBodySchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("text"), text: z.string().min(1).max(8000), replyTo: id.optional(), mentions: z.array(addr).max(50).default([]) }),
-  z.object({ kind: z.literal("file"), file: z.record(z.string(), z.unknown()), caption: z.string().max(2000).default(""), replyTo: id.optional() }),
+  z.object({
+    kind: z.literal("text"),
+    text: z.string().min(1).max(8000),
+    replyTo: id.optional(),
+    mentions: z.array(addr).max(50).default([]),
+  }),
+  z.object({
+    kind: z.literal("file"),
+    file: z.record(z.string(), z.unknown()),
+    caption: z.string().max(2000).default(""),
+    replyTo: id.optional(),
+  }),
   z.object({ kind: z.literal("reaction"), target: id, emoji: z.string().max(16), on: z.boolean() }),
   z.object({ kind: z.literal("pin"), target: id, on: z.boolean() }),
   z.object({ kind: z.literal("delete"), target: id }),
@@ -68,7 +106,12 @@ export const RoomBodySchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("added"), member: addr, history: z.enum(["share", "hide"]) }),
   z.object({ kind: z.literal("removed"), member: addr, blocked: z.boolean().default(false) }),
   z.object({ kind: z.literal("left"), member: addr }),
-  z.object({ kind: z.literal("role"), member: addr, role: z.enum(["member", "admin", "owner"]), permissions: z.array(z.enum(PERMISSIONS)).default([...PERMISSIONS]) }),
+  z.object({
+    kind: z.literal("role"),
+    member: addr,
+    role: z.enum(["member", "admin", "owner"]),
+    permissions: z.array(z.enum(PERMISSIONS)).default([...PERMISSIONS]),
+  }),
   z.object({ kind: z.literal("rotated"), reason: z.string().max(60) }),
 ]);
 export type RoomBody = z.infer<typeof RoomBodySchema>;
@@ -93,7 +136,13 @@ export function signRoomMessage(args: {
 }): RoomMessage {
   return signRecord({
     kind: "room",
-    body: { roomId: args.roomId, epoch: args.epoch.toString(), msgId: args.msgId, sentAt: new Date().toISOString(), body: RoomBodySchema.parse(args.body) },
+    body: {
+      roomId: args.roomId,
+      epoch: args.epoch.toString(),
+      msgId: args.msgId,
+      sentAt: new Date().toISOString(),
+      body: RoomBodySchema.parse(args.body),
+    },
     signer: args.author,
     classical: args.classical,
     pq: args.pq,
@@ -105,10 +154,14 @@ export function signRoomMessage(args: {
  * and the author's signature against their ML-DSA key (fetched by the caller from chain).
  * Throws on any mismatch; returns the parsed body.
  */
-export function verifyRoomMessage(msg: RoomMessage, expect: { roomId: string; epoch: bigint; pqPublicKey: Uint8Array }): RoomMessageBody {
+export function verifyRoomMessage(
+  msg: RoomMessage,
+  expect: { roomId: string; epoch: bigint; pqPublicKey: Uint8Array },
+): RoomMessageBody {
   const body = verifyRecord(msg, { kind: "room", signer: msg.signer, pqPublicKey: expect.pqPublicKey });
   if (body.roomId !== expect.roomId) throw new Error("This message belongs to another room.");
-  if (body.epoch !== expect.epoch.toString()) throw new Error("This message claims a different key epoch than the one that sealed it.");
+  if (body.epoch !== expect.epoch.toString())
+    throw new Error("This message claims a different key epoch than the one that sealed it.");
   return { ...body, body: RoomBodySchema.parse(body.body) };
 }
 
@@ -122,7 +175,11 @@ export interface MemberEntry {
  * Roles are not part of it: they change without a new key and are recorded on chain on their own
  * (`roleOf`, and the room's owner), so any device can re-check the current member list at any time.
  */
-export function membershipHash(roomId: string, epoch: bigint, members: ReadonlyArray<{ address: string }>): `0x${string}` {
+export function membershipHash(
+  roomId: string,
+  epoch: bigint,
+  members: ReadonlyArray<{ address: string }>,
+): `0x${string}` {
   const sorted = members.map((m) => m.address).sort();
   return `0x${toHex(sha256(utf8(canonicalJson({ roomId, epoch: epoch.toString(), members: sorted }))))}`;
 }

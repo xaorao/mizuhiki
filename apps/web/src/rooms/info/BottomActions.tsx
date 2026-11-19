@@ -134,7 +134,11 @@ export function BottomActions({ room, names }: { room: RoomState; names: Record<
       {pending ? (
         <div className={s.pending} role="status">
           <b>{busy ?? "Deleting in 5 seconds"}</b>
-          <span>{busy ? "Removing the sealed messages from storage for everyone." : "Nothing has been sent yet. Tap Undo on the notice to keep the room."}</span>
+          <span>
+            {busy
+              ? "Removing the sealed messages from storage for everyone."
+              : "Nothing has been sent yet. Tap Undo on the notice to keep the room."}
+          </span>
           {busy ? null : (
             <div className={s.countdown} aria-hidden="true">
               <span />
@@ -174,7 +178,10 @@ export function BottomActions({ room, names }: { room: RoomState; names: Record<
 
       <Sheet open={sheet === "leave"} onClose={close} title="Leave room" dismissable={!busy}>
         <div className={s.sheetBody}>
-          <p>You stop getting new messages now. The room key changes the next time an admin opens the room. You keep what you already saw on this device.</p>
+          <p>
+            You stop getting new messages now. The room key changes the next time an admin opens the room. You keep what
+            you already saw on this device.
+          </p>
           <p className={s.help}>To come back, you need a new invite or an admin to add you.</p>
           <InlineError>{err}</InlineError>
           <div className={s.btnRow}>
@@ -192,7 +199,10 @@ export function BottomActions({ room, names }: { room: RoomState; names: Record<
         <div className={s.sheetBody}>
           <p className={s.consequence}>The new owner can delete the room and choose admins. You become an admin.</p>
           {admins.length === 0 ? (
-            <p className={s.help}>Ownership goes only to an admin. Make someone an admin first from their row in Members, then come back here.</p>
+            <p className={s.help}>
+              Ownership goes only to an admin. Make someone an admin first from their row in Members, then come back
+              here.
+            </p>
           ) : (
             <>
               <div className={s.choiceList} role="radiogroup" aria-label="New owner">
@@ -239,7 +249,8 @@ export function BottomActions({ room, names }: { room: RoomState; names: Record<
         <div className={s.sheetBody}>
           <p>Are you sure you want to delete this room?</p>
           <p className={s.help}>
-            Deleting removes the sealed messages and files from storage for everyone and records the close on QoreChain. Copies members already opened stay on their devices.
+            Deleting removes the sealed messages and files from storage for everyone and records the close on QoreChain.
+            Copies members already opened stay on their devices.
           </p>
           <label className={s.checkRow}>
             <input type="checkbox" checked={forAll} onChange={(e) => setForAll(e.target.checked)} />
@@ -247,7 +258,8 @@ export function BottomActions({ room, names }: { room: RoomState; names: Record<
           </label>
           {!forAll ? (
             <p className={s.consequence}>
-              As the owner you cannot just leave. Transfer the room to an admin first and then leave, or tick the box to delete it for everyone.
+              As the owner you cannot just leave. Transfer the room to an admin first and then leave, or tick the box to
+              delete it for everyone.
             </p>
           ) : null}
           <div className={s.btnRow}>

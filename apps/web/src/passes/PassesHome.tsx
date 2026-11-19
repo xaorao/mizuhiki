@@ -29,7 +29,8 @@ export function PassesHome() {
   const [given, setGiven] = useState<PassView[] | null>(null);
   const [mine, setMine] = useState<PassView[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const preset = params.get("new") === "room" && params.get("id") ? { what: "room" as const, id: params.get("id") ?? "" } : null;
+  const preset =
+    params.get("new") === "room" && params.get("id") ? { what: "room" as const, id: params.get("id") ?? "" } : null;
   const [creating, setCreating] = useState(preset !== null);
   const [names, setNames] = useState<Record<string, string | null>>({});
 
@@ -67,7 +68,10 @@ export function PassesHome() {
         <div className={s.titleBlock}>
           <Kicker>あいかぎ</Kicker>
           <h1>Passes</h1>
-          <p className={s.lede}>Give an accountant one quarter, not everything. Each pass reads only what it says, and you can revoke it any time.</p>
+          <p className={s.lede}>
+            Give an accountant one quarter, not everything. Each pass reads only what it says, and you can revoke it any
+            time.
+          </p>
         </div>
         <Button variant="cord" icon="plus" className={s.newBtn} onClick={() => setCreating(true)}>
           New pass
@@ -84,7 +88,14 @@ export function PassesHome() {
       />
       <div className={s.body} key={tab}>
         {error ? (
-          <Oops title="Not loaded" action={<Button variant="line" icon="undo" onClick={() => void load()}>Try again</Button>}>
+          <Oops
+            title="Not loaded"
+            action={
+              <Button variant="line" icon="undo" onClick={() => void load()}>
+                Try again
+              </Button>
+            }
+          >
             {error}
           </Oops>
         ) : list === null ? (
@@ -118,17 +129,28 @@ export function PassesHome() {
               return (
                 <li key={p.id}>
                   <Link href={`/app/passes/${p.id}`} className={s.item}>
-                    <Avatar name={names[other] ?? other.slice(4, 6)} size={44} tone={tab === "given" ? "matcha" : "sora"} />
+                    <Avatar
+                      name={names[other] ?? other.slice(4, 6)}
+                      size={44}
+                      tone={tab === "given" ? "matcha" : "sora"}
+                    />
                     <span className={s.itemText}>
-                      <b>
-                        {tab === "given" ? label(other) : `From ${label(other)}`}
-                      </b>
+                      <b>{tab === "given" ? label(other) : `From ${label(other)}`}</b>
                       <small>
-                        {scopeLine(p.invite.body.scope)} · made {new Date(p.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                        {scopeLine(p.invite.body.scope)} · made{" "}
+                        {new Date(p.createdAt).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
                       </small>
                     </span>
                     <span className={s.itemEnd}>
-                      {tab === "given" && p.status === "active" && p.resealed ? <Chip tone="white" icon="lock">{p.resealed} copied</Chip> : null}
+                      {tab === "given" && p.status === "active" && p.resealed ? (
+                        <Chip tone="white" icon="lock">
+                          {p.resealed} copied
+                        </Chip>
+                      ) : null}
                       <StatusChip status={chip.status}>{chip.label}</StatusChip>
                       <Icon name="chev" size={18} />
                     </span>

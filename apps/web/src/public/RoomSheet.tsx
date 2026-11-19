@@ -14,9 +14,21 @@ import s from "./public.module.css";
 
 type Room = Extract<Block, { type: "room" }>;
 
-export function RoomSheet({ block, ownerName, open, onClose }: { block: Room | null; ownerName: string; open: boolean; onClose: () => void }) {
+export function RoomSheet({
+  block,
+  ownerName,
+  open,
+  onClose,
+}: {
+  block: Room | null;
+  ownerName: string;
+  open: boolean;
+  onClose: () => void;
+}) {
   const router = useRouter();
-  const [state, setState] = useState<{ s: "loading" } | { s: "ok"; preview: InvitePreview; card: InviteCard } | { s: "failed"; why: string }>({ s: "loading" });
+  const [state, setState] = useState<
+    { s: "loading" } | { s: "ok"; preview: InvitePreview; card: InviteCard } | { s: "failed"; why: string }
+  >({ s: "loading" });
   const invite = block?.invite;
 
   useEffect(() => {
@@ -45,7 +57,8 @@ export function RoomSheet({ block, ownerName, open, onClose }: { block: Room | n
           <RoomAvatar name={state.card.name} photo={state.card.photo} roomId={state.preview.roomId} size={72} />
           <b>{state.card.name}</b>
           <small>
-            {ROOM_TEMPLATES[state.card.type].label} room · {state.preview.members} {state.preview.members === 1 ? "member" : "members"}
+            {ROOM_TEMPLATES[state.card.type].label} room · {state.preview.members}{" "}
+            {state.preview.members === 1 ? "member" : "members"}
           </small>
           {state.card.description ? <p>{state.card.description}</p> : null}
           {closed ? (
@@ -63,7 +76,10 @@ export function RoomSheet({ block, ownerName, open, onClose }: { block: Room | n
                   ? `@${ownerName} approves each person. Once you are in, messages and files are sealed to the people in the room.`
                   : "You join as soon as an admin's device next opens the room. Messages and files are sealed to the people in it."}
               </p>
-              <LockLine>Joining needs a Mizuhiki key, which takes a minute to make. You will see messages from the day you join unless an admin shares earlier ones.</LockLine>
+              <LockLine>
+                Joining needs a Mizuhiki key, which takes a minute to make. You will see messages from the day you join
+                unless an admin shares earlier ones.
+              </LockLine>
               <Button variant="cord" icon="users" full onClick={() => invite && router.push(invite)}>
                 {state.preview.approval ? "Ask to join" : "Join"}
               </Button>

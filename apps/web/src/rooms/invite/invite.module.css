@@ -142,7 +142,9 @@
   color: var(--ink);
   text-align: left;
   cursor: pointer;
-  transition: transform var(--t-press) var(--ease-out), box-shadow var(--t-press) var(--ease-out);
+  transition:
+    transform var(--t-press) var(--ease-out),
+    box-shadow var(--t-press) var(--ease-out);
   box-shadow: var(--drop-sm);
 }
 .url:active {
@@ -185,7 +187,9 @@
   text-align: center;
   cursor: pointer;
   box-shadow: var(--drop-sm);
-  transition: transform var(--t-press) var(--ease-out), box-shadow var(--t-press) var(--ease-out);
+  transition:
+    transform var(--t-press) var(--ease-out),
+    box-shadow var(--t-press) var(--ease-out);
 }
 .tile:hover {
   transform: translateY(-2px);
@@ -420,7 +424,9 @@
   font-weight: 800;
   font-size: 13px;
   cursor: pointer;
-  transition: color var(--t-toggle) var(--ease-out), transform var(--t-toggle) var(--ease-pop);
+  transition:
+    color var(--t-toggle) var(--ease-out),
+    transform var(--t-toggle) var(--ease-pop);
 }
 .stops button:first-child {
   text-align: left;

@@ -39,9 +39,7 @@
 .stage {
   position: relative;
   min-height: 100dvh;
-  background:
-    radial-gradient(1100px 460px at 50% -8%, var(--sakura), transparent 70%),
-    var(--cream);
+  background: radial-gradient(1100px 460px at 50% -8%, var(--sakura), transparent 70%), var(--cream);
   overflow-x: clip;
   padding-bottom: 72px;
 }

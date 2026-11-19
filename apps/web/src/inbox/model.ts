@@ -87,7 +87,10 @@ export async function openRow(account: Account, row: InboxRow): Promise<Opened> 
 }
 
 /** Open with any key the item was sealed to (the owner's, or a pass key). */
-export async function openRowWith(keys: SealKeyPair, row: Pick<InboxRow, "kind" | "ref" | "envelope" | "at">): Promise<Opened> {
+export async function openRowWith(
+  keys: SealKeyPair,
+  row: Pick<InboxRow, "kind" | "ref" | "envelope" | "at">,
+): Promise<Opened> {
   if (!row.envelope) throw new Error("This item has no sealed part.");
   const purpose = purposeFor(row);
   if (!purpose) throw new Error("This kind of item opens in its own section.");

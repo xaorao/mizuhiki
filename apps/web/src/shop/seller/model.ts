@@ -62,7 +62,10 @@ export function amountInput(base: string | bigint, token: ShopToken): string {
 }
 
 /** Sum amounts per token: "12 fUSD · 3 QOR", or "0" in the first token when empty. */
-export function sumByToken(items: { amount: string | bigint; token: ShopToken }[], fallback: ShopToken = "fUSD"): string {
+export function sumByToken(
+  items: { amount: string | bigint; token: ShopToken }[],
+  fallback: ShopToken = "fUSD",
+): string {
   const sums = new Map<ShopToken, bigint>();
   for (const i of items) sums.set(i.token, (sums.get(i.token) ?? 0n) + BigInt(i.amount));
   const parts = [...sums].filter(([, n]) => n > 0n).map(([t, n]) => formatAmount(n, t));
@@ -124,7 +127,11 @@ export function parseRich(src: string): Inline[][] {
         else if (m[3] !== undefined && m[4] !== undefined) {
           try {
             const u = new URL(m[4]);
-            out.push(u.protocol === "https:" || u.protocol === "http:" ? { t: "a", text: m[3], href: u.toString() } : { t: "text", text: m[0] });
+            out.push(
+              u.protocol === "https:" || u.protocol === "http:"
+                ? { t: "a", text: m[3], href: u.toString() }
+                : { t: "text", text: m[0] },
+            );
           } catch {
             out.push({ t: "text", text: m[0] });
           }
@@ -164,7 +171,8 @@ export function wrapSelection(
 
 export const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 
-export const toTime = (min: number) => `${String(Math.floor(min / 60) % 24).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+export const toTime = (min: number) =>
+  `${String(Math.floor(min / 60) % 24).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 export function fromTime(t: string): number | null {
   const m = /^(\d{2}):(\d{2})$/.exec(t);
   if (!m) return null;
@@ -181,7 +189,8 @@ export function hoursProblems(hours: { day: number; from: number; to: number }[]
     const rs = hours.filter((h) => h.day === day).sort((a, b) => a.from - b.from);
     rs.forEach((r, i) => {
       if (r.to <= r.from) out.push(`${name}: the end time must be after the start time.`);
-      else if (r.to - r.from < minutes) out.push(`${name}: ${toTime(r.from)}–${toTime(r.to)} is shorter than one ${minutes}-minute call.`);
+      else if (r.to - r.from < minutes)
+        out.push(`${name}: ${toTime(r.from)}–${toTime(r.to)} is shorter than one ${minutes}-minute call.`);
       const prev = rs[i - 1];
       if (prev && r.from < prev.to) out.push(`${name}: two ranges overlap.`);
     });
@@ -233,7 +242,9 @@ export function orderLines(o: Pick<OrderView, "request" | "records" | "token">):
     const def = o.records.find((r) => r.body.id === l.productId)?.body;
     return {
       title: def?.title ?? "A product that is no longer listed",
-      option: l.versionId ? (def?.versions.find((v) => v.id === l.versionId)?.name ?? "An option no longer offered") : null,
+      option: l.versionId
+        ? (def?.versions.find((v) => v.id === l.versionId)?.name ?? "An option no longer offered")
+        : null,
       quantity: l.quantity,
       slot: l.slot,
       chosen: l.chosen ? formatAmount(l.chosen, o.token) : null,
@@ -248,7 +259,10 @@ export function paidSoFar(o: Pick<OrderView, "status" | "dueNow" | "dueLater" | 
 }
 
 export const canRefund = (o: Pick<OrderView, "payer" | "status" | "refundTx" | "depositTx">) =>
-  !!o.payer && !!o.depositTx && !o.refundTx && (o.status === "paid" || o.status === "in_progress" || o.status === "delivered");
+  !!o.payer &&
+  !!o.depositTx &&
+  !o.refundTx &&
+  (o.status === "paid" || o.status === "in_progress" || o.status === "delivered");
 export const canAskRest = (o: Pick<OrderView, "status" | "dueLater" | "balanceTx">) =>
   o.status === "in_progress" && BigInt(o.dueLater) > 0n && !o.balanceTx;
 export const canDeliver = (o: Pick<OrderView, "status" | "delivery">) => o.status === "paid" && !o.delivery;
@@ -260,7 +274,10 @@ export function discountValue(d: Pick<DiscountRow, "percent" | "amountOff" | "to
   return d.amountOff && d.token ? `${formatAmount(d.amountOff, d.token)} off` : "—";
 }
 
-export function discountState(d: Pick<DiscountRow, "active" | "expiresAt" | "maxUses" | "uses">, now = new Date()): { label: string; chip: Chip } {
+export function discountState(
+  d: Pick<DiscountRow, "active" | "expiresAt" | "maxUses" | "uses">,
+  now = new Date(),
+): { label: string; chip: Chip } {
   if (!d.active) return { label: "Off", chip: "neutral" };
   if (d.expiresAt && new Date(d.expiresAt) < now) return { label: "Expired", chip: "neutral" };
   if (d.maxUses !== null && d.uses >= d.maxUses) return { label: "Used up", chip: "wait" };
@@ -278,7 +295,8 @@ export function codeProblem(code: string, others: string[]): string | null {
 }
 
 /** Content blocks that hold something a buyer gets (an empty text block does not). */
-export const hasContent = (c: Content) => c.pages.some((p) => p.blocks.some((b) => (b.t === "text" ? b.text.trim() : true)));
+export const hasContent = (c: Content) =>
+  c.pages.some((p) => p.blocks.some((b) => (b.t === "text" ? b.text.trim() : true)));
 
 export function move<T>(list: T[], from: number, to: number): T[] {
   if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) return list;

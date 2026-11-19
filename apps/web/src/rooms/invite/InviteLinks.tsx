@@ -70,9 +70,15 @@ import s from "./invite.module.css";
 
 type View = "main" | "new" | "qr" | "forward" | "reset";
 
-const STATE_STATUS: Record<LinkState, Status> = { active: "ok", expired: "wait", "used-up": "neutral", revoked: "danger" };
+const STATE_STATUS: Record<LinkState, Status> = {
+  active: "ok",
+  expired: "wait",
+  "used-up": "neutral",
+  revoked: "danger",
+};
 
-const failText = (e: unknown, fallback: string) => (e instanceof ApiFailure || e instanceof Error ? e.message : fallback);
+const failText = (e: unknown, fallback: string) =>
+  e instanceof ApiFailure || e instanceof Error ? e.message : fallback;
 
 export function InviteLinks({ room, onClose }: { room: RoomState; onClose: () => void }) {
   const { account } = useAccount();
@@ -122,10 +128,16 @@ export function InviteLinks({ room, onClose }: { room: RoomState; onClose: () =>
   }, []);
 
   const primary = useMemo(
-    () => (rows ?? []).filter((r) => r.primary && linkState(r, now) === "active").sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0],
+    () =>
+      (rows ?? [])
+        .filter((r) => r.primary && linkState(r, now) === "active")
+        .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0],
     [rows, now],
   );
-  const extra = useMemo(() => (rows ?? []).filter((r) => !r.primary).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)), [rows]);
+  const extra = useMemo(
+    () => (rows ?? []).filter((r) => !r.primary).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
+    [rows],
+  );
 
   const card = useCallback(async (): Promise<InviteCard> => {
     if (!account || !info) throw new Error("The room is still opening. Try again in a moment.");
@@ -191,7 +203,15 @@ export function InviteLinks({ room, onClose }: { room: RoomState; onClose: () =>
   };
 
   const title =
-    view === "new" ? "New invite link" : view === "qr" ? "QR code" : view === "forward" ? "Send the link" : view === "reset" ? "Reset link?" : "Invite links";
+    view === "new"
+      ? "New invite link"
+      : view === "qr"
+        ? "QR code"
+        : view === "forward"
+          ? "Send the link"
+          : view === "reset"
+            ? "Reset link?"
+            : "Invite links";
 
   return (
     <Sheet open onClose={onClose} title={title} dismissable={!making}>
@@ -233,7 +253,13 @@ export function InviteLinks({ room, onClose }: { room: RoomState; onClose: () =>
           />
         ) : (
           <>
-            <RoomHead roomId={roomId} name={info.name} photo={info.photo} members={detail.members.filter((m) => m.status === "active").length} type={info.type} />
+            <RoomHead
+              roomId={roomId}
+              name={info.name}
+              photo={info.photo}
+              members={detail.members.filter((m) => m.status === "active").length}
+              type={info.type}
+            />
             <p className={s.lead}>
               {info.approval
                 ? "People can ask to join with this link. The room key is sealed to them only after an admin approves."
@@ -241,12 +267,21 @@ export function InviteLinks({ room, onClose }: { room: RoomState; onClose: () =>
             </p>
 
             {loadError ? (
-              <Oops title="The invite links did not load" action={<Button size="sm" variant="line" icon="undo" onClick={() => void load()}>Try again</Button>}>
+              <Oops
+                title="The invite links did not load"
+                action={
+                  <Button size="sm" variant="line" icon="undo" onClick={() => void load()}>
+                    Try again
+                  </Button>
+                }
+              >
                 {loadError} No link was changed.
               </Oops>
             ) : rows === null || (making && !primary) ? (
               <div className={s.linkCard} aria-busy="true">
-                <p className={s.muted}>{making ? "Sealing the room card to a new link key…" : "Loading the room’s links…"}</p>
+                <p className={s.muted}>
+                  {making ? "Sealing the room card to a new link key…" : "Loading the room’s links…"}
+                </p>
                 <Skeleton height={52} />
               </div>
             ) : !primary ? (
@@ -290,15 +325,20 @@ export function InviteLinks({ room, onClose }: { room: RoomState; onClose: () =>
                       <ActionTile icon="copy" label="Copy link" tone="sakura" onClick={() => void copy(primaryUrl)} />
                       <ActionTile icon="share" label="Share link" tone="sora" onClick={() => void share(primaryUrl)} />
                       <ActionTile icon="qr" label="QR code" tone="butter" onClick={() => setView("qr")} />
-                      <ActionTile icon="send" label="Send in Mizuhiki" tone="matcha" onClick={() => setView("forward")} />
+                      <ActionTile
+                        icon="send"
+                        label="Send in Mizuhiki"
+                        tone="matcha"
+                        onClick={() => setView("forward")}
+                      />
                     </div>
                   </>
                 ) : (
                   <p className={s.notice}>
                     <Icon name="info" size={16} />
                     <span>
-                      This link was made on another device. Its key never leaves the device that made it, so it cannot be shown here.
-                      Reset it to get a link here.
+                      This link was made on another device. Its key never leaves the device that made it, so it cannot
+                      be shown here. Reset it to get a link here.
                     </span>
                   </p>
                 )}
@@ -307,7 +347,9 @@ export function InviteLinks({ room, onClose }: { room: RoomState; onClose: () =>
                 </Button>
               </div>
             )}
-            {primary ? <AddToPage roomId={room.detail?.id ?? ""} roomName={info.name} url={primaryUrl ?? null} /> : null}
+            {primary ? (
+              <AddToPage roomId={room.detail?.id ?? ""} roomName={info.name} url={primaryUrl ?? null} />
+            ) : null}
 
             <section className={s.section} aria-labelledby="extra-links">
               <div className={s.sectionHead}>
@@ -316,7 +358,9 @@ export function InviteLinks({ room, onClose }: { room: RoomState; onClose: () =>
                   Create a new link
                 </Button>
               </div>
-              <p className={s.muted}>Links that stop after a time or a number of uses. Good for a deal or one pay run.</p>
+              <p className={s.muted}>
+                Links that stop after a time or a number of uses. Good for a deal or one pay run.
+              </p>
               {rows === null ? (
                 <Skeleton lines={2} />
               ) : extra.length === 0 ? (
@@ -342,7 +386,10 @@ export function InviteLinks({ room, onClose }: { room: RoomState; onClose: () =>
                 </ul>
               )}
             </section>
-            <LockLine>The link carries a key after the # sign. Mizuhiki never sees it, so only this device can show the link again.</LockLine>
+            <LockLine>
+              The link carries a key after the # sign. Mizuhiki never sees it, so only this device can show the link
+              again.
+            </LockLine>
           </>
         )}
       </div>
@@ -363,7 +410,19 @@ function NotAllowed({ closed }: { closed: boolean }) {
   );
 }
 
-function RoomHead({ roomId, name, photo, members, type }: { roomId: string; name: string; photo: InviteCard["photo"] | null; members: number; type: InviteCard["type"] }) {
+function RoomHead({
+  roomId,
+  name,
+  photo,
+  members,
+  type,
+}: {
+  roomId: string;
+  name: string;
+  photo: InviteCard["photo"] | null;
+  members: number;
+  type: InviteCard["type"];
+}) {
   const src = useSealedPhoto(photo);
   return (
     <div className={s.roomHead}>
@@ -378,7 +437,17 @@ function RoomHead({ roomId, name, photo, members, type }: { roomId: string; name
   );
 }
 
-function ActionTile({ icon, label, tone, onClick }: { icon: "copy" | "share" | "qr" | "send"; label: string; tone: "sakura" | "sora" | "butter" | "matcha"; onClick: () => void }) {
+function ActionTile({
+  icon,
+  label,
+  tone,
+  onClick,
+}: {
+  icon: "copy" | "share" | "qr" | "send";
+  label: string;
+  tone: "sakura" | "sora" | "butter" | "matcha";
+  onClick: () => void;
+}) {
   return (
     <button type="button" className={s.tile} onClick={onClick} onPointerDown={ripple}>
       <span className={[s.tileIcon, s[`t_${tone}`]].join(" ")} aria-hidden="true">
@@ -417,7 +486,8 @@ function LinkRow({
         <span className={s.rowMeta}>{usesLabel(row.uses, row.maxUses)}</span>
       </div>
       <span className={s.rowMeta}>
-        <Icon name="clock" size={14} /> {state === "revoked" ? `Made ${fmtWhen(new Date(row.createdAt), now)}` : expiryLabel(row.expiresAt, now)}
+        <Icon name="clock" size={14} />{" "}
+        {state === "revoked" ? `Made ${fmtWhen(new Date(row.createdAt), now)}` : expiryLabel(row.expiresAt, now)}
       </span>
       {state === "active" ? (
         confirm ? (
@@ -594,10 +664,25 @@ function NewLink({ onCreate }: { onCreate: (o: { expiresAt: Date | null; maxUses
 }
 
 /** A stepped slider with the stop names under it. `value` null = a custom value is chosen (no stop lit). */
-function Slider({ id, stops, value, onChange, label }: { id: string; stops: string[]; value: number | null; onChange: (i: number) => void; label: string }) {
+function Slider({
+  id,
+  stops,
+  value,
+  onChange,
+  label,
+}: {
+  id: string;
+  stops: string[];
+  value: number | null;
+  onChange: (i: number) => void;
+  label: string;
+}) {
   const at = value ?? stops.length - 1;
   return (
-    <div className={[s.slider, value === null ? s.sliderOff : ""].join(" ")} style={{ ["--pct" as string]: `${(at / (stops.length - 1)) * 100}%` }}>
+    <div
+      className={[s.slider, value === null ? s.sliderOff : ""].join(" ")}
+      style={{ ["--pct" as string]: `${(at / (stops.length - 1)) * 100}%` }}
+    >
       <input
         id={id}
         type="range"
@@ -611,7 +696,13 @@ function Slider({ id, stops, value, onChange, label }: { id: string; stops: stri
       />
       <div className={s.stops} aria-hidden="true">
         {stops.map((t, i) => (
-          <button key={t} type="button" tabIndex={-1} className={value === i ? s.stopOn : ""} onClick={() => onChange(i)}>
+          <button
+            key={t}
+            type="button"
+            tabIndex={-1}
+            className={value === i ? s.stopOn : ""}
+            onClick={() => onChange(i)}
+          >
             {t}
           </button>
         ))}
@@ -625,7 +716,12 @@ function QrView({ url, roomName }: { url: string; roomName: string }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     let alive = true;
-    QRCode.toDataURL(url, { margin: 2, width: 1024, errorCorrectionLevel: "M", color: { dark: "#2b2340", light: "#ffffff" } }).then(
+    QRCode.toDataURL(url, {
+      margin: 2,
+      width: 1024,
+      errorCorrectionLevel: "M",
+      color: { dark: "#2b2340", light: "#ffffff" },
+    }).then(
       (u) => alive && setQr(u),
       () => alive && setFailed(true),
     );
@@ -633,17 +729,26 @@ function QrView({ url, roomName }: { url: string; roomName: string }) {
       alive = false;
     };
   }, [url]);
-  const file = `${(roomName || "room").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "room"}-invite-qr.png`;
+  const file = `${
+    (roomName || "room")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "room"
+  }-invite-qr.png`;
   return (
     <div className={s.qrView}>
       {qr ? (
         <img className={s.qr} src={qr} alt={`QR code for the invite link to ${roomName || "this room"}`} />
       ) : failed ? (
-        <Oops title="The QR code could not be drawn">This browser could not draw it. The link works the same; copy it instead.</Oops>
+        <Oops title="The QR code could not be drawn">
+          This browser could not draw it. The link works the same; copy it instead.
+        </Oops>
       ) : (
         <Skeleton height={280} />
       )}
-      <p className={s.lead}>Scanning it opens the invite. Anyone who scans it can ask to join, so share it like the link itself.</p>
+      <p className={s.lead}>
+        Scanning it opens the invite. Anyone who scans it can ask to join, so share it like the link itself.
+      </p>
       {qr ? (
         <ButtonLink href={qr} download={file} variant="line" full icon="download">
           Download PNG
@@ -654,7 +759,17 @@ function QrView({ url, roomName }: { url: string; roomName: string }) {
 }
 
 /** Send the link to a Mizuhiki account as a sealed, signed message in their inbox. */
-function ForwardView({ url, roomName, members, onDone }: { url: string; roomName: string; members: string[]; onDone: () => void }) {
+function ForwardView({
+  url,
+  roomName,
+  members,
+  onDone,
+}: {
+  url: string;
+  roomName: string;
+  members: string[];
+  onDone: () => void;
+}) {
   const { account } = useAccount();
   const toast = useToast();
   const [who, setWho] = useState("");
@@ -673,10 +788,15 @@ function ForwardView({ url, roomName, members, onDone }: { url: string; roomName
         void (async () => {
           try {
             const person = await lookupPerson(who);
-            if (!person) throw new Error(`There is no Mizuhiki account called ${who.trim().startsWith("@") || who.trim().startsWith("qor1") ? who.trim() : `@${who.trim()}`}. Nothing was sent.`);
+            if (!person)
+              throw new Error(
+                `There is no Mizuhiki account called ${who.trim().startsWith("@") || who.trim().startsWith("qor1") ? who.trim() : `@${who.trim()}`}. Nothing was sent.`,
+              );
             const label = person.name ? `@${person.name}` : shortAddress(person.address);
-            if (person.address === account.owner.address) throw new Error("That is your own account. Nothing was sent.");
-            if (members.includes(person.address)) throw new Error(`${label} is already in this room. Nothing was sent.`);
+            if (person.address === account.owner.address)
+              throw new Error("That is your own account. Nothing was sent.");
+            if (members.includes(person.address))
+              throw new Error(`${label} is already in this room. Nothing was sent.`);
             await sendSealed({
               to: { address: person.address, card: null },
               kind: "message",
@@ -698,8 +818,24 @@ function ForwardView({ url, roomName, members, onDone }: { url: string; roomName
       }}
     >
       <p className={s.lead}>The link goes to their Mizuhiki inbox, sealed to them and signed by you.</p>
-      <TextField label="Send to" placeholder="@name or qor1… address" value={who} onChange={(e) => setWho(e.target.value)} disabled={busy} autoFocus autoComplete="off" spellCheck={false} />
-      <TextField label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={280} counter disabled={busy} />
+      <TextField
+        label="Send to"
+        placeholder="@name or qor1… address"
+        value={who}
+        onChange={(e) => setWho(e.target.value)}
+        disabled={busy}
+        autoFocus
+        autoComplete="off"
+        spellCheck={false}
+      />
+      <TextField
+        label="Note (optional)"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        maxLength={280}
+        counter
+        disabled={busy}
+      />
       {step ? (
         <div className={s.progress} role="status">
           <span className={s.bar}>
@@ -750,4 +886,3 @@ function ResetView({ onCancel, onReset }: { onCancel: () => void; onReset: () =>
     </div>
   );
 }
-

@@ -28,8 +28,18 @@ function subscribe(l: () => void) {
 }
 
 /** Per order: what the last delivery attempt on this device did. */
-export const useOutcomes = () => useSyncExternalStore(subscribe, () => outcomes, () => outcomes);
-export const useDelivering = () => useSyncExternalStore(subscribe, () => busyNow, () => false);
+export const useOutcomes = () =>
+  useSyncExternalStore(
+    subscribe,
+    () => outcomes,
+    () => outcomes,
+  );
+export const useDelivering = () =>
+  useSyncExternalStore(
+    subscribe,
+    () => busyNow,
+    () => false,
+  );
 
 async function once(a: Tokened, only: string | undefined, orders: OrderView[] | undefined): Promise<Outcome[]> {
   const all = orders ?? (await listSales(a));
@@ -76,11 +86,19 @@ export async function deliverNow(a: Tokened, opts: { only?: string; orders?: Ord
 export function summary(done: Outcome[]): { text: string; tone: "ok" | "error" } | null {
   const ok = done.filter((d) => d.ok).length;
   const bad = done.filter((d) => !d.ok);
-  if (ok && !bad.length) return { text: ok === 1 ? "Sealed to the buyer. できた！" : `Sealed ${ok} orders to their buyers. できた！`, tone: "ok" };
+  if (ok && !bad.length)
+    return {
+      text: ok === 1 ? "Sealed to the buyer. できた！" : `Sealed ${ok} orders to their buyers. できた！`,
+      tone: "ok",
+    };
   if (bad.length) {
     const first = bad[0]?.why ?? "It could not be sealed here.";
     return {
-      text: ok ? `Sealed ${ok}; ${bad.length} not sealed: ${first}` : bad.length === 1 ? `An order was not sealed: ${first}` : `${bad.length} orders were not sealed: ${first}`,
+      text: ok
+        ? `Sealed ${ok}; ${bad.length} not sealed: ${first}`
+        : bad.length === 1
+          ? `An order was not sealed: ${first}`
+          : `${bad.length} orders were not sealed: ${first}`,
       tone: "error",
     };
   }

@@ -7,14 +7,48 @@ import Link from "next/link";
  * Purchases · Saved · Reviews (Saved and Reviews live on this device).
  */
 import { useCallback, useEffect, useState } from "react";
-import { Button, ButtonLink, EmptyState, Icon, Kicker, Oops, Sakura, Skeleton, StatusChip, Tabs, TextArea, TextField, type Status } from "@mizuhiki/ui";
+import {
+  Button,
+  ButtonLink,
+  EmptyState,
+  Icon,
+  Kicker,
+  Oops,
+  Sakura,
+  Skeleton,
+  StatusChip,
+  Tabs,
+  TextArea,
+  TextField,
+  type Status,
+} from "@mizuhiki/ui";
 import { formatAmount, isValidPhrase, normalizePhrase, type ProductDef } from "@mizuhiki/core";
 import { useAccount } from "@/account/AccountProvider";
 import { ApiFailure } from "@/lib/api";
-import { buyerKeyFrom, buyerKeys, forgetBuyerKey, getOrder, keyOrders, myOrders, rememberBuyerKey, verifyProduct, withToken, type BuyerKey, type OrderView } from "../engine";
+import {
+  buyerKeyFrom,
+  buyerKeys,
+  forgetBuyerKey,
+  getOrder,
+  keyOrders,
+  myOrders,
+  rememberBuyerKey,
+  verifyProduct,
+  withToken,
+  type BuyerKey,
+  type OrderView,
+} from "../engine";
 import { fingerprint } from "./model";
 import { ShopBar, Stars, Thumb, when } from "./parts";
-import { localOrders, onStoreChange, postedReviews, savedProducts, toggleSaved, type PostedReview, type SavedProduct } from "./store";
+import {
+  localOrders,
+  onStoreChange,
+  postedReviews,
+  savedProducts,
+  toggleSaved,
+  type PostedReview,
+  type SavedProduct,
+} from "./store";
 import s from "./buyer.module.css";
 
 type Tab = "purchases" | "saved" | "reviews";
@@ -69,7 +103,9 @@ export function LibraryPage() {
     const add = async (list: OrderView[], via: string) => {
       for (const o of list) {
         if (found.has(o.ref)) continue;
-        const defs = (await Promise.all(o.records.map(checked))).filter((d): d is ProductDef => !!d && o.request.lines.some((l) => l.productId === d.id));
+        const defs = (await Promise.all(o.records.map(checked))).filter(
+          (d): d is ProductDef => !!d && o.request.lines.some((l) => l.productId === d.id),
+        );
         found.set(o.ref, { o, defs, via });
       }
     };
@@ -77,7 +113,9 @@ export function LibraryPage() {
       try {
         await add(await myOrders(withToken(acct.account, await acct.token())), "account");
       } catch (e) {
-        errs.push(`Your account's purchases could not be loaded: ${e instanceof ApiFailure ? e.message : "try again"}.`);
+        errs.push(
+          `Your account's purchases could not be loaded: ${e instanceof ApiFailure ? e.message : "try again"}.`,
+        );
       }
     }
     const ks = await buyerKeys().catch(() => [] as BuyerKey[]);
@@ -99,7 +137,11 @@ export function LibraryPage() {
         // An order this device placed that the server no longer has (an unpaid hold that was swept).
       }
     }
-    setRows([...found.values()].filter((r) => r.o.status !== "expired" || r.via === "this device").sort((a, b) => b.o.createdAt.localeCompare(a.o.createdAt)));
+    setRows(
+      [...found.values()]
+        .filter((r) => r.o.status !== "expired" || r.via === "this device")
+        .sort((a, b) => b.o.createdAt.localeCompare(a.o.createdAt)),
+    );
     setProblems(errs);
   }, [acct]);
 
@@ -117,7 +159,9 @@ export function LibraryPage() {
           <div>
             <Kicker>ライブラリ</Kicker>
             <h1 className={s.pageTitle}>Library</h1>
-            <p className={s.lede}>Purchases for this wallet. Everything opens on this device; Mizuhiki only holds the sealed copies.</p>
+            <p className={s.lede}>
+              Purchases for this wallet. Everything opens on this device; Mizuhiki only holds the sealed copies.
+            </p>
           </div>
           <Button variant="line" icon="key" onClick={() => setWords((w) => !w)} aria-expanded={words}>
             Open with my 12 words
@@ -163,7 +207,8 @@ export function LibraryPage() {
             ) : rows.length === 0 ? (
               <div className={s.card}>
                 <EmptyState title="You haven't bought anything... yet" face="sleepy" jp="まだないよ">
-                  Once you do, it shows up here for this wallet, ready to open. Bought with a buyer key on another device? Use Open with my 12 words.
+                  Once you do, it shows up here for this wallet, ready to open. Bought with a buyer key on another
+                  device? Use Open with my 12 words.
                 </EmptyState>
               </div>
             ) : (
@@ -286,7 +331,10 @@ function WhoBar({ keys, onForget }: { keys: BuyerKey[]; onForget: (hash: string)
     <div className={[s.card, s.who].join(" ")}>
       {acct.status === "unlocked" && acct.account ? (
         <p>
-          <Icon name="key" size={16} /> Account <code className={s.mono}>{acct.account.owner.address.slice(0, 14)}…{acct.account.owner.address.slice(-6)}</code>
+          <Icon name="key" size={16} /> Account{" "}
+          <code className={s.mono}>
+            {acct.account.owner.address.slice(0, 14)}…{acct.account.owner.address.slice(-6)}
+          </code>
         </p>
       ) : acct.status === "locked" ? (
         <form
@@ -301,7 +349,15 @@ function WhoBar({ keys, onForget }: { keys: BuyerKey[]; onForget: (hash: string)
               .finally(() => setBusy(false));
           }}
         >
-          <TextField label="Unlock to see your account's purchases" type="password" placeholder="Device passphrase" value={pass} onChange={(e) => setPass(e.target.value)} error={err} autoComplete="current-password" />
+          <TextField
+            label="Unlock to see your account's purchases"
+            type="password"
+            placeholder="Device passphrase"
+            value={pass}
+            onChange={(e) => setPass(e.target.value)}
+            error={err}
+            autoComplete="current-password"
+          />
           <Button type="submit" variant="line" icon="key" busy={busy} disabled={!pass}>
             Unlock
           </Button>
@@ -334,7 +390,8 @@ function WordsBox({ onKey }: { onKey: (k: BuyerKey) => void }) {
       onSubmit={(e) => {
         e.preventDefault();
         setErr(undefined);
-        if (n !== 12 || !isValidPhrase(text)) return setErr("Type all 12 words of your buyer key, in order. Each word is checked on this device.");
+        if (n !== 12 || !isValidPhrase(text))
+          return setErr("Type all 12 words of your buyer key, in order. Each word is checked on this device.");
         setBusy(true);
         const k = buyerKeyFrom(text);
         rememberBuyerKey(k)
@@ -343,11 +400,22 @@ function WordsBox({ onKey }: { onKey: (k: BuyerKey) => void }) {
           .finally(() => setBusy(false));
       }}
     >
-      <TextArea label="Your buyer key's 12 words" rows={3} value={text} onChange={(e) => setText(e.target.value)} error={err} autoComplete="off" spellCheck={false} hint={`${n} of 12 words. Never sent anywhere.`} />
+      <TextArea
+        label="Your buyer key's 12 words"
+        rows={3}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        error={err}
+        autoComplete="off"
+        spellCheck={false}
+        hint={`${n} of 12 words. Never sent anywhere.`}
+      />
       <Button type="submit" variant="cord" icon="key" busy={busy} disabled={n !== 12}>
         Open my purchases
       </Button>
-      <p className={s.fine}>The key is kept on this device so your purchases open next time too. You can forget it here any time.</p>
+      <p className={s.fine}>
+        The key is kept on this device so your purchases open next time too. You can forget it here any time.
+      </p>
       <ButtonLink variant="ghost" href="/login?next=/library">
         Have a full Mizuhiki account? Log in
       </ButtonLink>

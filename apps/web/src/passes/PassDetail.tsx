@@ -9,7 +9,25 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Avatar, Button, ButtonLink, Chip, CopyValue, EmptyState, Icon, Kicker, LockLine, Oops, SealMoment, Sheet, Skeleton, StatusChip, TypeChip, useToast, type SealStep } from "@mizuhiki/ui";
+import {
+  Avatar,
+  Button,
+  ButtonLink,
+  Chip,
+  CopyValue,
+  EmptyState,
+  Icon,
+  Kicker,
+  LockLine,
+  Oops,
+  SealMoment,
+  Sheet,
+  Skeleton,
+  StatusChip,
+  TypeChip,
+  useToast,
+  type SealStep,
+} from "@mizuhiki/ui";
 import type { Content, FileFacts } from "@mizuhiki/core";
 import { useOwner } from "@/owner/OwnerProvider";
 import { ApiFailure } from "@/lib/api";
@@ -38,9 +56,22 @@ import { usePassHooks } from "./usePassHooks";
 import { usePassEvents } from "./usePassEvents";
 import s from "./passes.module.css";
 
-const when = (iso: string) => new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+const when = (iso: string) =>
+  new Date(iso).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 /** The last day an expiry covers, in UTC like the boundary sentence. */
-const lastDay = (iso: string) => new Date(Date.parse(iso) - 1).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+const lastDay = (iso: string) =>
+  new Date(Date.parse(iso) - 1).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 
 export function PassDetail({ id }: { id: string }) {
   const owner = useOwner();
@@ -53,7 +84,9 @@ export function PassDetail({ id }: { id: string }) {
       const p = await getPass({ ...owner.account, token: await owner.token() }, id);
       setPass(p);
       setError(null);
-      const both = await Promise.all([p.owner, p.holder].map(async (a) => [a, await nameOf(a).catch(() => null)] as const));
+      const both = await Promise.all(
+        [p.owner, p.holder].map(async (a) => [a, await nameOf(a).catch(() => null)] as const),
+      );
       setNames(Object.fromEntries(both));
     } catch (e) {
       setError(e instanceof ApiFailure ? e.message : "This pass could not be loaded. Nothing changed.");
@@ -69,7 +102,14 @@ export function PassDetail({ id }: { id: string }) {
     return (
       <div className={s.page}>
         <Back />
-        <Oops title="Not loaded" action={<Button variant="line" icon="undo" onClick={() => void load()}>Try again</Button>}>
+        <Oops
+          title="Not loaded"
+          action={
+            <Button variant="line" icon="undo" onClick={() => void load()}>
+              Try again
+            </Button>
+          }
+        >
           {error}
         </Oops>
       </div>
@@ -101,7 +141,11 @@ export function PassDetail({ id }: { id: string }) {
       <div className={s.detail}>
         <div className={s.body}>
           <Boundary pass={pass} />
-          {side === "owner" ? <OwnerSide pass={pass} holder={label(pass.holder)} onChanged={load} /> : <HolderSide pass={pass} from={label(pass.owner)} onChanged={load} />}
+          {side === "owner" ? (
+            <OwnerSide pass={pass} holder={label(pass.holder)} onChanged={load} />
+          ) : (
+            <HolderSide pass={pass} from={label(pass.owner)} onChanged={load} />
+          )}
         </div>
         <Facts pass={pass} label={label} />
       </div>
@@ -190,7 +234,10 @@ function Steps({ pass }: { pass: PassView }) {
   const items = [
     { t: "Invite sent", d: "Signed by you, with the boundary above." },
     { t: "They accept", d: "Signed with their own key." },
-    { t: "You compare safety words", d: "Six words read from their key on QoreChain. Then the pass is sealed to them." },
+    {
+      t: "You compare safety words",
+      d: "Six words read from their key on QoreChain. Then the pass is sealed to them.",
+    },
   ];
   return (
     <ol className={s.steps}>
@@ -217,9 +264,19 @@ const STEP_LABEL: Record<ConfirmStep, string> = {
 };
 function stepsFor(pass: PassView, at: ConfirmStep | null, failed: boolean): SealStep[] {
   const k = pass.invite.body.scope.kind;
-  const order: ConfirmStep[] = k === "period" ? ["keys", "seal", "page", "catchup"] : k === "product" ? ["keys", "seal"] : k === "room" ? ["room"] : ["form", "catchup"];
+  const order: ConfirmStep[] =
+    k === "period"
+      ? ["keys", "seal", "page", "catchup"]
+      : k === "product"
+        ? ["keys", "seal"]
+        : k === "room"
+          ? ["room"]
+          : ["form", "catchup"];
   const i = at ? order.indexOf(at) : -1;
-  return order.map((x, j) => ({ label: STEP_LABEL[x], state: j < i ? "done" : j === i ? (failed ? "failed" : "running") : "waiting" }));
+  return order.map((x, j) => ({
+    label: STEP_LABEL[x],
+    state: j < i ? "done" : j === i ? (failed ? "failed" : "running") : "waiting",
+  }));
 }
 
 function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string; onChanged: () => Promise<void> }) {
@@ -238,7 +295,10 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
     const life = { alive: true };
     safetyWords(pass.holder)
       .then((w) => life.alive && setWords(w))
-      .catch((e: unknown) => life.alive && setWordsError(e instanceof Error ? e.message : "Their key could not be read from QoreChain."));
+      .catch(
+        (e: unknown) =>
+          life.alive && setWordsError(e instanceof Error ? e.message : "Their key could not be read from QoreChain."),
+      );
     return () => {
       life.alive = false;
     };
@@ -259,7 +319,9 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
       await onChanged();
     } catch (e) {
       setStep(cur.at ?? "keys");
-      setConfirmError(e instanceof ApiFailure || e instanceof Error ? e.message : "The pass was not confirmed. Nothing was shared.");
+      setConfirmError(
+        e instanceof ApiFailure || e instanceof Error ? e.message : "The pass was not confirmed. Nothing was shared.",
+      );
     }
   };
 
@@ -268,12 +330,18 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
     try {
       const { t, hooks } = await hooksFor();
       await revokePass(t, pass, hooks);
-      toast.show(pass.status === "invited" || pass.status === "accepted" ? "The invite is cancelled." : `Revoked. New items are no longer sealed to ${holder}.`);
+      toast.show(
+        pass.status === "invited" || pass.status === "accepted"
+          ? "The invite is cancelled."
+          : `Revoked. New items are no longer sealed to ${holder}.`,
+      );
       setRevoking(null);
       await onChanged();
     } catch (e) {
       setRevoking("ask");
-      toast.show(e instanceof ApiFailure || e instanceof Error ? e.message : "It was not revoked. Nothing changed.", { tone: "error" });
+      toast.show(e instanceof ApiFailure || e instanceof Error ? e.message : "It was not revoked. Nothing changed.", {
+        tone: "error",
+      });
     }
   };
 
@@ -281,10 +349,16 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
     setCatching(true);
     try {
       const r = await bringUpToDate({ ...owner.account, token: await owner.token() }, pass);
-      toast.show(r.added ? `${r.added} ${r.added === 1 ? "item" : "items"} sealed to ${holder}. The pass covers ${r.covered}.` : `Up to date. The pass covers ${r.covered} ${r.covered === 1 ? "item" : "items"}.`);
+      toast.show(
+        r.added
+          ? `${r.added} ${r.added === 1 ? "item" : "items"} sealed to ${holder}. The pass covers ${r.covered}.`
+          : `Up to date. The pass covers ${r.covered} ${r.covered === 1 ? "item" : "items"}.`,
+      );
       await onChanged();
     } catch (e) {
-      toast.show(e instanceof ApiFailure || e instanceof Error ? e.message : "Nothing new was sealed. Try again.", { tone: "error" });
+      toast.show(e instanceof ApiFailure || e instanceof Error ? e.message : "Nothing new was sealed. Try again.", {
+        tone: "error",
+      });
     } finally {
       setCatching(false);
     }
@@ -292,7 +366,8 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
 
   const link = `${SITE_URL}/app/passes/${pass.id}`;
   const scopeKind = pass.invite.body.scope.kind;
-  const live = pass.status === "invited" || pass.status === "accepted" || pass.status === "active" || pass.status === "expired";
+  const live =
+    pass.status === "invited" || pass.status === "accepted" || pass.status === "active" || pass.status === "expired";
   return (
     <>
       {pass.status === "invited" || pass.status === "accepted" ? (
@@ -311,7 +386,8 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
           ) : (
             <>
               <p>
-                Ask {holder} to read the six safety words on their pass screen, on a call or in person. Confirm only if every word matches, in order.
+                Ask {holder} to read the six safety words on their pass screen, on a call or in person. Confirm only if
+                every word matches, in order.
               </p>
               <ul className={s.words} aria-label="Safety words">
                 {words.split(/\s+/).map((w, i) => (
@@ -322,7 +398,12 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
                 <Button variant="ghost" icon="alert" onClick={() => setRevoking("mismatch")}>
                   They don&rsquo;t match
                 </Button>
-                <Button variant="cord" icon="check" onClick={() => void confirm()} disabled={step !== null && !confirmError}>
+                <Button
+                  variant="cord"
+                  icon="check"
+                  onClick={() => void confirm()}
+                  disabled={step !== null && !confirmError}
+                >
                   They match, confirm
                 </Button>
               </div>
@@ -337,7 +418,8 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
           {scopeKind === "period" || scopeKind === "form" ? (
             <>
               <p>
-                New items in scope are sealed to {holder} as they arrive. Older items, invoices, and anything a sender&rsquo;s browser missed are sealed from this device.
+                New items in scope are sealed to {holder} as they arrive. Older items, invoices, and anything a
+                sender&rsquo;s browser missed are sealed from this device.
               </p>
               <div className={s.covered}>
                 <Chip tone="matcha" icon="lock">
@@ -349,7 +431,10 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
               </div>
             </>
           ) : scopeKind === "room" ? (
-            <p>{holder} is in the room as a read-only member, with its past messages. Removing them changes the room&rsquo;s key.</p>
+            <p>
+              {holder} is in the room as a read-only member, with its past messages. Removing them changes the
+              room&rsquo;s key.
+            </p>
           ) : (
             <p>{holder} can open this product&rsquo;s content page and files. They cannot see sales or buyers.</p>
           )}
@@ -359,13 +444,19 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
       {pass.status === "expired" ? (
         <section className={s.panel}>
           <h2>Expired</h2>
-          <p>New items are no longer sealed to {holder}. What the pass covered before it ended stays readable to them.</p>
+          <p>
+            New items are no longer sealed to {holder}. What the pass covered before it ended stays readable to them.
+          </p>
         </section>
       ) : null}
       {pass.status === "revoked" || pass.status === "declined" ? (
         <section className={s.panel}>
           <h2>{pass.status === "revoked" ? "Revoked" : `${holder} declined`}</h2>
-          <p>{pass.status === "revoked" ? `${holder} keeps anything already opened. Future items are not sealed to them.` : "Nothing was shared. You can make a new pass any time."}</p>
+          <p>
+            {pass.status === "revoked"
+              ? `${holder} keeps anything already opened. Future items are not sealed to them.`
+              : "Nothing was shared. You can make a new pass any time."}
+          </p>
           <ButtonLink href="/app/passes" variant="line" icon="plus">
             New pass
           </ButtonLink>
@@ -380,8 +471,22 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
         </div>
       ) : null}
 
-      <Sheet open={step !== null} onClose={() => setStep(null)} title="Confirming the pass" dismissable={confirmError !== null}>
-        <SealMoment steps={stepsFor(pass, step, confirmError !== null)} progress={step ? (stepsFor(pass, step, false).findIndex((x) => x.state === "running") + 1) / stepsFor(pass, step, false).length : 0} note={<>On your device. Keys are sealed here before they leave.</>} />
+      <Sheet
+        open={step !== null}
+        onClose={() => setStep(null)}
+        title="Confirming the pass"
+        dismissable={confirmError !== null}
+      >
+        <SealMoment
+          steps={stepsFor(pass, step, confirmError !== null)}
+          progress={
+            step
+              ? (stepsFor(pass, step, false).findIndex((x) => x.state === "running") + 1) /
+                stepsFor(pass, step, false).length
+              : 0
+          }
+          note={<>On your device. Keys are sealed here before they leave.</>}
+        />
         {confirmError ? (
           <div className={s.form}>
             <p className={s.err} role="alert">
@@ -401,20 +506,33 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
 
       <Confirm
         open={revoking !== null}
-        title={revoking === "mismatch" ? "Cancel this invite?" : pass.status === "invited" || pass.status === "accepted" ? "Cancel the invite?" : `Revoke ${holder}'s pass?`}
+        title={
+          revoking === "mismatch"
+            ? "Cancel this invite?"
+            : pass.status === "invited" || pass.status === "accepted"
+              ? "Cancel the invite?"
+              : `Revoke ${holder}'s pass?`
+        }
         confirm={pass.status === "invited" || pass.status === "accepted" ? "Cancel invite" : "Revoke"}
         busy={revoking === "busy"}
         onClose={() => setRevoking(null)}
         onConfirm={() => void revoke()}
       >
         {revoking === "mismatch" ? (
-          <p>If the words differ, the key on chain may not be theirs. Cancel this invite and check their @name with them another way. Nothing has been shared.</p>
+          <p>
+            If the words differ, the key on chain may not be theirs. Cancel this invite and check their @name with them
+            another way. Nothing has been shared.
+          </p>
         ) : pass.status === "invited" || pass.status === "accepted" ? (
           <p>Nothing has been shared yet. {holder} will see that the invite was cancelled.</p>
         ) : (
           <p>
             {holder} keeps anything already opened. Future items are not sealed to them.
-            {scopeKind === "room" ? " They leave the room and its key changes." : scopeKind === "form" ? " They stop being a reader of the form." : ""}
+            {scopeKind === "room"
+              ? " They leave the room and its key changes."
+              : scopeKind === "form"
+                ? " They stop being a reader of the form."
+                : ""}
           </p>
         )}
       </Confirm>
@@ -445,10 +563,14 @@ function HolderSide({ pass, from, onChanged }: { pass: PassView; from: string; o
       const t = { ...owner.account, token: await owner.token() };
       if (what === "accept") await acceptPass(t, pass);
       else await declinePass(t, pass);
-      toast.show(what === "accept" ? `Accepted. ${from} will compare safety words with you.` : "Declined. Nothing was shared.");
+      toast.show(
+        what === "accept" ? `Accepted. ${from} will compare safety words with you.` : "Declined. Nothing was shared.",
+      );
       await onChanged();
     } catch (e) {
-      toast.show(e instanceof ApiFailure || e instanceof Error ? e.message : "That did not work. Nothing changed.", { tone: "error" });
+      toast.show(e instanceof ApiFailure || e instanceof Error ? e.message : "That did not work. Nothing changed.", {
+        tone: "error",
+      });
     } finally {
       setBusy(null);
     }
@@ -458,12 +580,25 @@ function HolderSide({ pass, from, onChanged }: { pass: PassView; from: string; o
     return (
       <section className={s.panel}>
         <h2>{from} wants to give you read-only access</h2>
-        <p>Accepting signs a short note with your key. Nothing is shared until {from} compares safety words with you.</p>
+        <p>
+          Accepting signs a short note with your key. Nothing is shared until {from} compares safety words with you.
+        </p>
         <div className={s.actions}>
-          <Button variant="ghost" busy={busy === "decline"} disabled={busy !== null} onClick={() => void act("decline")}>
+          <Button
+            variant="ghost"
+            busy={busy === "decline"}
+            disabled={busy !== null}
+            onClick={() => void act("decline")}
+          >
             Decline
           </Button>
-          <Button variant="cord" icon="check" busy={busy === "accept"} disabled={busy !== null} onClick={() => void act("accept")}>
+          <Button
+            variant="cord"
+            icon="check"
+            busy={busy === "accept"}
+            disabled={busy !== null}
+            onClick={() => void act("accept")}
+          >
             {busy === "accept" ? "Signing" : "Accept"}
           </Button>
         </div>
@@ -473,7 +608,9 @@ function HolderSide({ pass, from, onChanged }: { pass: PassView; from: string; o
     return (
       <section className={s.panel}>
         <h2>Your safety words</h2>
-        <p>Read these to {from} on a call or in person. They confirm the pass only if every word matches what they see.</p>
+        <p>
+          Read these to {from} on a call or in person. They confirm the pass only if every word matches what they see.
+        </p>
         {words === null ? (
           <Skeleton lines={1} />
         ) : words ? (
@@ -518,7 +655,10 @@ function HolderContent({ pass, from }: { pass: PassView; from: string }) {
           if (life.alive) setItems(list);
         }
       } catch (e) {
-        if (life.alive) setError(e instanceof ApiFailure || e instanceof Error ? e.message : "What this pass covers could not be opened.");
+        if (life.alive)
+          setError(
+            e instanceof ApiFailure || e instanceof Error ? e.message : "What this pass covers could not be opened.",
+          );
       }
     })();
     return () => {
@@ -526,9 +666,14 @@ function HolderContent({ pass, from }: { pass: PassView; from: string }) {
     };
   }, [owner, pass, scope.kind]);
 
-  const ended = pass.status !== "active" ? (
-    <LockLine>{pass.status === "revoked" ? `${from} revoked this pass. You keep what it covered; nothing new arrives.` : "This pass has ended. You keep what it covered; nothing new arrives."}</LockLine>
-  ) : null;
+  const ended =
+    pass.status !== "active" ? (
+      <LockLine>
+        {pass.status === "revoked"
+          ? `${from} revoked this pass. You keep what it covered; nothing new arrives.`
+          : "This pass has ended. You keep what it covered; nothing new arrives."}
+      </LockLine>
+    ) : null;
 
   if (scope.kind === "room")
     return (
@@ -549,7 +694,15 @@ function HolderContent({ pass, from }: { pass: PassView; from: string }) {
       <section className={s.panel}>
         <h2>{scope.label}</h2>
         {ended}
-        {product === null ? <Skeleton lines={4} /> : product === "none" ? <p>This product has no content page.</p> : <div className={s.product}><ContentReader content={product} /></div>}
+        {product === null ? (
+          <Skeleton lines={4} />
+        ) : product === "none" ? (
+          <p>This product has no content page.</p>
+        ) : (
+          <div className={s.product}>
+            <ContentReader content={product} />
+          </div>
+        )}
         <LockLine>Opened on this device with the key {from} sealed to you.</LockLine>
       </section>
     );
@@ -595,7 +748,11 @@ function snippet(it: PassItem): string {
   if ("error" in it) return it.error;
   if ("doc" in it) return it.doc.billTo.business || it.doc.billTo.label || "Invoice";
   const o = it.opened;
-  if (o.kind === "message") return o.text.slice(0, 120) || (o.files.length ? `${o.files.length} ${o.files.length === 1 ? "file" : "files"}` : "Message");
+  if (o.kind === "message")
+    return (
+      o.text.slice(0, 120) ||
+      (o.files.length ? `${o.files.length} ${o.files.length === 1 ? "file" : "files"}` : "Message")
+    );
   if (o.kind === "paynote") return o.note.slice(0, 120);
   return `${Object.keys(o.answers).filter((k) => !k.includes(":")).length} answers`;
 }

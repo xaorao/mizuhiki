@@ -419,16 +419,20 @@ export async function setFormReader(
   reader: { address: string; name: string; note: string },
   on: boolean,
 ): Promise<void> {
-  const r = await api.get<{ record: Signed<FormDef> | null; version: number; slug: string; draftEnvelope: string | null }>(
-    `/owner/forms/${encodeURIComponent(formId)}/record`,
-    { token },
-  );
+  const r = await api.get<{
+    record: Signed<FormDef> | null;
+    version: number;
+    slug: string;
+    draftEnvelope: string | null;
+  }>(`/owner/forms/${encodeURIComponent(formId)}/record`, { token });
   const change = (readers: FormDef["readers"]) => {
     const rest = readers.filter((x) => x.address !== reader.address);
     if (on && rest.length >= 10) throw new Error("This form already has 10 readers. Remove one first.");
     return on ? [...rest, reader] : rest;
   };
-  const draft = r.draftEnvelope ? openDraft(account, formId, await api.bytes(`/blobs/${r.draftEnvelope}`)) : r.record?.body;
+  const draft = r.draftEnvelope
+    ? openDraft(account, formId, await api.bytes(`/blobs/${r.draftEnvelope}`))
+    : r.record?.body;
   if (!draft) throw new Error("This form could not be opened on this device.");
   const nextDraft: FormDef = { ...draft, readers: change(draft.readers) };
   const d = sealDraft(account, nextDraft);
@@ -443,6 +447,12 @@ export async function setFormReader(
     version: r.version + 1,
     updatedAt: new Date().toISOString(),
   });
-  const record = signRecord({ kind: "form", body, signer: account.owner.address, classical: account.keys.classical, pq: account.keys.pq });
+  const record = signRecord({
+    kind: "form",
+    body,
+    signer: account.owner.address,
+    classical: account.keys.classical,
+    pq: account.keys.pq,
+  });
   await api.put("/forms", { id: formId, slug: r.slug, draftEnvelope: d.hash, publish: record }, { token });
 }

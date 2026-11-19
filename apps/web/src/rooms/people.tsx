@@ -46,7 +46,15 @@ export function pillString(text: PillText, names: Record<string, string | null>,
   return text.map((p) => (typeof p === "string" ? p : label(p.who, names, me))).join("");
 }
 
-export function PersonAvatar({ address, names, size = 40 }: { address: string; names: Record<string, string | null>; size?: number }) {
+export function PersonAvatar({
+  address,
+  names,
+  size = 40,
+}: {
+  address: string;
+  names: Record<string, string | null>;
+  size?: number;
+}) {
   return <Avatar name={names[address] ?? address.slice(4, 6)} size={size} tone={toneOf(address)} />;
 }
 
@@ -84,7 +92,17 @@ export function useSealedPhoto(facts: FileFacts | null | undefined): string | un
   return url;
 }
 
-export function RoomAvatar({ name, photo, roomId, size = 44 }: { name: string; photo: FileFacts | null | undefined; roomId: string; size?: number }) {
+export function RoomAvatar({
+  name,
+  photo,
+  roomId,
+  size = 44,
+}: {
+  name: string;
+  photo: FileFacts | null | undefined;
+  roomId: string;
+  size?: number;
+}) {
   const src = useSealedPhoto(photo);
   return <Avatar name={name || "Room"} src={src} size={size} tone={toneOf(roomId)} />;
 }

@@ -27,7 +27,9 @@ const devFile = `${homedir()}/.secrets/qorechain/testnet-wallet.env`;
 const have = await balanceOf(signer.address, DENOMS.QOR.denom);
 if (have < 2_000_000n) {
   if (!existsSync(devFile)) {
-    console.error(`The helper needs about 2 test QOR for key registration fees. Send some to ${signer.address} and run setup again.`);
+    console.error(
+      `The helper needs about 2 test QOR for key registration fees. Send some to ${signer.address} and run setup again.`,
+    );
     process.exit(1);
   }
   // KEY=value lines; the dev wallet's phrase is read here and never printed.
@@ -40,13 +42,39 @@ if (have < 2_000_000n) {
   const m = env["QORE_MNEMONIC"];
   if (!m) throw new Error("QORE_MNEMONIC missing from the testnet wallet file");
   const dev = deriveAccount(m);
-  await sendTx({ address: dev.address.bech32, classical: dev.classical, pq: dev.pq }, [msgSend(dev.address.bech32, signer.address, DENOMS.QOR.denom, 3_000_000n)], "mzk:test-fund:delivery-helper");
+  await sendTx(
+    { address: dev.address.bech32, classical: dev.classical, pq: dev.pq },
+    [msgSend(dev.address.bech32, signer.address, DENOMS.QOR.denom, 3_000_000n)],
+    "mzk:test-fund:delivery-helper",
+  );
 }
 await ensureKeys(signer, a.seal);
-const card = signRecipientCard({ chainId: NETWORK.chainId, address: signer.address, keys: a.seal, classicalKey: a.classical, pqKey: a.pq });
-const ch = (await (await fetch(`${api}/auth/challenge`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ address: signer.address }) })).json()) as { message: string; nonce: string };
+const card = signRecipientCard({
+  chainId: NETWORK.chainId,
+  address: signer.address,
+  keys: a.seal,
+  classicalKey: a.classical,
+  pqKey: a.pq,
+});
+const ch = (await (
+  await fetch(`${api}/auth/challenge`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ address: signer.address }),
+  })
+).json()) as { message: string; nonce: string };
 const signature = signSiwq({ message: ch.message, classicalKey: a.classical, pqKey: a.pq });
-const { token } = (await (await fetch(`${api}/auth/verify`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nonce: ch.nonce, signature }) })).json()) as { token: string };
-const r = await fetch(`${api}/cards`, { method: "PUT", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ card }) });
+const { token } = (await (
+  await fetch(`${api}/auth/verify`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ nonce: ch.nonce, signature }),
+  })
+).json()) as { token: string };
+const r = await fetch(`${api}/cards`, {
+  method: "PUT",
+  headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+  body: JSON.stringify({ card }),
+});
 if (!r.ok) throw new Error(`storing the helper's card failed: ${r.status} ${await r.text()}`);
 console.log("helper keys and card are ready on testnet");

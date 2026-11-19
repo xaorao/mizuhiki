@@ -157,7 +157,14 @@ export interface ProductDraft {
 
 export const newId = (prefix: string) => `${prefix}${toHex(randomBytes(8))}`;
 
-export function newDraft(args: { owner: string; name: string; kind: ProductKind; title: string; token: ShopToken; amount: bigint }): ProductDraft {
+export function newDraft(args: {
+  owner: string;
+  name: string;
+  kind: ProductKind;
+  title: string;
+  token: ShopToken;
+  amount: bigint;
+}): ProductDraft {
   const id = newId("pr");
   const def = ProductDefSchema.parse({
     v: 1,
@@ -167,10 +174,22 @@ export function newDraft(args: { owner: string; name: string; kind: ProductKind;
     slug: slugify(args.title) || id.slice(2, 10),
     kind: args.kind,
     title: args.title,
-    price: { token: args.token, amount: args.amount.toString(), pwyw: args.kind === "tip" ? { min: args.amount.toString(), suggested: args.amount.toString() } : null },
+    price: {
+      token: args.token,
+      amount: args.amount.toString(),
+      pwyw: args.kind === "tip" ? { min: args.amount.toString(), suggested: args.amount.toString() } : null,
+    },
     cta: args.kind === "call" ? "Book a time" : args.kind === "tip" ? "Support" : "I want this!",
     commission: args.kind === "commission" ? { depositPercent: 50 } : null,
-    booking: args.kind === "call" ? { minutes: 30, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, hours: [1, 2, 3, 4, 5].map((day) => ({ day, from: 600, to: 1020 })), place: "" } : null,
+    booking:
+      args.kind === "call"
+        ? {
+            minutes: 30,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            hours: [1, 2, 3, 4, 5].map((day) => ({ day, from: 600, to: 1020 })),
+            place: "",
+          }
+        : null,
     version: 1,
     updatedAt: new Date().toISOString(),
   });
@@ -194,13 +213,20 @@ export function slugify(s: string): string {
 }
 
 export function sealDraft(account: Account, d: ProductDraft): { envelope: Uint8Array; hash: string } {
-  const s = sealItem({ purpose: Purpose.product(d.def.id), readers: [publicRecipient(account.keys.seal)], plaintext: utf8(JSON.stringify({ ...d, savedAt: new Date().toISOString() })), context: "draft" });
+  const s = sealItem({
+    purpose: Purpose.product(d.def.id),
+    readers: [publicRecipient(account.keys.seal)],
+    plaintext: utf8(JSON.stringify({ ...d, savedAt: new Date().toISOString() })),
+    context: "draft",
+  });
   return { envelope: s.envelope, hash: s.hash };
 }
 
 export async function openDraft(account: Account, p: OwnerProduct): Promise<ProductDraft> {
   const env = await api.bytes(`/blobs/${p.draftEnvelope}`);
-  const d = JSON.parse(fromUtf8(openItem({ purpose: Purpose.product(p.id), envelope: env, keys: account.keys.seal, context: "draft" }))) as ProductDraft;
+  const d = JSON.parse(
+    fromUtf8(openItem({ purpose: Purpose.product(p.id), envelope: env, keys: account.keys.seal, context: "draft" })),
+  ) as ProductDraft;
   return { ...d, content: ContentSchema.parse(d.content) };
 }
 
@@ -212,7 +238,11 @@ export async function listMyProducts(a: Tokened): Promise<OwnerProduct[]> {
 export const contentChunks = (c: Content): string[] => [
   ...new Set(
     c.pages.flatMap((p) =>
-      p.blocks.flatMap((b) => (b.t === "file" && Array.isArray(b.file.chunks) ? (b.file.chunks as unknown[]).filter((h): h is string => typeof h === "string" && /^[0-9a-f]{64}$/.test(h)) : [])),
+      p.blocks.flatMap((b) =>
+        b.t === "file" && Array.isArray(b.file.chunks)
+          ? (b.file.chunks as unknown[]).filter((h): h is string => typeof h === "string" && /^[0-9a-f]{64}$/.test(h))
+          : [],
+      ),
     ),
   ),
 ];
@@ -224,11 +254,23 @@ export const contentChunks = (c: Content): string[] => [
 export async function saveDraft(a: Tokened, d: ProductDraft, agentEnvelope: string | null = null): Promise<void> {
   const s = sealDraft(a, d);
   await api.put("/blobs", s.envelope, T(a));
-  await api.put("/products", { id: d.def.id, slug: d.def.slug, kind: d.def.kind, draftEnvelope: s.hash, agentEnvelope, files: contentChunks(d.content) }, T(a));
+  await api.put(
+    "/products",
+    {
+      id: d.def.id,
+      slug: d.def.slug,
+      kind: d.def.kind,
+      draftEnvelope: s.hash,
+      agentEnvelope,
+      files: contentChunks(d.content),
+    },
+    T(a),
+  );
 }
 
 /** The delivery helper this Mizuhiki offers for "Instant delivery", if any. */
-export const offeredHelper = async (): Promise<string | null> => (await api.get<{ address: string | null }>("/shop/helper")).address;
+export const offeredHelper = async (): Promise<string | null> =>
+  (await api.get<{ address: string | null }>("/shop/helper")).address;
 
 /** Problems that stop publishing, in plain words (empty = ready). */
 export function publishProblems(d: ProductDraft): string[] {
@@ -236,17 +278,26 @@ export function publishProblems(d: ProductDraft): string[] {
   const def = d.def;
   if (!def.title.trim()) out.push("Give the product a name.");
   if (!/^[a-z0-9-]{1,48}$/.test(def.slug)) out.push("The link may use lowercase letters, numbers and dashes.");
-  if (!["tip", "commission", "call", "bundle"].includes(def.kind) && !d.content.pages.some((p) => p.blocks.some((b) => (b.t === "text" ? b.text.trim() : true))))
+  if (
+    !["tip", "commission", "call", "bundle"].includes(def.kind) &&
+    !d.content.pages.some((p) => p.blocks.some((b) => (b.t === "text" ? b.text.trim() : true)))
+  )
     out.push("Add what the buyer gets in Content.");
-  if (def.kind === "bundle" && (def.bundle?.productIds.length ?? 0) < 2) out.push("A bundle needs two or more of your published products.");
+  if (def.kind === "bundle" && (def.bundle?.productIds.length ?? 0) < 2)
+    out.push("A bundle needs two or more of your published products.");
   if (def.kind === "call" && (def.booking?.hours.length ?? 0) === 0) out.push("Add the hours people can book.");
-  if (def.price.pwyw && BigInt(def.price.pwyw.suggested) < BigInt(def.price.pwyw.min)) out.push("The suggested amount must be at least the minimum.");
+  if (def.price.pwyw && BigInt(def.price.pwyw.suggested) < BigInt(def.price.pwyw.min))
+    out.push("The suggested amount must be at least the minimum.");
   if (def.delivery === "instant" && !def.agent) out.push("Instant delivery needs a helper's address.");
   return out;
 }
 
 /** Seal the content, sign the record (version + 1) and publish it. Returns the new working copy. */
-export async function publish(a: Tokened, d: ProductDraft, onStep: (s: "content" | "sign" | "upload") => void = () => undefined): Promise<ProductDraft> {
+export async function publish(
+  a: Tokened,
+  d: ProductDraft,
+  onStep: (s: "content" | "sign" | "upload") => void = () => undefined,
+): Promise<ProductDraft> {
   const problems = publishProblems(d);
   if (problems.length) throw new Error(problems[0]);
   const key = fromBase64Url(d.key);
@@ -260,21 +311,50 @@ export async function publish(a: Tokened, d: ProductDraft, onStep: (s: "content"
   let agentEnvelope: string | null = null;
   if (d.def.delivery === "instant" && d.def.agent) {
     const recipient = await resolveOwner(d.def.agent, await cardOf(d.def.agent));
-    const s = sealItem({ purpose: Purpose.product(d.def.id), readers: [recipient], plaintext: utf8(JSON.stringify({ key: d.key, content })), context: "agent" });
+    const s = sealItem({
+      purpose: Purpose.product(d.def.id),
+      readers: [recipient],
+      plaintext: utf8(JSON.stringify({ key: d.key, content })),
+      context: "agent",
+    });
     agentEnvelope = (await api.put<{ hash: string }>("/blobs", s.envelope, T(a))).hash;
   }
   onStep("sign");
-  const def = ProductDefSchema.parse({ ...d.def, content, version: d.def.version + 1, updatedAt: new Date().toISOString() });
-  const record = signRecord({ kind: "product", body: def, signer: a.owner.address, classical: a.keys.classical, pq: a.keys.pq });
+  const def = ProductDefSchema.parse({
+    ...d.def,
+    content,
+    version: d.def.version + 1,
+    updatedAt: new Date().toISOString(),
+  });
+  const record = signRecord({
+    kind: "product",
+    body: def,
+    signer: a.owner.address,
+    classical: a.keys.classical,
+    pq: a.keys.pq,
+  });
   const next: ProductDraft = { ...d, def };
   const s = sealDraft(a, next);
   onStep("upload");
   await api.put("/blobs", s.envelope, T(a));
-  await api.put("/products", { id: def.id, slug: def.slug, kind: def.kind, draftEnvelope: s.hash, agentEnvelope, publish: record, files: contentChunks(d.content) }, T(a));
+  await api.put(
+    "/products",
+    {
+      id: def.id,
+      slug: def.slug,
+      kind: def.kind,
+      draftEnvelope: s.hash,
+      agentEnvelope,
+      publish: record,
+      files: contentChunks(d.content),
+    },
+    T(a),
+  );
   return next;
 }
 
-export const setProductStatus = (a: Tokened, id: string, status: "published" | "unpublished") => api.patch(`/owner/products/${id}`, { status }, T(a));
+export const setProductStatus = (a: Tokened, id: string, status: "published" | "unpublished") =>
+  api.patch(`/owner/products/${id}`, { status }, T(a));
 export const deleteProduct = (a: Tokened, id: string) => api.del(`/owner/products/${id}`, T(a));
 
 /** Public images (covers, thumbnails): the same media store pages use. */
@@ -284,7 +364,8 @@ export async function uploadImage(a: Tokened, file: File): Promise<{ hash: strin
 
 // ---- seller: discounts -------------------------------------------------------------------------
 
-export const listDiscounts = async (a: Tokened) => (await api.get<{ discounts: DiscountRow[] }>("/owner/discounts", T(a))).discounts;
+export const listDiscounts = async (a: Tokened) =>
+  (await api.get<{ discounts: DiscountRow[] }>("/owner/discounts", T(a))).discounts;
 export const saveDiscount = (a: Tokened, d: Omit<DiscountRow, "uses">) => api.put("/owner/discounts", d, T(a));
 export const deleteDiscount = (a: Tokened, id: string) => api.del(`/owner/discounts/${id}`, T(a));
 
@@ -297,7 +378,11 @@ export const requestBalance = (a: Tokened, ref: string) => api.post(`/orders/${r
  * Deliver every paid order this device can: the seller's own device by default.
  * Returns what happened per order, in plain words.
  */
-export async function deliverPaid(a: Tokened, orders: OrderView[], mine: OwnerProduct[]): Promise<{ ref: string; ok: boolean; why?: string }[]> {
+export async function deliverPaid(
+  a: Tokened,
+  orders: OrderView[],
+  mine: OwnerProduct[],
+): Promise<{ ref: string; ok: boolean; why?: string }[]> {
   const waiting = orders.filter((o) => o.status === "paid" && !o.delivery);
   if (waiting.length === 0) return [];
   const keys = new Map<string, { key: Uint8Array; content: string | null }>();
@@ -323,27 +408,52 @@ export async function deliverPaid(a: Tokened, orders: OrderView[], mine: OwnerPr
       const code = o.request.discountCode?.trim().toUpperCase();
       const d = code ? discounts.find((x) => x.code === code) : undefined;
       if (code && !d) throw new DeliveryRefused(`The discount code ${code} is not one of yours. Nothing was sealed.`);
-      const discount: Discount | null = d ? { percent: d.percent, amountOff: d.amountOff, productIds: d.productIds } : null;
+      const discount: Discount | null = d
+        ? { percent: d.percent, amountOff: d.amountOff, productIds: d.productIds }
+        : null;
       // Each product key goes out with the content hash of the record the buyer bought.
-      const forOrder = new Map([...keys].map(([id, k]) => [id, { key: k.key, content: products.find((p) => p.id === id)?.content ?? null }]));
-      const { envelope } = await prepareDelivery({ order: o, products, keys: forOrder, discount, cardOf, current: mine.flatMap((p) => (p.record ? [p.record.body] : [])) });
+      const forOrder = new Map(
+        [...keys].map(([id, k]) => [id, { key: k.key, content: products.find((p) => p.id === id)?.content ?? null }]),
+      );
+      const { envelope } = await prepareDelivery({
+        order: o,
+        products,
+        keys: forOrder,
+        discount,
+        cardOf,
+        current: mine.flatMap((p) => (p.record ? [p.record.body] : [])),
+      });
       const h = (await api.put<{ hash: string }>("/blobs", envelope, T(a))).hash;
       await api.post(`/orders/${o.ref}/deliver`, { envelope: h }, T(a));
       out.push({ ref: o.ref, ok: true });
     } catch (e) {
-      out.push({ ref: o.ref, ok: false, why: e instanceof DeliveryRefused || e instanceof ApiFailure ? e.message : "This order could not be sealed here." });
+      out.push({
+        ref: o.ref,
+        ok: false,
+        why:
+          e instanceof DeliveryRefused || e instanceof ApiFailure ? e.message : "This order could not be sealed here.",
+      });
     }
   }
   return out;
 }
 
 /** A refund: the seller sends the money back from their own wallet with the order's refund memo, then records it. */
-export async function refund(a: Tokened, o: OrderView, amount: bigint, onStage: (s: "signing" | "submitted" | "confirmed") => void): Promise<string> {
+export async function refund(
+  a: Tokened,
+  o: OrderView,
+  amount: bigint,
+  onStage: (s: "signing" | "submitted" | "confirmed") => void,
+): Promise<string> {
   if (!o.payer) throw new Error("This order has no payer on record.");
   const denom = denomBySymbol(o.token);
   if (!denom) throw new Error("Unknown token.");
   onStage("signing");
-  const sent = await sendTx(a.owner, [msgSend(a.owner.address, o.payer, denom.denom, amount)], `mzk:ord:${refundRef(o.ref)}`);
+  const sent = await sendTx(
+    a.owner,
+    [msgSend(a.owner.address, o.payer, denom.denom, amount)],
+    `mzk:ord:${refundRef(o.ref)}`,
+  );
   onStage("submitted");
   await waitForTx(sent.txHash);
   onStage("confirmed");
@@ -361,7 +471,8 @@ export async function loadProduct(name: string, slug: string): Promise<PublicPro
 
 export async function verifyProduct(record: Signed<ProductDef>): Promise<ProductDef> {
   const pq = await pqKeyViaEvm(record.signer);
-  if (!pq.registered || !pq.publicKey || !pq.possessionProven) throw new Error("The seller's key is not on QoreChain, so this product cannot be checked.");
+  if (!pq.registered || !pq.publicKey || !pq.possessionProven)
+    throw new Error("The seller's key is not on QoreChain, so this product cannot be checked.");
   const body = verifyRecord(record, { kind: "product", signer: record.signer, pqPublicKey: pq.publicKey });
   const def = ProductDefSchema.parse(body);
   if (def.owner !== record.signer) throw new Error("This product is signed by someone other than its seller.");
@@ -369,7 +480,9 @@ export async function verifyProduct(record: Signed<ProductDef>): Promise<Product
 }
 
 export async function loadShop(name: string): Promise<{ def: ProductDef; rating: PublicProduct["rating"] }[]> {
-  const r = await api.get<{ products: { record: Signed<ProductDef>; rating: PublicProduct["rating"] }[] }>(`/shop/${encodeURIComponent(name)}`);
+  const r = await api.get<{ products: { record: Signed<ProductDef>; rating: PublicProduct["rating"] }[] }>(
+    `/shop/${encodeURIComponent(name)}`,
+  );
   const out: { def: ProductDef; rating: PublicProduct["rating"] }[] = [];
   for (const p of r.products) {
     try {
@@ -405,7 +518,12 @@ export function buyerKeyFrom(phraseInput: string): BuyerKey {
   const keys = deriveSealKeys({ mnemonic: phrase, index: 0 });
   const mlkem = toHex(keys.mlkemPublicKey);
   const x25519 = toHex(keys.x25519PublicKey);
-  return { phrase, keys, hash: sha256Hex(utf8(canonicalJson({ mlkem, x25519 }))), recipient: { kind: "key", mlkem, x25519 } };
+  return {
+    phrase,
+    keys,
+    hash: sha256Hex(utf8(canonicalJson({ mlkem, x25519 }))),
+    recipient: { kind: "key", mlkem, x25519 },
+  };
 }
 export const newBuyerKey = (): BuyerKey => buyerKeyFrom(newPhrase(BUYER_PHRASE_WORDS));
 
@@ -429,7 +547,9 @@ export async function rememberBuyerKey(k: BuyerKey): Promise<void> {
   await idb.set("shop:buyer-keys", [...all, { hash: k.hash, iv, ct }]);
 }
 async function buyerKeyRecords(): Promise<{ hash: string; iv: Uint8Array; ct: Uint8Array }[]> {
-  return (await idb.get<{ hash: string; iv: Uint8Array; ct: Uint8Array }[]>("shop:buyer-keys").catch(() => undefined)) ?? [];
+  return (
+    (await idb.get<{ hash: string; iv: Uint8Array; ct: Uint8Array }[]>("shop:buyer-keys").catch(() => undefined)) ?? []
+  );
 }
 export async function buyerKeys(): Promise<BuyerKey[]> {
   const wrap = await deviceWrapKey().catch(() => null);
@@ -437,7 +557,11 @@ export async function buyerKeys(): Promise<BuyerKey[]> {
   const out: BuyerKey[] = [];
   for (const r of await buyerKeyRecords()) {
     try {
-      out.push(buyerKeyFrom(fromUtf8(new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: ab(r.iv) }, wrap, ab(r.ct))))));
+      out.push(
+        buyerKeyFrom(
+          fromUtf8(new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: ab(r.iv) }, wrap, ab(r.ct)))),
+        ),
+      );
     } catch {
       // Unreadable here (storage from another browser profile); the 12 words still work.
     }
@@ -445,7 +569,10 @@ export async function buyerKeys(): Promise<BuyerKey[]> {
   return out;
 }
 export async function forgetBuyerKey(hash: string): Promise<void> {
-  await idb.set("shop:buyer-keys", (await buyerKeyRecords()).filter((r) => r.hash !== hash));
+  await idb.set(
+    "shop:buyer-keys",
+    (await buyerKeyRecords()).filter((r) => r.hash !== hash),
+  );
 }
 
 // ---- buyer: ordering and paying ----------------------------------------------------------------
@@ -504,17 +631,29 @@ export function orderPayment(o: OrderView, part: "now" | "rest" = "now"): Prepar
   const units = BigInt(part === "now" ? o.dueNow : o.dueLater);
   const ref = part === "now" ? o.ref : `${o.ref}-2`;
   const shown = formatAmount(units, o.token).replace(` ${o.token}`, "");
-  return { ref, memo: `mzk:ord:${ref}`, denom, units, amount: shown, tip: "0", total: shown, token: o.token, note: null };
+  return {
+    ref,
+    memo: `mzk:ord:${ref}`,
+    denom,
+    units,
+    amount: shown,
+    tip: "0",
+    total: shown,
+    token: o.token,
+    note: null,
+  };
 }
 
 /** Tell the server the payment's transaction, so it reads it from QoreChain now rather than at the next index pass. */
-export const reportTx = (ref: string, txHash: string) => api.post<OrderView & { seen: boolean }>(`/orders/${ref}/tx`, { txHash });
+export const reportTx = (ref: string, txHash: string) =>
+  api.post<OrderView & { seen: boolean }>(`/orders/${ref}/tx`, { txHash });
 export const getOrder = (ref: string) => api.get<OrderView>(`/orders/${ref}`);
 
 // ---- buyer: purchases ---------------------------------------------------------------------------
 
 export const myOrders = async (a: Tokened) => (await api.get<{ orders: OrderView[] }>("/orders/mine", T(a))).orders;
-export const keyOrders = async (k: BuyerKey) => (await api.get<{ orders: OrderView[] }>(`/orders/by-key/${k.hash}`)).orders;
+export const keyOrders = async (k: BuyerKey) =>
+  (await api.get<{ orders: OrderView[] }>(`/orders/by-key/${k.hash}`)).orders;
 
 export interface OpenedPurchase {
   ref: string;
@@ -522,7 +661,11 @@ export interface OpenedPurchase {
 }
 
 /** Open a delivered order on this device: the delivery gives each product key; the keys open the content pages. */
-export async function openPurchase(o: OrderView, seal: SealKeyPair, defs: Map<string, ProductDef>): Promise<OpenedPurchase> {
+export async function openPurchase(
+  o: OrderView,
+  seal: SealKeyPair,
+  defs: Map<string, ProductDef>,
+): Promise<OpenedPurchase> {
   if (!o.delivery) throw new Error("This purchase has not been sealed to you yet.");
   const env = await api.bytes(`/blobs/${o.delivery}`);
   const d = readDelivery(openItem({ chainId: CHAIN_ID, purpose: Purpose.order(o.ref), envelope: env, keys: seal }));
@@ -537,7 +680,13 @@ export async function openPurchase(o: OrderView, seal: SealKeyPair, defs: Map<st
   return { ref: o.ref, products };
 }
 
-export async function postReview(ref: string, secret: string, productId: string, rating: number, text: string): Promise<void> {
+export async function postReview(
+  ref: string,
+  secret: string,
+  productId: string,
+  rating: number,
+  text: string,
+): Promise<void> {
   await api.post(`/orders/${ref}/review`, { secret, productId, rating, text });
 }
 export const orderReviews = async (ref: string) =>
@@ -547,7 +696,8 @@ export const orderReviews = async (ref: string) =>
 export async function sealKeysFor(o: OrderView, account: Account | undefined): Promise<SealKeyPair | null> {
   const r = o.request.recipient;
   if (r.kind === "account") return account && account.owner.address === r.address ? account.keys.seal : null;
-  for (const k of await buyerKeys()) if (k.recipient.mlkem === r.mlkem && k.recipient.x25519 === r.x25519) return k.keys;
+  for (const k of await buyerKeys())
+    if (k.recipient.mlkem === r.mlkem && k.recipient.x25519 === r.x25519) return k.keys;
   return null;
 }
 

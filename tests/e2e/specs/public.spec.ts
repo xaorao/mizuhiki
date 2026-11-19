@@ -160,7 +160,9 @@ test("visitor: a manifest changed on the server is refused; unpublished pages va
   await expect(page.getByText(/checked on QoreChain/)).toBeVisible();
 });
 
-test("browser back and sheets: back closes an open sheet; after closing one in place, one back leaves the page", async ({ page }) => {
+test("browser back and sheets: back closes an open sheet; after closing one in place, one back leaves the page", async ({
+  page,
+}) => {
   await ensureOwner("e2e-editor", NAME);
   await page.goto("/proof");
   await page.goto(`/@${NAME}`);

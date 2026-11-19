@@ -36,7 +36,15 @@ export const DEFAULT_INFO: RoomInfo = {
 
 export type Item =
   | { type: "day"; key: string; date: string }
-  | { type: "message"; key: string; line: Line; author: string; body: Extract<RoomBody, { kind: "text" } | { kind: "file" }>; reactions: Record<string, string[]>; pinned: boolean }
+  | {
+      type: "message";
+      key: string;
+      line: Line;
+      author: string;
+      body: Extract<RoomBody, { kind: "text" } | { kind: "file" }>;
+      reactions: Record<string, string[]>;
+      pinned: boolean;
+    }
   | { type: "pill"; key: string; line: Line | null; text: PillText; tone: "plain" | "key" | "warn" }
   | { type: "problem"; key: string; line: Line };
 
@@ -101,7 +109,12 @@ function roleTracker(members: MemberRow[], epochs: EpochRow[]) {
   if (creator) roles.set(creator, "owner");
   return {
     roleOf(address: string): Role {
-      return roles.get(address) ?? (members.find((m) => m.address === address && m.status === "active")?.role === "owner" && !creator ? "owner" : "member");
+      return (
+        roles.get(address) ??
+        (members.find((m) => m.address === address && m.status === "active")?.role === "owner" && !creator
+          ? "owner"
+          : "member")
+      );
     },
     permsOf(address: string): Permission[] {
       return perms.get(address) ?? members.find((m) => m.address === address)?.permissions ?? [];
@@ -209,13 +222,28 @@ export function derive(lines: Line[], members: MemberRow[], epochs: EpochRow[]):
     const who = { who: m.author };
     const tx = epochBy.get(l.epoch)?.txHash;
     const act = (text: PillText, withTx = false) =>
-      actions.push({ key: m.id, at: m.sentAt, by: m.author, text, epoch: l.epoch, ...(withTx && tx ? { txHash: tx } : {}) });
+      actions.push({
+        key: m.id,
+        at: m.sentAt,
+        by: m.author,
+        text,
+        epoch: l.epoch,
+        ...(withTx && tx ? { txHash: tx } : {}),
+      });
     switch (b.kind) {
       case "text":
       case "file": {
         const r: Record<string, string[]> = {};
         for (const [emoji, set] of reactions.get(m.id) ?? []) if (set.size) r[emoji] = [...set];
-        items.push({ type: "message", key: m.id, line: l, author: m.author, body: b, reactions: r, pinned: pins.get(m.id) === true });
+        items.push({
+          type: "message",
+          key: m.id,
+          line: l,
+          author: m.author,
+          body: b,
+          reactions: r,
+          pinned: pins.get(m.id) === true,
+        });
         if (b.kind === "file") {
           const facts = b.file as unknown as FileFacts;
           files.push({ key: m.id, line: l, author: m.author, facts, caption: b.caption, kind: fileKind(facts.type) });
@@ -231,7 +259,12 @@ export function derive(lines: Line[], members: MemberRow[], epochs: EpochRow[]):
         const firstInfo = !info.name;
         const photoId = (b.photo as unknown as FileFacts | undefined)?.fileId;
         // Admins re-post the room info under each new key (so people who join see it); that is not a change.
-        const same = !firstInfo && !renamed && info.description === b.description && info.type === b.type && (photoId === undefined || photoId === info.photo?.fileId);
+        const same =
+          !firstInfo &&
+          !renamed &&
+          info.description === b.description &&
+          info.type === b.type &&
+          (photoId === undefined || photoId === info.photo?.fileId);
         info.name = b.name;
         info.description = b.description;
         info.type = b.type;
@@ -245,11 +278,26 @@ export function derive(lines: Line[], members: MemberRow[], epochs: EpochRow[]):
       }
       case "settings": {
         const changed: string[] = [];
-        if (info.approval !== b.approval) changed.push(b.approval ? "turned on approval for new members" : "let invites join without approval");
-        if (info.autoDeleteSeconds !== b.autoDeleteSeconds) changed.push(b.autoDeleteSeconds ? `set new messages to delete after ${durationLabel(b.autoDeleteSeconds)}` : "turned off auto-delete");
-        if (info.restrictSaving !== b.restrictSaving) changed.push(b.restrictSaving ? "asked members not to save" : "stopped asking members not to save");
-        if (info.historyDefault !== b.historyDefault) changed.push(b.historyDefault === "share" ? "set invites to see past messages" : "set invites to see only new messages");
-        Object.assign(info, { approval: b.approval, autoDeleteSeconds: b.autoDeleteSeconds, restrictSaving: b.restrictSaving, historyDefault: b.historyDefault });
+        if (info.approval !== b.approval)
+          changed.push(b.approval ? "turned on approval for new members" : "let invites join without approval");
+        if (info.autoDeleteSeconds !== b.autoDeleteSeconds)
+          changed.push(
+            b.autoDeleteSeconds
+              ? `set new messages to delete after ${durationLabel(b.autoDeleteSeconds)}`
+              : "turned off auto-delete",
+          );
+        if (info.restrictSaving !== b.restrictSaving)
+          changed.push(b.restrictSaving ? "asked members not to save" : "stopped asking members not to save");
+        if (info.historyDefault !== b.historyDefault)
+          changed.push(
+            b.historyDefault === "share" ? "set invites to see past messages" : "set invites to see only new messages",
+          );
+        Object.assign(info, {
+          approval: b.approval,
+          autoDeleteSeconds: b.autoDeleteSeconds,
+          restrictSaving: b.restrictSaving,
+          historyDefault: b.historyDefault,
+        });
         const isCreation = l === lines.find((x) => x.msg?.body.kind === "settings");
         // The room's starting settings are part of creation, not a change.
         if (!isCreation)
@@ -266,15 +314,39 @@ export function derive(lines: Line[], members: MemberRow[], epochs: EpochRow[]):
           type: "pill",
           key: `${m.id}:key`,
           line: l,
-          text: ["Room key updated. ", { who: b.member }, b.history === "share" ? " joined, history shared." : " joined, history not shared."],
+          text: [
+            "Room key updated. ",
+            { who: b.member },
+            b.history === "share" ? " joined, history shared." : " joined, history not shared.",
+          ],
           tone: "key",
         });
-        act([who, " added ", { who: b.member }, b.history === "share" ? " and shared past messages" : " (only new messages)"], true);
+        act(
+          [
+            who,
+            " added ",
+            { who: b.member },
+            b.history === "share" ? " and shared past messages" : " (only new messages)",
+          ],
+          true,
+        );
         break;
       }
       case "removed": {
-        items.push({ type: "pill", key: m.id, line: l, text: [who, b.blocked ? " removed and blocked " : " removed ", { who: b.member }], tone: "plain" });
-        items.push({ type: "pill", key: `${m.id}:key`, line: l, text: ["Room key updated. ", { who: b.member }, " was removed and cannot read new messages."], tone: "key" });
+        items.push({
+          type: "pill",
+          key: m.id,
+          line: l,
+          text: [who, b.blocked ? " removed and blocked " : " removed ", { who: b.member }],
+          tone: "plain",
+        });
+        items.push({
+          type: "pill",
+          key: `${m.id}:key`,
+          line: l,
+          text: ["Room key updated. ", { who: b.member }, " was removed and cannot read new messages."],
+          tone: "key",
+        });
         act([who, b.blocked ? " removed and blocked " : " removed ", { who: b.member }], true);
         break;
       }
@@ -284,9 +356,14 @@ export function derive(lines: Line[], members: MemberRow[], epochs: EpochRow[]):
         break;
       case "rotated": {
         const leftWho = /^left:(qor1[0-9a-z]{38})$/.exec(b.reason)?.[1];
-        const text: PillText = leftWho ? ["Room key updated. ", { who: leftWho }, " left and cannot read new messages."] : ["Room key updated."];
+        const text: PillText = leftWho
+          ? ["Room key updated. ", { who: leftWho }, " left and cannot read new messages."]
+          : ["Room key updated."];
         items.push({ type: "pill", key: m.id, line: l, text, tone: "key" });
-        act(leftWho ? [who, " changed the room key after ", { who: leftWho }, " left"] : [who, " changed the room key"], true);
+        act(
+          leftWho ? [who, " changed the room key after ", { who: leftWho }, " left"] : [who, " changed the room key"],
+          true,
+        );
         break;
       }
       case "role": {
@@ -344,7 +421,13 @@ export const ALL_PERMISSIONS: Permission[] = ["send", "files", "add", "info", "p
 export function permissionSummary(p: Permission[]): string {
   if (p.length === ALL_PERMISSIONS.length) return "everything";
   if (p.length === 0) return "read only";
-  const label: Record<Permission, string> = { send: "send", files: "files", add: "add people", info: "change info", pin: "pin" };
+  const label: Record<Permission, string> = {
+    send: "send",
+    files: "files",
+    add: "add people",
+    info: "change info",
+    pin: "pin",
+  };
   return p.map((x) => label[x]).join(", ");
 }
 

@@ -15,11 +15,19 @@ export type ProductKind = (typeof PRODUCT_KINDS)[number];
 
 export const KIND_INFO: Record<ProductKind, { group: "Products" | "Services"; label: string; line: string }> = {
   file: { group: "Products", label: "Digital file", line: "Any set of files to download or stream." },
-  course: { group: "Products", label: "Course or tutorial", line: "Sell a single lesson or a whole course, page by page." },
+  course: {
+    group: "Products",
+    label: "Course or tutorial",
+    line: "Sell a single lesson or a whole course, page by page.",
+  },
   report: { group: "Products", label: "Report or dataset", line: "Sealed to each buyer, so only they can open it." },
   bundle: { group: "Products", label: "Bundle", line: "Two or more of your products for one price." },
   call: { group: "Services", label: "Booking or call", line: "Let people book a time with you." },
-  commission: { group: "Services", label: "Commission with deposit", line: "A deposit now, the rest when the work is done." },
+  commission: {
+    group: "Services",
+    label: "Commission with deposit",
+    line: "A deposit now, the rest when the work is done.",
+  },
   tip: { group: "Services", label: "Tip jar", line: "Let people support you with any amount." },
 };
 
@@ -62,11 +70,20 @@ export const ProductDefSchema = z.object({
   title: z.string().min(1).max(120),
   /** Plain text with paragraphs; **bold**, *italic* and [links](https://…) are rendered. */
   description: z.string().max(8000).default(""),
-  covers: z.array(z.object({ hash, type: z.string().max(60) })).max(8).default([]),
-  thumbnail: z.object({ hash, type: z.string().max(60) }).nullable().default(null),
+  covers: z
+    .array(z.object({ hash, type: z.string().max(60) }))
+    .max(8)
+    .default([]),
+  thumbnail: z
+    .object({ hash, type: z.string().max(60) })
+    .nullable()
+    .default(null),
   cta: z.enum(["I want this!", "Buy this", "Pay", "Book a time", "Support"]).default("I want this!"),
   summary: z.string().max(200).default(""),
-  details: z.array(z.object({ k: z.string().min(1).max(40), v: z.string().max(80) })).max(12).default([]),
+  details: z
+    .array(z.object({ k: z.string().min(1).max(40), v: z.string().max(80) }))
+    .max(12)
+    .default([]),
   price: z.object({
     token: z.enum(TOKENS),
     amount,
@@ -81,7 +98,10 @@ export const ProductDefSchema = z.object({
       showSales: z.boolean().default(false),
     })
     .default({ maxSales: null, quantity: false, showSales: false }),
-  refund: z.object({ days: z.number().int().min(1).max(365), finePrint: z.string().max(500).default("") }).nullable().default(null),
+  refund: z
+    .object({ days: z.number().int().min(1).max(365), finePrint: z.string().max(500).default("") })
+    .nullable()
+    .default(null),
   tips: z.boolean().default(false),
   discountField: z.enum(["available", "never"]).default("available"),
   receipt: z
@@ -91,11 +111,22 @@ export const ProductDefSchema = z.object({
   delivery: z.enum(["seller", "instant"]).default("seller"),
   agent: addr.nullable().default(null),
   booking: z
-    .object({ minutes: z.number().int().min(10).max(480), timezone: z.string().min(1).max(64), hours: z.array(WeeklyHours).max(42), place: z.string().max(200) })
+    .object({
+      minutes: z.number().int().min(10).max(480),
+      timezone: z.string().min(1).max(64),
+      hours: z.array(WeeklyHours).max(42),
+      place: z.string().max(200),
+    })
     .nullable()
     .default(null),
-  commission: z.object({ depositPercent: z.number().int().min(10).max(90) }).nullable().default(null),
-  bundle: z.object({ productIds: z.array(id).min(2).max(20) }).nullable().default(null),
+  commission: z
+    .object({ depositPercent: z.number().int().min(10).max(90) })
+    .nullable()
+    .default(null),
+  bundle: z
+    .object({ productIds: z.array(id).min(2).max(20) })
+    .nullable()
+    .default(null),
   /** SHA-256 of the sealed content blob (the content page encrypted with the product key). */
   content: hash.nullable().default(null),
   version: z.number().int().min(1),
@@ -115,7 +146,10 @@ export const ContentBlockSchema = z.discriminatedUnion("t", [
 export type ContentBlock = z.infer<typeof ContentBlockSchema>;
 export const ContentSchema = z.object({
   v: z.literal(1),
-  pages: z.array(z.object({ id, title: z.string().max(120), blocks: z.array(ContentBlockSchema).max(400) })).min(1).max(60),
+  pages: z
+    .array(z.object({ id, title: z.string().max(120), blocks: z.array(ContentBlockSchema).max(400) }))
+    .min(1)
+    .max(60),
 });
 export type Content = z.infer<typeof ContentSchema>;
 
@@ -129,7 +163,11 @@ export async function sealContent(key: Uint8Array, productId: string, content: C
   const k = await crypto.subtle.importKey("raw", ab(key), "AES-GCM", false, ["encrypt"]);
   const iv = randomBytes(12);
   const ct = new Uint8Array(
-    await crypto.subtle.encrypt({ name: "AES-GCM", iv: ab(iv), additionalData: ab(utf8(`${CONTENT_MAGIC}|${productId}`)) }, k, ab(utf8(canonicalJson(parsed)))),
+    await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: ab(iv), additionalData: ab(utf8(`${CONTENT_MAGIC}|${productId}`)) },
+      k,
+      ab(utf8(canonicalJson(parsed))),
+    ),
   );
   const out = new Uint8Array(1 + 12 + ct.length);
   out[0] = 1;
@@ -139,7 +177,8 @@ export async function sealContent(key: Uint8Array, productId: string, content: C
 }
 
 export async function openContent(key: Uint8Array, productId: string, blob: Uint8Array): Promise<Content> {
-  if (blob[0] !== 1 || blob.length < 13 + 16) throw new MizuhikiError("TAMPERED", "This content is damaged.", { dataState: "unreadable-here" });
+  if (blob[0] !== 1 || blob.length < 13 + 16)
+    throw new MizuhikiError("TAMPERED", "This content is damaged.", { dataState: "unreadable-here" });
   const k = await crypto.subtle.importKey("raw", ab(key), "AES-GCM", false, ["decrypt"]);
   try {
     const pt = await crypto.subtle.decrypt(
@@ -149,7 +188,10 @@ export async function openContent(key: Uint8Array, productId: string, blob: Uint
     );
     return ContentSchema.parse(JSON.parse(fromUtf8(new Uint8Array(pt))));
   } catch (e) {
-    throw new MizuhikiError("TAMPERED", "This content does not open with its key.", { dataState: "unreadable-here", cause: e });
+    throw new MizuhikiError("TAMPERED", "This content does not open with its key.", {
+      dataState: "unreadable-here",
+      cause: e,
+    });
   }
 }
 
@@ -158,7 +200,14 @@ export async function openContent(key: Uint8Array, productId: string, blob: Uint
 /** Who the purchase is sealed to: a Mizuhiki account (its card, checked on chain) or a buyer key made at checkout. */
 export const RecipientSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("account"), address: addr }),
-  z.object({ kind: z.literal("key"), mlkem: z.string().regex(/^[0-9a-f]+$/).max(4000), x25519: z.string().regex(/^[0-9a-f]{64}$/) }),
+  z.object({
+    kind: z.literal("key"),
+    mlkem: z
+      .string()
+      .regex(/^[0-9a-f]+$/)
+      .max(4000),
+    x25519: z.string().regex(/^[0-9a-f]{64}$/),
+  }),
 ]);
 export type OrderRecipient = z.infer<typeof RecipientSchema>;
 
@@ -246,7 +295,8 @@ export function orderTotal(req: OrderRequest, products: ProductDef[], discount: 
   for (const line of req.lines) {
     const p = products.find((x) => x.id === line.productId);
     if (!p) throw new PriceError("A product in this order is no longer available.");
-    if (p.version !== line.productVersion) throw new PriceError(`“${p.title}” changed since you opened it. Review the new price.`);
+    if (p.version !== line.productVersion)
+      throw new PriceError(`“${p.title}” changed since you opened it. Review the new price.`);
     if (p.owner !== req.seller) throw new PriceError("Everything in one order must come from the same seller.");
     if (p.price.token !== req.token) throw new PriceError("Everything in one order must be paid in the same token.");
     if (!p.limits.quantity && line.quantity !== 1) throw new PriceError(`“${p.title}” is sold one at a time.`);
@@ -259,18 +309,22 @@ export function orderTotal(req: OrderRequest, products: ProductDef[], discount: 
       const min = BigInt(p.price.pwyw?.min ?? p.price.amount);
       const chosen = line.chosen === null ? null : BigInt(line.chosen);
       if (chosen === null) throw new PriceError(`Choose how much to pay for “${p.title}”.`);
-      if (chosen < min + BigInt(v?.extra ?? "0")) throw new PriceError(`“${p.title}” is at least ${min + BigInt(v?.extra ?? "0")} base units.`);
+      if (chosen < min + BigInt(v?.extra ?? "0"))
+        throw new PriceError(`“${p.title}” is at least ${min + BigInt(v?.extra ?? "0")} base units.`);
       unit = chosen;
     } else if (line.chosen !== null) throw new PriceError(`“${p.title}” has a fixed price.`);
     const subtotal = unit * BigInt(line.quantity);
-    if (p.kind === "commission" && p.commission) depositShare += (subtotal * BigInt(p.commission.depositPercent)) / 100n;
+    if (p.kind === "commission" && p.commission)
+      depositShare += (subtotal * BigInt(p.commission.depositPercent)) / 100n;
     else depositShare += subtotal;
     lines.push({ productId: p.id, title: p.title, version: v?.name ?? null, quantity: line.quantity, unit, subtotal });
   }
   const subtotal = lines.reduce((n, l) => n + l.subtotal, 0n);
   let off = 0n;
   if (discount) {
-    const eligible = lines.filter((l) => discount.productIds.length === 0 || discount.productIds.includes(l.productId)).reduce((n, l) => n + l.subtotal, 0n);
+    const eligible = lines
+      .filter((l) => discount.productIds.length === 0 || discount.productIds.includes(l.productId))
+      .reduce((n, l) => n + l.subtotal, 0n);
     off = discount.percent !== null ? (eligible * BigInt(discount.percent)) / 100n : BigInt(discount.amountOff ?? "0");
     if (off > eligible) off = eligible;
   }
@@ -287,21 +341,38 @@ export function orderTotal(req: OrderRequest, products: ProductDef[], discount: 
 export const DeliverySchema = z.object({
   v: z.literal(1),
   ref: z.string(),
-  keys: z.array(z.object({ productId: id, key: z.string(), content: hash.nullable() })).min(1).max(40),
+  keys: z
+    .array(z.object({ productId: id, key: z.string(), content: hash.nullable() }))
+    .min(1)
+    .max(40),
   deliveredAt: z.string(),
 });
 export type Delivery = z.infer<typeof DeliverySchema>;
 
-export function deliveryPayload(ref: string, keys: { productId: string; key: Uint8Array; content: string | null }[]): Uint8Array {
+export function deliveryPayload(
+  ref: string,
+  keys: { productId: string; key: Uint8Array; content: string | null }[],
+): Uint8Array {
   return utf8(
     JSON.stringify(
-      DeliverySchema.parse({ v: 1, ref, keys: keys.map((k) => ({ productId: k.productId, key: toBase64Url(k.key), content: k.content })), deliveredAt: new Date().toISOString() }),
+      DeliverySchema.parse({
+        v: 1,
+        ref,
+        keys: keys.map((k) => ({ productId: k.productId, key: toBase64Url(k.key), content: k.content })),
+        deliveredAt: new Date().toISOString(),
+      }),
     ),
   );
 }
-export function readDelivery(bytes: Uint8Array): { ref: string; keys: { productId: string; key: Uint8Array; content: string | null }[] } {
+export function readDelivery(bytes: Uint8Array): {
+  ref: string;
+  keys: { productId: string; key: Uint8Array; content: string | null }[];
+} {
   const d = DeliverySchema.parse(JSON.parse(fromUtf8(bytes)));
-  return { ref: d.ref, keys: d.keys.map((k) => ({ productId: k.productId, key: fromBase64Url(k.key), content: k.content })) };
+  return {
+    ref: d.ref,
+    keys: d.keys.map((k) => ({ productId: k.productId, key: fromBase64Url(k.key), content: k.content })),
+  };
 }
 
 /** A verified-purchase review needs this secret's hash on the order; the buyer's device keeps the secret. */
@@ -330,7 +401,12 @@ export function parseAmount(input: string, token: ShopToken): bigint | null {
  * Free call times for one week, from the seller's weekly hours, minus booked
  * slots. Times are computed in the seller's time zone and returned as UTC ISO.
  */
-export function callSlots(booking: NonNullable<ProductDef["booking"]>, weekStart: Date, booked: string[], now = new Date()): string[] {
+export function callSlots(
+  booking: NonNullable<ProductDef["booking"]>,
+  weekStart: Date,
+  booked: string[],
+  now = new Date(),
+): string[] {
   const taken = new Set(booked);
   const out: string[] = [];
   for (let d = 0; d < 7; d++) {
@@ -348,7 +424,13 @@ export function callSlots(booking: NonNullable<ProductDef["booking"]>, weekStart
 }
 
 function zonedParts(d: Date, tz: string): { year: number; month: number; day: number; weekday: number } {
-  const f = new Intl.DateTimeFormat("en-US", { timeZone: tz, year: "numeric", month: "numeric", day: "numeric", weekday: "short" });
+  const f = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    weekday: "short",
+  });
   const parts = Object.fromEntries(f.formatToParts(d).map((p) => [p.type, p.value]));
   const wd = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(parts.weekday ?? "Sun");
   return { year: Number(parts.year), month: Number(parts.month), day: Number(parts.day), weekday: wd };
@@ -358,7 +440,15 @@ function zonedParts(d: Date, tz: string): { year: number; month: number; day: nu
 export function zonedToUtc(year: number, month: number, day: number, hour: number, minute: number, tz: string): Date {
   let guess = Date.UTC(year, month - 1, day, hour, minute);
   for (let i = 0; i < 2; i++) {
-    const f = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric" });
+    const f = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    });
     const p = Object.fromEntries(f.formatToParts(new Date(guess)).map((x) => [x.type, Number(x.value)]));
     const asIf = Date.UTC(p.year ?? year, (p.month ?? month) - 1, p.day ?? day, p.hour ?? hour, p.minute ?? minute);
     guess += Date.UTC(year, month - 1, day, hour, minute) - asIf;

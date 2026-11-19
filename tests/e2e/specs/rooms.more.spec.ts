@@ -34,7 +34,8 @@ async function party(browser: Browser, problems: string[], tag: string): Promise
   });
   return { ctx, page };
 }
-const nav = (page: Page, label: string) => page.getByRole("link", { name: label }).filter({ visible: true }).first().click();
+const nav = (page: Page, label: string) =>
+  page.getByRole("link", { name: label }).filter({ visible: true }).first().click();
 const sheet = (page: Page) => page.locator("dialog[open]").last();
 
 async function unlockIfAsked(page: Page, ready: RegExp) {
@@ -46,7 +47,10 @@ async function unlockIfAsked(page: Page, ready: RegExp) {
   }
 }
 
-test("a family room: page button, automatic admission with history, inbox request, roles, transfer, leave, delete", async ({ browser, problems }, info) => {
+test("a family room: page button, automatic admission with history, inbox request, roles, transfer, leave, delete", async ({
+  browser,
+  problems,
+}, info) => {
   test.skip(info.project.name !== "desktop", "a multi-party run; phone layouts are covered in rooms.spec.ts");
   test.setTimeout(1_200_000);
   await ensureOwner("room-ana", "mzk-room-ana");
@@ -63,7 +67,9 @@ test("a family room: page button, automatic admission with history, inbox reques
   await A.page.getByRole("button", { name: "Next", exact: true }).click();
   await A.page.getByRole("button", { name: "Skip for now" }).click();
   await expect(A.page.getByRole("switch", { name: /Approve new members/ })).not.toBeChecked();
-  await A.page.locator("input[type=file][accept^='image/']").setInputFiles({ name: "family.png", mimeType: "image/png", buffer: PNG });
+  await A.page
+    .locator("input[type=file][accept^='image/']")
+    .setInputFiles({ name: "family.png", mimeType: "image/png", buffer: PNG });
   await A.page.getByLabel("Room name").fill(roomName);
   await A.page.getByRole("button", { name: "Seal and create room" }).click();
   await A.page.waitForURL(/\/app\/rooms\/[0-9a-f]{20}/, { timeout: 180_000 });
@@ -73,9 +79,14 @@ test("a family room: page button, automatic admission with history, inbox reques
   const box = A.page.getByRole("textbox", { name: "Message" });
   await box.fill("Grandma's recipes are in Files");
   await box.press("Enter");
-  await A.page.locator("input[type=file]").last().setInputFiles({ name: "recipes.png", mimeType: "image/png", buffer: PNG });
+  await A.page
+    .locator("input[type=file]")
+    .last()
+    .setInputFiles({ name: "recipes.png", mimeType: "image/png", buffer: PNG });
   await box.press("Enter");
-  await expect(A.page.getByRole("article").filter({ has: A.page.getByRole("img", { name: "recipes.png" }) })).toBeVisible({ timeout: 90_000 });
+  await expect(
+    A.page.getByRole("article").filter({ has: A.page.getByRole("img", { name: "recipes.png" }) }),
+  ).toBeVisible({ timeout: 90_000 });
 
   // ---- The room's invite goes on Ana's public page
   await A.page.getByRole("button", { name: "More" }).click();
@@ -97,10 +108,18 @@ test("a family room: page button, automatic admission with history, inbox reques
   await unlockIfAsked(B.page, /^Join$/);
   await B.page.getByRole("button", { name: "Join", exact: true }).click();
   await expect(B.page.getByRole("heading", { name: "You’re in" })).toBeVisible({ timeout: 240_000 });
-  await expect(A.page.getByText(/Room key updated\. @mzk-room-ben joined, history shared\./)).toBeVisible({ timeout: 60_000 });
+  await expect(A.page.getByText(/Room key updated\. @mzk-room-ben joined, history shared\./)).toBeVisible({
+    timeout: 60_000,
+  });
   expect((await readRoom(rid)).epoch).toBe(2n);
-  await B.page.getByRole("link", { name: /Open the room/ }).or(B.page.getByRole("button", { name: /Open the room/ })).first().click();
-  await expect(B.page.getByRole("article").filter({ hasText: "Grandma's recipes are in Files" })).toBeVisible({ timeout: 90_000 });
+  await B.page
+    .getByRole("link", { name: /Open the room/ })
+    .or(B.page.getByRole("button", { name: /Open the room/ }))
+    .first()
+    .click();
+  await expect(B.page.getByRole("article").filter({ hasText: "Grandma's recipes are in Files" })).toBeVisible({
+    timeout: 90_000,
+  });
   await expect(B.page.getByRole("img", { name: "recipes.png" })).toBeVisible({ timeout: 60_000 });
   await B.page.screenshot({ path: info.outputPath("1-ben-history-shared.png"), animations: "disabled" });
 
@@ -116,7 +135,9 @@ test("a family room: page button, automatic admission with history, inbox reques
   await C.page.goto(new URL(inviteUrl).pathname + new URL(inviteUrl).hash);
   await unlockIfAsked(C.page, /Ask to join/);
   await C.page.getByRole("button", { name: "Ask to join" }).click();
-  await expect(C.page.getByRole("heading", { name: "Waiting for an admin to let you in" })).toBeVisible({ timeout: 60_000 });
+  await expect(C.page.getByRole("heading", { name: "Waiting for an admin to let you in" })).toBeVisible({
+    timeout: 60_000,
+  });
 
   await nav(A.page, "Inbox");
   await A.page.getByText("Asked to join one of your rooms · tap to review").first().click();
@@ -126,26 +147,40 @@ test("a family room: page button, automatic admission with history, inbox reques
   await A.page.waitForURL(`**/app/rooms/${roomId}`);
   await A.page.getByRole("button", { name: /1 person asked to join/ }).click();
   await A.page.locator("aside[aria-label='Room info']").getByRole("button", { name: "Decline" }).click();
-  await expect(A.page.getByText(/Declined\. @mzk-room-cai was not let in and got no key\./)).toBeVisible({ timeout: 60_000 });
+  await expect(A.page.getByText(/Declined\. @mzk-room-cai was not let in and got no key\./)).toBeVisible({
+    timeout: 60_000,
+  });
   await expect(C.page.getByText(/declined/i).first()).toBeVisible({ timeout: 90_000 });
   expect((await readRoom(rid)).epoch).toBe(2n); // nothing was sealed to Cai
 
   // ---- Ana makes Ben an admin, checks his safety words, and hands him the room
   const panel = A.page.locator("aside[aria-label='Room info']");
-  await panel.getByRole("button", { name: /mzk-room-ben/ }).first().click();
-  await sheet(A.page).getByRole("button", { name: /Verify keys/ }).click();
+  await panel
+    .getByRole("button", { name: /mzk-room-ben/ })
+    .first()
+    .click();
+  await sheet(A.page)
+    .getByRole("button", { name: /Verify keys/ })
+    .click();
   await sheet(A.page).getByRole("button", { name: "Mark as verified" }).click();
   await expect(sheet(A.page).getByText("Marked as verified on this device.")).toBeVisible({ timeout: 30_000 });
   await A.page.keyboard.press("Escape");
   await expect(panel.getByText(/Verified/).first()).toBeVisible({ timeout: 30_000 });
-  await panel.getByRole("button", { name: /mzk-room-ben/ }).first().click();
-  await sheet(A.page).getByRole("button", { name: /Make admin/ }).click();
+  await panel
+    .getByRole("button", { name: /mzk-room-ben/ })
+    .first()
+    .click();
+  await sheet(A.page)
+    .getByRole("button", { name: /Make admin/ })
+    .click();
   await sheet(A.page).getByRole("button", { name: "Make admin" }).click();
   await expect(panel.getByText("Admin", { exact: true }).first()).toBeVisible({ timeout: 180_000 });
   expect(await roleOnChain(rid, parseAddress(ben.address).hex as `0x${string}`)).toBe(ROOM_ROLE.admin);
 
   await panel.getByRole("button", { name: "Transfer ownership" }).click();
-  await sheet(A.page).getByRole("radio", { name: /mzk-room-ben/ }).click();
+  await sheet(A.page)
+    .getByRole("radio", { name: /mzk-room-ben/ })
+    .click();
   await sheet(A.page).getByLabel("Type the room name to confirm").fill(roomName);
   await sheet(A.page).getByRole("button", { name: "Transfer ownership" }).click();
   await expect(A.page.getByText(/made @mzk-room-ben the owner/)).toBeVisible({ timeout: 180_000 });
@@ -155,7 +190,9 @@ test("a family room: page button, automatic admission with history, inbox reques
   await panel.getByRole("button", { name: "Leave room" }).click();
   await sheet(A.page).getByRole("button", { name: "Leave room" }).click();
   await A.page.waitForURL("**/app/rooms", { timeout: 60_000 });
-  await expect(B.page.getByText(/Room key updated\. @mzk-room-ana left and cannot read new messages\./)).toBeVisible({ timeout: 240_000 });
+  await expect(B.page.getByText(/Room key updated\. @mzk-room-ana left and cannot read new messages\./)).toBeVisible({
+    timeout: 240_000,
+  });
   expect((await readRoom(rid)).epoch).toBe(3n);
 
   // ---- Ben deletes the room: Undo keeps it, then it is closed on QoreChain and leaves everyone's list

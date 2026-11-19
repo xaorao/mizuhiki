@@ -7,7 +7,16 @@
  * with @mentions, replies and sealed attachments. Everything opens and is
  * sealed on this device.
  */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
 import { Button, Icon, IconButton, Oops, Sheet, Skeleton, useToast } from "@mizuhiki/ui";
 import { decryptFile, type FileFacts } from "@mizuhiki/core";
@@ -46,7 +55,12 @@ function dayLabel(iso: string) {
   y.setDate(now.getDate() - 1);
   if (d.toDateString() === now.toDateString()) return "Today";
   if (d.toDateString() === y.toDateString()) return "Yesterday";
-  return d.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long", ...(d.getFullYear() !== now.getFullYear() ? { year: "numeric" } : {}) });
+  return d.toLocaleDateString([], {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    ...(d.getFullYear() !== now.getFullYear() ? { year: "numeric" } : {}),
+  });
 }
 
 /** Text with @mentions of members highlighted. */
@@ -91,7 +105,8 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
   const people = useMemo(() => {
     const set = new Set<string>(detail?.members.map((m) => m.address) ?? []);
     for (const l of room.lines) if (l.msg) set.add(l.msg.author);
-    for (const it of derived?.items ?? []) if (it.type === "pill") for (const p of it.text) if (typeof p !== "string") set.add(p.who);
+    for (const it of derived?.items ?? [])
+      if (it.type === "pill") for (const p of it.text) if (typeof p !== "string") set.add(p.who);
     return [...set];
   }, [detail, room.lines, derived]);
   const names = useNames(people);
@@ -125,7 +140,11 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
     if (!q) return [] as string[];
     return items
       .filter((i): i is MessageItem => i.type === "message")
-      .filter((i) => (i.body.kind === "text" ? i.body.text : `${i.body.caption} ${(i.body.file as unknown as FileFacts).name}`).toLowerCase().includes(q))
+      .filter((i) =>
+        (i.body.kind === "text" ? i.body.text : `${i.body.caption} ${(i.body.file as unknown as FileFacts).name}`)
+          .toLowerCase()
+          .includes(q),
+      )
       .map((i) => i.key);
   }, [items, query]);
   const current = hits.length ? hits[Math.min(hit, hits.length - 1)] : undefined;
@@ -180,15 +199,36 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
         jobs.push({
           id,
           run: async () => {
-            const facts = await sealRoomFile(a, f, (p) => setSending((x) => x.map((j) => (j.id === id ? { ...j, progress: p } : j))));
-            await postMessage(a, roomId, { kind: "file", file: facts as unknown as Record<string, unknown>, caption: files.length === 1 ? text : "", ...(reply ? { replyTo: reply } : {}) }, id);
+            const facts = await sealRoomFile(a, f, (p) =>
+              setSending((x) => x.map((j) => (j.id === id ? { ...j, progress: p } : j))),
+            );
+            await postMessage(
+              a,
+              roomId,
+              {
+                kind: "file",
+                file: facts as unknown as Record<string, unknown>,
+                caption: files.length === 1 ? text : "",
+                ...(reply ? { replyTo: reply } : {}),
+              },
+              id,
+            );
           },
         });
         setSending((x) => [...x, { id, text: `Sealing ${f.name}`, progress: 0 }]);
       }
       if (text.trim() && !(files.length === 1)) {
         const id = newMsgId();
-        jobs.push({ id, run: () => postMessage(a, roomId, { kind: "text", text: text.trim(), mentions, ...(reply ? { replyTo: reply } : {}) }, id) });
+        jobs.push({
+          id,
+          run: () =>
+            postMessage(
+              a,
+              roomId,
+              { kind: "text", text: text.trim(), mentions, ...(reply ? { replyTo: reply } : {}) },
+              id,
+            ),
+        });
         setSending((x) => [...x, { id, text: text.trim() }]);
       }
       nearBottom.current = true;
@@ -301,8 +341,18 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
     <div className={s.chatWrap} data-panel={panel === "info" || undefined}>
       <section className={s.chat} aria-label={title || "Room"}>
         <header className={s.chatHead}>
-          <IconButton icon="back" label="Back to rooms" className={s.backBtn} onClick={() => router.push("/app/rooms")} />
-          <button type="button" className={s.headWho} onClick={() => setPanel(panel === "info" ? null : "info")} aria-label="Room info">
+          <IconButton
+            icon="back"
+            label="Back to rooms"
+            className={s.backBtn}
+            onClick={() => router.push("/app/rooms")}
+          />
+          <button
+            type="button"
+            className={s.headWho}
+            onClick={() => setPanel(panel === "info" ? null : "info")}
+            aria-label="Room info"
+          >
             <RoomAvatar name={title} photo={info?.photo} roomId={roomId} size={42} />
             <span>
               <b>{title || <Skeleton lines={1} />}</b>
@@ -316,7 +366,10 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
             </span>
           </button>
           {detail && active ? (
-            <span className={s.keyChip} title={`Room key number ${detail.epoch}. It changes every time someone joins or leaves.`}>
+            <span
+              className={s.keyChip}
+              title={`Room key number ${detail.epoch}. It changes every time someone joins or leaves.`}
+            >
               <Icon name="key" size={14} />
               Key {detail.epoch}
             </span>
@@ -342,15 +395,47 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
               }}
               aria-label="Search in this room"
             />
-            <span className={s.searchCount}>{query ? (hits.length ? `${Math.min(hit, hits.length - 1) + 1} of ${hits.length}` : "No results") : "Searches on this device"}</span>
-            <IconButton icon="chev" label="Earlier result" className={s.up} disabled={!hits.length} onClick={() => setHit((h) => (h + 1) % hits.length)} />
-            <IconButton icon="chev" label="Later result" className={s.down} disabled={!hits.length} onClick={() => setHit((h) => (h - 1 + hits.length) % hits.length)} />
-            <IconButton icon="x" label="Close search" onClick={() => { setSearching(false); setQuery(""); }} />
+            <span className={s.searchCount}>
+              {query
+                ? hits.length
+                  ? `${Math.min(hit, hits.length - 1) + 1} of ${hits.length}`
+                  : "No results"
+                : "Searches on this device"}
+            </span>
+            <IconButton
+              icon="chev"
+              label="Earlier result"
+              className={s.up}
+              disabled={!hits.length}
+              onClick={() => setHit((h) => (h + 1) % hits.length)}
+            />
+            <IconButton
+              icon="chev"
+              label="Later result"
+              className={s.down}
+              disabled={!hits.length}
+              onClick={() => setHit((h) => (h - 1 + hits.length) % hits.length)}
+            />
+            <IconButton
+              icon="x"
+              label="Close search"
+              onClick={() => {
+                setSearching(false);
+                setQuery("");
+              }}
+            />
           </div>
         ) : null}
 
         {pinShown ? (
-          <button type="button" className={s.pinBar} onClick={() => { jumpTo(pinShown.msgId); setPinIndex((i) => i + 1); }}>
+          <button
+            type="button"
+            className={s.pinBar}
+            onClick={() => {
+              jumpTo(pinShown.msgId);
+              setPinIndex((i) => i + 1);
+            }}
+          >
             <Icon name="pin" size={16} />
             <span>
               <b>Pinned{pinned.length > 1 ? ` · ${(pinIndex % pinned.length) + 1} of ${pinned.length}` : ""}</b>
@@ -361,7 +446,8 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
         {room.chainCheck === "mismatch" ? (
           <p className={s.chainWarn} role="alert">
             <Icon name="alert" size={16} />
-            The member list this server shows does not match the room&apos;s record on QoreChain. Do not send anything sensitive until an admin checks the members.
+            The member list this server shows does not match the room&apos;s record on QoreChain. Do not send anything
+            sensitive until an admin checks the members.
           </p>
         ) : null}
         {room.chore ? (
@@ -374,7 +460,9 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
           <button type="button" className={s.requestBar} onClick={() => setPanel("info")}>
             <Icon name="users" size={16} />
             {room.requests.length === 1 ? "1 person asked to join" : `${room.requests.length} people asked to join`}
-            {can(mine, "add") && (mine?.role === "admin" || mine?.role === "owner") ? " · Review" : " · An admin will review"}
+            {can(mine, "add") && (mine?.role === "admin" || mine?.role === "owner")
+              ? " · Review"
+              : " · An admin will review"}
           </button>
         ) : null}
 
@@ -391,14 +479,21 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
                 <div className={s.e2eBanner}>
                   <Icon name="lock" size={16} />
                   <p>
-                    Messages and files are sealed to the people in this room. Only they can open them, on their own devices. When someone leaves, the key changes.
+                    Messages and files are sealed to the people in this room. Only they can open them, on their own
+                    devices. When someone leaves, the key changes.
                   </p>
                   <IconButton icon="x" label="Hide this note" size="sm" onClick={dismissBanner} />
                 </div>
               ) : null}
               <div className={s.creation}>
                 <RoomAvatar name={title} photo={info?.photo} roomId={roomId} size={72} />
-                <b>{createdBy === me ? "You created this room" : createdBy ? `${label(createdBy, names, me)} created this room` : "Room"}</b>
+                <b>
+                  {createdBy === me
+                    ? "You created this room"
+                    : createdBy
+                      ? `${label(createdBy, names, me)} created this room`
+                      : "Room"}
+                </b>
                 <small>
                   {active ? `Room · ${count} ${count === 1 ? "member" : "members"}` : "Room"}
                   {info?.description ? ` · ${info.description}` : ""}
@@ -414,7 +509,11 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
                   </div>
                 ) : null}
               </div>
-              {info?.restrictSaving ? <p className={s.pill}>Members are asked not to save what is said here. Screenshots cannot be prevented.</p> : null}
+              {info?.restrictSaving ? (
+                <p className={s.pill}>
+                  Members are asked not to save what is said here. Screenshots cannot be prevented.
+                </p>
+              ) : null}
               {items.map((it) =>
                 it.type === "day" ? (
                   <p key={it.key} className={s.day}>
@@ -434,7 +533,7 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
                         ? "A message whose signature did not check out against QoreChain. It is hidden."
                         : it.line.problem === "not-member"
                           ? "A message from someone who was not in the room at that time. It is hidden."
-                        : "A message that could not be opened. It may be damaged."}
+                          : "A message that could not be opened. It may be damaged."}
                   </p>
                 ) : (
                   <Bubble
@@ -515,10 +614,22 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
 
       <Sheet open={menu} onClose={() => setMenu(false)} title={title || "Room"}>
         <div className={s.menuList}>
-          <button type="button" onClick={() => { setMenu(false); setPanel("info"); }}>
+          <button
+            type="button"
+            onClick={() => {
+              setMenu(false);
+              setPanel("info");
+            }}
+          >
             <Icon name="info" size={20} /> Room info
           </button>
-          <button type="button" onClick={() => { setMenu(false); setSearching(true); }}>
+          <button
+            type="button"
+            onClick={() => {
+              setMenu(false);
+              setSearching(true);
+            }}
+          >
             <Icon name="search" size={20} /> Search
           </button>
           {active ? (
@@ -527,12 +638,25 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
             </button>
           ) : null}
           {active && canAdd ? (
-            <button type="button" onClick={() => { setMenu(false); setPanel("invites"); }}>
+            <button
+              type="button"
+              onClick={() => {
+                setMenu(false);
+                setPanel("invites");
+              }}
+            >
               <Icon name="link" size={20} /> Invite link
             </button>
           ) : null}
           {active && mine?.role !== "owner" ? (
-            <button type="button" className={s.danger} onClick={() => { setMenu(false); setConfirmLeave(true); }}>
+            <button
+              type="button"
+              className={s.danger}
+              onClick={() => {
+                setMenu(false);
+                setConfirmLeave(true);
+              }}
+            >
               <Icon name="logout" size={20} /> Leave room
             </button>
           ) : null}
@@ -544,13 +668,24 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
           <div className={s.menuList}>
             <div className={s.reactRow} role="group" aria-label="React">
               {REACTIONS.map((e) => (
-                <button key={e} type="button" aria-pressed={(actionFor.reactions[e] ?? []).includes(me)} onClick={() => void react(actionFor, e)}>
+                <button
+                  key={e}
+                  type="button"
+                  aria-pressed={(actionFor.reactions[e] ?? []).includes(me)}
+                  onClick={() => void react(actionFor, e)}
+                >
                   {e}
                 </button>
               ))}
             </div>
             {active && can(mine, "send") ? (
-              <button type="button" onClick={() => { setReplyTo(actionFor); setActionFor(null); }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setReplyTo(actionFor);
+                  setActionFor(null);
+                }}
+              >
                 <Icon name="reply" size={20} /> Reply
               </button>
             ) : null}
@@ -565,12 +700,20 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
               </button>
             ) : null}
             {active && (actionFor.author === me || mine?.role === "admin" || mine?.role === "owner") ? (
-              <button type="button" className={s.danger} onClick={() => { setConfirmDelete(actionFor); setActionFor(null); }}>
+              <button
+                type="button"
+                className={s.danger}
+                onClick={() => {
+                  setConfirmDelete(actionFor);
+                  setActionFor(null);
+                }}
+              >
                 <Icon name="trash" size={20} /> Delete for everyone
               </button>
             ) : null}
             <p className={s.menuNote}>
-              Sent {new Date(actionFor.line.msg?.sentAt ?? actionFor.line.at).toLocaleString()} · signed by {label(actionFor.author, names, me)}, checked against QoreChain
+              Sent {new Date(actionFor.line.msg?.sentAt ?? actionFor.line.at).toLocaleString()} · signed by{" "}
+              {label(actionFor.author, names, me)}, checked against QoreChain
               {actionFor.line.expiresAt ? ` · deletes ${new Date(actionFor.line.expiresAt).toLocaleDateString()}` : ""}
             </p>
           </div>
@@ -579,7 +722,8 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
 
       <Sheet open={confirmDelete !== null} onClose={() => setConfirmDelete(null)} title="Delete for everyone?">
         <p className={s.sheetText}>
-          The sealed copy is removed from storage and the message disappears for everyone. People who already opened it may still have seen it.
+          The sealed copy is removed from storage and the message disappears for everyone. People who already opened it
+          may still have seen it.
         </p>
         <div className={s.sheetActions}>
           <Button variant="line" onClick={() => setConfirmDelete(null)}>
@@ -593,7 +737,8 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
 
       <Sheet open={confirmLeave} onClose={() => setConfirmLeave(false)} title="Leave this room?">
         <p className={s.sheetText}>
-          You stop getting new messages at once. The room key changes the next time an admin&apos;s device is open, so you cannot read anything sent after you leave. You keep what you already saw.
+          You stop getting new messages at once. The room key changes the next time an admin&apos;s device is open, so
+          you cannot read anything sent after you leave. You keep what you already saw.
         </p>
         <div className={s.sheetActions}>
           <Button variant="line" onClick={() => setConfirmLeave(false)}>
@@ -724,8 +869,14 @@ function FileBody({ facts }: { facts: FileFacts }) {
     setBusy(0);
     setFailed(false);
     try {
-      const parts = await decryptFile({ facts, fetchChunk: (h) => api.bytes(`/blobs/${h}`), onProgress: (d, t) => setBusy(d / Math.max(1, t)) });
-      const href = URL.createObjectURL(new Blob(parts as BlobPart[], { type: facts.type || "application/octet-stream" }));
+      const parts = await decryptFile({
+        facts,
+        fetchChunk: (h) => api.bytes(`/blobs/${h}`),
+        onProgress: (d, t) => setBusy(d / Math.max(1, t)),
+      });
+      const href = URL.createObjectURL(
+        new Blob(parts as BlobPart[], { type: facts.type || "application/octet-stream" }),
+      );
       const a = document.createElement("a");
       a.href = href;
       a.download = facts.name;
@@ -751,7 +902,11 @@ function FileBody({ facts }: { facts: FileFacts }) {
       <span>
         <b>{facts.name}</b>
         <small>
-          {failed ? "Could not unseal. A piece may have expired." : busy !== null ? `Unsealing ${Math.round(busy * 100)}%` : `${fmtBytes(facts.size)} · sealed · tap to save`}
+          {failed
+            ? "Could not unseal. A piece may have expired."
+            : busy !== null
+              ? `Unsealing ${Math.round(busy * 100)}%`
+              : `${fmtBytes(facts.size)} · sealed · tap to save`}
         </small>
       </span>
       <Icon name="download" size={18} />
@@ -860,7 +1015,11 @@ function Composer({
               <Icon name={f.type.startsWith("image/") ? "image" : "file"} size={16} />
               <span>{f.name}</span>
               <small>{fmtBytes(f.size)}</small>
-              <button type="button" aria-label={`Remove ${f.name}`} onClick={() => setFiles((x) => x.filter((_, j) => j !== i))}>
+              <button
+                type="button"
+                aria-label={`Remove ${f.name}`}
+                onClick={() => setFiles((x) => x.filter((_, j) => j !== i))}
+              >
                 <Icon name="x" size={14} />
               </button>
             </li>
@@ -871,7 +1030,15 @@ function Composer({
         <ul className={s.mentions} role="listbox" aria-label="Mention someone">
           {options.map((a, i) => (
             <li key={a}>
-              <button type="button" role="option" aria-selected={i === pick} onMouseDown={(e) => { e.preventDefault(); choose(a); }}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={i === pick}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  choose(a);
+                }}
+              >
                 <PersonAvatar address={a} names={names} size={26} />@{names[a]}
               </button>
             </li>
@@ -923,7 +1090,13 @@ function Composer({
             }
           }}
         />
-        <IconButton icon="send" label="Send sealed" variant="cord" disabled={!text.trim() && files.length === 0} onClick={submit} />
+        <IconButton
+          icon="send"
+          label="Send sealed"
+          variant="cord"
+          disabled={!text.trim() && files.length === 0}
+          onClick={submit}
+        />
       </div>
       <p className={s.composeNote}>
         <Icon name="lock" size={12} /> Sealed on this device to the people in this room

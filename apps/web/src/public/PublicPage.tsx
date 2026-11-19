@@ -149,10 +149,19 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
   // The switch shows when the shop is published: a Shop section on the page, or any published product.
   const shop = useShop(name);
   const hasShop =
-    blocks.some((b) => b.type === "shopSection" && b.on && !b.archived) || (shop.state === "ok" && shop.items.length > 0);
+    blocks.some((b) => b.type === "shopSection" && b.on && !b.archived) ||
+    (shop.state === "ok" && shop.items.length > 0);
   const allProducts: Block | null =
     shop.state === "ok" && shop.items.length > 0
-      ? { id: "allshop", type: "shopSection", title: "Shop", subtitle: "", on: true, archived: false, productIds: shop.items.map((x) => x.def.id).slice(0, 48) }
+      ? {
+          id: "allshop",
+          type: "shopSection",
+          title: "Shop",
+          subtitle: "",
+          on: true,
+          archived: false,
+          productIds: shop.items.map((x) => x.def.id).slice(0, 48),
+        }
       : null;
   const [tab, setTab] = useState<"links" | "shop">("links");
   useEffect(() => {
@@ -164,7 +173,9 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
     window.history.replaceState(window.history.state, "", url);
   };
   const renderBlock = (b: Block) =>
-    b.type === "product" || b.type === "shopSection" ? <ShopBlockView block={b} name={name} onTap={(x) => tap(x.id)} /> : undefined;
+    b.type === "product" || b.type === "shopSection" ? (
+      <ShopBlockView block={b} name={name} onTap={(x) => tap(x.id)} />
+    ) : undefined;
 
   // A sealed payment note that did not reach the owner earlier is kept on this device; offer it again.
   const [pendingNotes, setPendingNotes] = useState<Awaited<ReturnType<typeof pendingNotesFor>>>([]);
@@ -318,7 +329,12 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
           }
         />
       ) : null}
-      <RoomSheet block={open.kind === "room" ? open.block : null} ownerName={name} open={open.kind === "room"} onClose={close} />
+      <RoomSheet
+        block={open.kind === "room" ? open.block : null}
+        ownerName={name}
+        open={open.kind === "room"}
+        onClose={close}
+      />
       {messageBlock ? (
         <MessageSheet
           open={open.kind === "message" && ready}

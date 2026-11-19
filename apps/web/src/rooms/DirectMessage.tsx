@@ -52,7 +52,9 @@ export function DirectMessage({ to, toLabel, onClose }: { to: string | null; toL
         maxLength={8000}
         error={error ?? undefined}
       />
-      <LockLine>Sealed on this device to {toLabel} and you, signed with your key. It arrives in their inbox, not in the room.</LockLine>
+      <LockLine>
+        Sealed on this device to {toLabel} and you, signed with your key. It arrives in their inbox, not in the room.
+      </LockLine>
       <div className={s.sheetActions}>
         <Button variant="line" onClick={onClose} disabled={step !== null}>
           Cancel

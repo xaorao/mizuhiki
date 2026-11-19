@@ -65,7 +65,8 @@ export async function lookupProduct(name: string, slug: string): Promise<Product
       Extract<ProductLookup, { state: "ok" }>
     >;
     if (res.status === 404) return { state: "missing", message: j.error?.message ?? "This product isn't available." };
-    if (!res.ok || !j.record) return { state: "error", message: j.error?.message ?? "This product could not be loaded." };
+    if (!res.ok || !j.record)
+      return { state: "error", message: j.error?.message ?? "This product could not be loaded." };
     return { state: "ok", record: j.record };
   } catch {
     return { state: "error", message: "Mizuhiki could not be reached. Try again in a moment." };

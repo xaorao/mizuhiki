@@ -9,11 +9,7 @@
  */
 import { signSiwq } from "@qorechain/qoresign";
 import type { SealKeyPair } from "@qorechain/qoreseal";
-import {
-  DeliveryRefused,
-  pqKeyViaEvm,
-  prepareDelivery,
-} from "@mizuhiki/chain";
+import { DeliveryRefused, pqKeyViaEvm, prepareDelivery } from "@mizuhiki/chain";
 import {
   ProductDefSchema,
   Purpose,
@@ -64,7 +60,10 @@ export class DeliveryAgent {
     return this.keys.address.bech32;
   }
 
-  private async call<T>(path: string, init: { method?: string; body?: unknown; bytes?: Uint8Array; auth?: boolean } = {}): Promise<T> {
+  private async call<T>(
+    path: string,
+    init: { method?: string; body?: unknown; bytes?: Uint8Array; auth?: boolean } = {},
+  ): Promise<T> {
     const headers: Record<string, string> = {};
     if (init.auth !== false && this.token) headers.authorization = `Bearer ${this.token}`;
     let body: BodyInit | undefined;
@@ -96,9 +95,19 @@ export class DeliveryAgent {
 
   /** Sign In With QoreChain, with this helper's own keys. */
   async signIn(): Promise<void> {
-    const ch = await this.call<{ message: string; nonce: string }>("/auth/challenge", { method: "POST", body: { address: this.address }, auth: false });
+    const ch = await this.call<{ message: string; nonce: string }>("/auth/challenge", {
+      method: "POST",
+      body: { address: this.address },
+      auth: false,
+    });
     const signature = signSiwq({ message: ch.message, classicalKey: this.keys.classical, pqKey: this.keys.pq });
-    this.token = (await this.call<{ token: string }>("/auth/verify", { method: "POST", body: { nonce: ch.nonce, signature }, auth: false })).token;
+    this.token = (
+      await this.call<{ token: string }>("/auth/verify", {
+        method: "POST",
+        body: { nonce: ch.nonce, signature },
+        auth: false,
+      })
+    ).token;
   }
 
   private readonly cardOf = async (address: string): Promise<RecipientCard> =>
@@ -107,21 +116,33 @@ export class DeliveryAgent {
   /** A product record checked against its seller's key on QoreChain. */
   private async verified(record: Signed<ProductDef>): Promise<ProductDef> {
     const pq = await pqKeyViaEvm(record.signer);
-    if (!pq.registered || !pq.publicKey || !pq.possessionProven) throw new DeliveryRefused("The seller's key is not on QoreChain.");
-    const def = ProductDefSchema.parse(verifyRecord(record, { kind: "product", signer: record.signer, pqPublicKey: pq.publicKey }));
+    if (!pq.registered || !pq.publicKey || !pq.possessionProven)
+      throw new DeliveryRefused("The seller's key is not on QoreChain.");
+    const def = ProductDefSchema.parse(
+      verifyRecord(record, { kind: "product", signer: record.signer, pqPublicKey: pq.publicKey }),
+    );
     if (def.owner !== record.signer) throw new DeliveryRefused("A product is signed by someone other than its seller.");
     return def;
   }
 
-  private openAgentKey(productId: string, envelope: Uint8Array, seal: SealKeyPair): { key: Uint8Array; content: string | null } {
-    const j = JSON.parse(fromUtf8(openItem({ purpose: Purpose.product(productId), envelope, keys: seal, context: "agent" }))) as { key: string; content: string | null };
+  private openAgentKey(
+    productId: string,
+    envelope: Uint8Array,
+    seal: SealKeyPair,
+  ): { key: Uint8Array; content: string | null } {
+    const j = JSON.parse(
+      fromUtf8(openItem({ purpose: Purpose.product(productId), envelope, keys: seal, context: "agent" })),
+    ) as { key: string; content: string | null };
     return { key: fromBase64Url(j.key), content: j.content };
   }
 
   /** One pass: deliver every paid order this helper is allowed to. Returns refs delivered. */
   async pass(): Promise<string[]> {
     if (!this.token) await this.signIn();
-    const r = await this.call<{ orders: AgentOrder[]; products: { id: string; record: Signed<ProductDef>; agentEnvelope: string | null }[] }>("/agent/orders");
+    const r = await this.call<{
+      orders: AgentOrder[];
+      products: { id: string; record: Signed<ProductDef>; agentEnvelope: string | null }[];
+    }>("/agent/orders");
     const keys = new Map<string, { key: Uint8Array; content: string | null }>();
     for (const p of r.products) {
       if (!p.agentEnvelope) continue;
@@ -145,11 +166,29 @@ export class DeliveryAgent {
         let discount: Discount | null = null;
         if (o.request.discountCode) {
           // The helper cannot see the seller's codes; it asks the same public check the buyer's checkout used.
-          discount = (await this.call<{ discount: Discount }>("/discounts/check", { method: "POST", body: { seller: o.seller, code: o.request.discountCode, token: o.request.token }, auth: false })).discount;
+          discount = (
+            await this.call<{ discount: Discount }>("/discounts/check", {
+              method: "POST",
+              body: { seller: o.seller, code: o.request.discountCode, token: o.request.token },
+              auth: false,
+            })
+          ).discount;
         }
         // Each key goes out with the content of the record the buyer bought.
-        const forOrder = new Map([...keys].map(([id, k]) => [id, { key: k.key, content: products.find((p) => p.id === id)?.content ?? k.content }]));
-        const { envelope } = await prepareDelivery({ order: o, products, keys: forOrder, discount, cardOf: this.cardOf, current: r.products.map((p) => p.record.body) });
+        const forOrder = new Map(
+          [...keys].map(([id, k]) => [
+            id,
+            { key: k.key, content: products.find((p) => p.id === id)?.content ?? k.content },
+          ]),
+        );
+        const { envelope } = await prepareDelivery({
+          order: o,
+          products,
+          keys: forOrder,
+          discount,
+          cardOf: this.cardOf,
+          current: r.products.map((p) => p.record.body),
+        });
         const up = await this.call<{ hash: string }>("/blobs", { method: "PUT", bytes: envelope });
         await this.call(`/orders/${o.ref}/deliver`, { method: "POST", body: { envelope: up.hash } });
         done.push(o.ref);

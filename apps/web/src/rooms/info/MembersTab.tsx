@@ -46,7 +46,12 @@ function ApproveSheet({
     setErr(null);
     steps.reset();
     try {
-      await changeMembers(await room.acct(), room.detail.id, { add: [{ address: request.address, history }], reason: "joined" }, steps.onStep);
+      await changeMembers(
+        await room.acct(),
+        room.detail.id,
+        { add: [{ address: request.address, history }], reason: "joined" },
+        steps.onStep,
+      );
       toast.show(`${who} is in. Room key changed.`);
       setBusy(false);
       clear();
@@ -140,7 +145,10 @@ export function MembersTab({
   const admin = isAdminRole(me);
   const mayAdd = can(me, "add");
 
-  const active = useMemo(() => sortMembers((detail?.members ?? []).filter((m) => m.status === "active")), [detail?.members]);
+  const active = useMemo(
+    () => sortMembers((detail?.members ?? []).filter((m) => m.status === "active")),
+    [detail?.members],
+  );
   const shown = active.filter((m) => matchesQuery(m.address, names[m.address], q));
   const gone = (detail?.members ?? []).filter((m) => m.status === "removed" || m.status === "blocked");
   const openMember: MemberRow | null = active.find((m) => m.address === openAddr) ?? null;
@@ -177,7 +185,14 @@ export function MembersTab({
   return (
     <>
       {active.length > 6 ? (
-        <TextField label="Search members" hideLabel placeholder="Search by @name or address" value={q} onChange={(e) => setQ(e.target.value)} type="search" />
+        <TextField
+          label="Search members"
+          hideLabel
+          placeholder="Search by @name or address"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          type="search"
+        />
       ) : null}
 
       <div className={s.actionsRow}>
@@ -214,15 +229,30 @@ export function MembersTab({
                 <span className={s.memberText}>
                   <b>{label(r.address, names)}</b>
                   <small>
-                    {origin.kind === "link" ? "Used an invite link" : `Suggested by ${label(origin.by, names, me.address)}`} · {whenLabel(r.at)}
+                    {origin.kind === "link"
+                      ? "Used an invite link"
+                      : `Suggested by ${label(origin.by, names, me.address)}`}{" "}
+                    · {whenLabel(r.at)}
                   </small>
                 </span>
                 {admin ? (
                   <div className={s.requestBtns}>
-                    <Button size="sm" variant="cord" icon="check" onClick={() => setApproving(r)} disabled={rowBusy === r.address}>
+                    <Button
+                      size="sm"
+                      variant="cord"
+                      icon="check"
+                      onClick={() => setApproving(r)}
+                      disabled={rowBusy === r.address}
+                    >
                       Approve
                     </Button>
-                    <Button size="sm" variant="quiet" icon="x" busy={rowBusy === r.address} onClick={() => void decline(r)}>
+                    <Button
+                      size="sm"
+                      variant="quiet"
+                      icon="x"
+                      busy={rowBusy === r.address}
+                      onClick={() => void decline(r)}
+                    >
                       Decline
                     </Button>
                   </div>
@@ -251,7 +281,8 @@ export function MembersTab({
                 <span className={s.memberText}>
                   <b>{label(m.address, names, me.address)}</b>
                   <small>
-                    {m.address === me.address && names[m.address] ? `${label(m.address, names)} · ` : ""}Joined {dayLabel(m.joinedAt)}
+                    {m.address === me.address && names[m.address] ? `${label(m.address, names)} · ` : ""}Joined{" "}
+                    {dayLabel(m.joinedAt)}
                   </small>
                 </span>
                 <span className={s.tags}>
@@ -261,7 +292,9 @@ export function MembersTab({
                       Verified
                     </span>
                   ) : null}
-                  {m.role !== "member" ? <span className={s.role}>{m.role === "owner" ? "Owner" : "Admin"}</span> : null}
+                  {m.role !== "member" ? (
+                    <span className={s.role}>{m.role === "owner" ? "Owner" : "Admin"}</span>
+                  ) : null}
                 </span>
               </button>
             </li>
@@ -289,7 +322,9 @@ export function MembersTab({
               ) : null}
             </div>
           ))}
-          <p className={s.help}>Removed people kept what they saw before. They cannot open anything sent after they left.</p>
+          <p className={s.help}>
+            Removed people kept what they saw before. They cannot open anything sent after they left.
+          </p>
         </section>
       ) : null}
 

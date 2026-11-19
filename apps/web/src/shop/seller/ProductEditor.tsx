@@ -128,7 +128,12 @@ export function ProductEditor({ id }: { id: string }) {
       if (e instanceof ApiFailure && e.code === "SLUG_TAKEN") {
         setSlugError(e.message);
         setSaveErr(null);
-      } else setSaveErr(e instanceof ApiFailure ? e.message : "Your latest changes are not saved yet. They are still here; we keep trying.");
+      } else
+        setSaveErr(
+          e instanceof ApiFailure
+            ? e.message
+            : "Your latest changes are not saved yet. They are still here; we keep trying.",
+        );
       return false;
     }
   }, [tokened]);
@@ -202,7 +207,10 @@ export function ProductEditor({ id }: { id: string }) {
     },
     [schedule],
   );
-  const patch = useCallback<EditorProps["patch"]>((p, key) => update((d) => ({ ...d, def: { ...d.def, ...p } }), key), [update]);
+  const patch = useCallback<EditorProps["patch"]>(
+    (p, key) => update((d) => ({ ...d, def: { ...d.def, ...p } }), key),
+    [update],
+  );
 
   const undo = useCallback(() => {
     const prev = past.current.pop();
@@ -272,7 +280,11 @@ export function ProductEditor({ id }: { id: string }) {
       } else {
         const mine = latest.current;
         if (mine) {
-          const merged = { ...mine, def: { ...mine.def, version: kept.def.version, content: kept.def.content, updatedAt: kept.def.updatedAt }, publishedFp: kept.publishedFp };
+          const merged = {
+            ...mine,
+            def: { ...mine.def, version: kept.def.version, content: kept.def.content, updatedAt: kept.def.updatedAt },
+            publishedFp: kept.publishedFp,
+          };
           latest.current = merged;
           setDraft(merged);
           schedule();
@@ -284,7 +296,13 @@ export function ProductEditor({ id }: { id: string }) {
       if (first) setTab("share");
       return true;
     } catch (e) {
-      setProblems([e instanceof ApiFailure ? e.message : e instanceof Error && e.message ? `${e.message} Nothing was published.` : "It was not published. Nothing changed."]);
+      setProblems([
+        e instanceof ApiFailure
+          ? e.message
+          : e instanceof Error && e.message
+            ? `${e.message} Nothing was published.`
+            : "It was not published. Nothing changed.",
+      ]);
       dirty.current = true;
       return false;
     } finally {
@@ -297,7 +315,11 @@ export function ProductEditor({ id }: { id: string }) {
     try {
       await setProductStatus(await tokened(), id, to);
       await refreshRow();
-      toast.show(to === "unpublished" ? "Unpublished. The link now says it is not available; buyers keep their copies." : "Published again. The link is live.");
+      toast.show(
+        to === "unpublished"
+          ? "Unpublished. The link now says it is not available; buyers keep their copies."
+          : "Published again. The link is live.",
+      );
     } catch (e) {
       toast.show(e instanceof ApiFailure ? e.message : "That did not work. Nothing changed.", { tone: "error" });
     } finally {
@@ -341,7 +363,12 @@ export function ProductEditor({ id }: { id: string }) {
   const link = name ? `${SITE_URL}${productPath(name, row.record?.body.slug ?? def.slug)}` : null;
   const publishing = step !== null;
   const props: EditorProps = { draft, update, patch, tokened, name, displayName, row, slugError, publish, publishing };
-  const pane = tab === "receipt" ? <ReceiptPreview def={def} name={name} displayName={displayName} /> : <ProductPreview def={def} name={name} displayName={displayName} />;
+  const pane =
+    tab === "receipt" ? (
+      <ReceiptPreview def={def} name={name} displayName={displayName} />
+    ) : (
+      <ProductPreview def={def} name={name} displayName={displayName} />
+    );
 
   return (
     <div className={s.editor}>
@@ -390,7 +417,14 @@ export function ProductEditor({ id }: { id: string }) {
                   )
                 }
               />
-              <ButtonLink href={link} target="_blank" rel="noopener" variant="line" icon="eye" className={s.hideOnPhone}>
+              <ButtonLink
+                href={link}
+                target="_blank"
+                rel="noopener"
+                variant="line"
+                icon="eye"
+                className={s.hideOnPhone}
+              >
                 View
               </ButtonLink>
             </>
@@ -429,7 +463,14 @@ export function ProductEditor({ id }: { id: string }) {
         </div>
       </header>
       {saveErr ? (
-        <Oops title="Not saved yet" action={<Button size="sm" variant="line" icon="undo" onClick={() => void flush()}>Save now</Button>}>
+        <Oops
+          title="Not saved yet"
+          action={
+            <Button size="sm" variant="line" icon="undo" onClick={() => void flush()}>
+              Save now
+            </Button>
+          }
+        >
           {saveErr}
         </Oops>
       ) : null}

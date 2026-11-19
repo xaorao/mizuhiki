@@ -1,9 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { deriveSealKeys } from "@qorechain/qoreseal";
-import { newPhrase, passKeyIndex, passReaders, quarterPeriod, toHex, type PassInvite, type Signed } from "@mizuhiki/core";
-import { chipOf, covers, expiryOf, periodKeysOf, periodLabel, personProblem, recentQuarters, scopeLine } from "../../src/passes/model";
+import {
+  newPhrase,
+  passKeyIndex,
+  passReaders,
+  quarterPeriod,
+  toHex,
+  type PassInvite,
+  type Signed,
+} from "@mizuhiki/core";
+import {
+  chipOf,
+  covers,
+  expiryOf,
+  periodKeysOf,
+  periodLabel,
+  personProblem,
+  recentQuarters,
+  scopeLine,
+} from "../../src/passes/model";
 import type { PassView } from "../../src/passes/engine";
-
 
 const q3 = quarterPeriod(2026, 3);
 function view(over: Partial<PassView> & { scope: PassInvite["scope"] }): PassView {
@@ -29,7 +45,9 @@ describe("passes screen words", () => {
   it("names a quarter as a quarter and anything else by its dates", () => {
     expect(periodLabel(q3.from, q3.until)).toBe("Q3 2026");
     expect(periodLabel("2026-07-01T00:00:00.000Z", "2026-07-16T00:00:00.000Z")).toBe("1 Jul 2026 – 15 Jul 2026");
-    expect(scopeLine({ kind: "period", ...q3, kinds: ["invoices", "payments"], keyIndex: passKeyIndex(0) })).toBe("Invoices and payment notes · Q3 2026");
+    expect(scopeLine({ kind: "period", ...q3, kinds: ["invoices", "payments"], keyIndex: passKeyIndex(0) })).toBe(
+      "Invoices and payment notes · Q3 2026",
+    );
     expect(scopeLine({ kind: "room", roomId: "r1234567", label: "Payroll" })).toBe("Room · Payroll");
   });
 
@@ -73,7 +91,11 @@ describe("pass keys on the page", () => {
       [
         view({ scope, expiresAt: "2026-09-01T00:00:00.000Z" }),
         view({ id: "pass_revokedxxxxx", scope: { ...scope, keyIndex: passKeyIndex(3) }, status: "revoked" }),
-        view({ id: "pass_expiredxxxxx", scope: { ...scope, keyIndex: passKeyIndex(4) }, expiresAt: "2026-07-15T00:00:00.000Z" }),
+        view({
+          id: "pass_expiredxxxxx",
+          scope: { ...scope, keyIndex: passKeyIndex(4) },
+          expiresAt: "2026-07-15T00:00:00.000Z",
+        }),
         view({ id: "pass_roomxxxxxxxx", scope: { kind: "room", roomId: "r1234567", label: "x" } }),
       ],
       now,

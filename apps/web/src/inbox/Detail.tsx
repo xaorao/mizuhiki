@@ -352,7 +352,21 @@ export function Detail({
   onSent: () => void;
 }) {
   if (row.type === "request") return <RoomRequestDetail row={row} onBack={onBack} />;
-  return <ItemDetail row={row} box={box} state={state} check={check} account={account} token={token} sent={sent} onBack={onBack} onRetry={onRetry} onFlag={onFlag} onSent={onSent} />;
+  return (
+    <ItemDetail
+      row={row}
+      box={box}
+      state={state}
+      check={check}
+      account={account}
+      token={token}
+      sent={sent}
+      onBack={onBack}
+      onRetry={onRetry}
+      onFlag={onFlag}
+      onSent={onSent}
+    />
+  );
 }
 
 /** A join request for a room: who asked, which room (its name is sealed in the room, read from this device's copy), and the way to review. */
@@ -362,7 +376,10 @@ function RoomRequestDetail({ row, onBack }: { row: InboxRow; onBack: () => void 
   const roomId = row.ref?.replace(/^room:/, "") ?? "";
   useEffect(() => {
     if (!acct.account) return;
-    void readSummaries(acct.account).then((all) => setRoom(all[roomId]?.name ?? null), () => undefined);
+    void readSummaries(acct.account).then(
+      (all) => setRoom(all[roomId]?.name ?? null),
+      () => undefined,
+    );
   }, [acct.account, roomId]);
   const who = row.sender?.name ? `@${row.sender.name}` : `${row.sender?.address.slice(0, 12) ?? "Someone"}…`;
   return (
@@ -372,7 +389,12 @@ function RoomRequestDetail({ row, onBack }: { row: InboxRow; onBack: () => void 
         <TypeChip tone={TYPE_TONE.request ?? "butter"}>{TYPE_LABEL.request ?? "Room request"}</TypeChip>
         <h2>{who}</h2>
         <time dateTime={row.at}>
-          {new Date(row.at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+          {new Date(row.at).toLocaleString("en-GB", {
+            day: "numeric",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
         </time>
       </header>
       <div className={s.request}>
@@ -624,7 +646,11 @@ function ItemDetail({
       </footer>
 
       {addingReader ? (
-        <AddReaderSheet row={row} tokened={async () => ({ ...account, token: await token() })} onClose={() => setAddingReader(false)} />
+        <AddReaderSheet
+          row={row}
+          tokened={async () => ({ ...account, token: await token() })}
+          onClose={() => setAddingReader(false)}
+        />
       ) : null}
       {proving ? (
         <ProveSheet account={account} target={proving} defaultKind="file" onClose={() => setProving(null)} />

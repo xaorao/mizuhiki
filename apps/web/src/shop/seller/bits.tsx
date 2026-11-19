@@ -55,7 +55,9 @@ export function RowMenu({ label, items }: { label: string; items: MenuItem[] }) 
           role="menu"
           id={id}
           onKeyDown={(e) => {
-            const all = [...(root.current?.querySelectorAll<HTMLButtonElement>("[role=menuitem]:not(:disabled)") ?? [])];
+            const all = [
+              ...(root.current?.querySelectorAll<HTMLButtonElement>("[role=menuitem]:not(:disabled)") ?? []),
+            ];
             const i = all.indexOf(document.activeElement as HTMLButtonElement);
             if (e.key === "ArrowDown") {
               e.preventDefault();
@@ -126,11 +128,25 @@ export function Confirm({
 }
 
 /** Square thumbnail: the thumbnail, else the first cover, else the kind's icon on its pastel. */
-export function Thumb({ def, size = 44 }: { def: Pick<ProductDef, "thumbnail" | "covers" | "kind" | "title">; size?: number }) {
+export function Thumb({
+  def,
+  size = 44,
+}: {
+  def: Pick<ProductDef, "thumbnail" | "covers" | "kind" | "title">;
+  size?: number;
+}) {
   const pic = def.thumbnail ?? def.covers[0] ?? null;
   return (
-    <span className={[s.thumb, s[`tone_${KIND_TONE[def.kind]}`]].join(" ")} style={{ width: size, height: size }} aria-hidden="true">
-      {pic ? <img src={mediaUrl(pic.hash)} alt="" /> : <Icon name={KIND_ICON[def.kind]} size={Math.round(size * 0.46)} />}
+    <span
+      className={[s.thumb, s[`tone_${KIND_TONE[def.kind]}`]].join(" ")}
+      style={{ width: size, height: size }}
+      aria-hidden="true"
+    >
+      {pic ? (
+        <img src={mediaUrl(pic.hash)} alt="" />
+      ) : (
+        <Icon name={KIND_ICON[def.kind]} size={Math.round(size * 0.46)} />
+      )}
     </span>
   );
 }

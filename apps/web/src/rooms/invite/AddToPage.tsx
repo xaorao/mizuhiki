@@ -31,16 +31,27 @@ export function AddToPage({ roomId, roomName, url }: { roomId: string; roomName:
     setQueued(null);
     o.publish().then(
       () => toast.show(done),
-      (e: unknown) => setError(`${e instanceof Error ? e.message : "Your page was not published."} The button is saved in your page draft.`),
+      (e: unknown) =>
+        setError(
+          `${e instanceof Error ? e.message : "Your page was not published."} The button is saved in your page draft.`,
+        ),
     );
   }, [queued, o, toast]);
 
   if (o.loading) return <Skeleton lines={2} />;
   const d = o.draft;
-  if (!d) return <p className={s.muted}>{o.loadError ?? "Your page is not set up yet, so there is nowhere to add the button."}</p>;
+  if (!d)
+    return (
+      <p className={s.muted}>{o.loadError ?? "Your page is not set up yet, so there is nowhere to add the button."}</p>
+    );
   const path = url ? invitePath(url) : null;
-  const block = d.manifest.blocks.find((b): b is Extract<Block, { type: "room" }> => b.type === "room" && b.roomId === roomId);
-  const live = o.published?.blocks.some((b) => b.type === "room" && b.roomId === roomId && b.on && !b.archived && b.invite === path) ?? false;
+  const block = d.manifest.blocks.find(
+    (b): b is Extract<Block, { type: "room" }> => b.type === "room" && b.roomId === roomId,
+  );
+  const live =
+    o.published?.blocks.some(
+      (b) => b.type === "room" && b.roomId === roomId && b.on && !b.archived && b.invite === path,
+    ) ?? false;
   const busy = o.publishing || queued !== null;
   const run = (fn: Parameters<typeof o.edit>[0], message: string) => {
     setError(null);
@@ -52,10 +63,23 @@ export function AddToPage({ roomId, roomName, url }: { roomId: string; roomName:
   const add = () =>
     path &&
     run((x) => {
-      const b: Block = { id: newId(), type: "room", roomId, invite: path, title, subtitle: "Ask to join · sealed to members", on: true, archived: false };
+      const b: Block = {
+        id: newId(),
+        type: "room",
+        roomId,
+        invite: path,
+        title,
+        subtitle: "Ask to join · sealed to members",
+        on: true,
+        archived: false,
+      };
       const i = x.pending.findIndex((p) => p.kind === "room");
       const pending = i < 0 ? x.pending : x.pending.filter((_, j) => j !== i);
-      return markChecklist({ ...x, pending, manifest: { ...x.manifest, blocks: [...x.manifest.blocks, b] } }, "block", "done");
+      return markChecklist(
+        { ...x, pending, manifest: { ...x.manifest, blocks: [...x.manifest.blocks, b] } },
+        "block",
+        "done",
+      );
     }, "Added to your page and published");
 
   return (
@@ -69,15 +93,33 @@ export function AddToPage({ roomId, roomName, url }: { roomId: string; roomName:
           <p className={s.muted}>The main link was made on another device. Reset it here first.</p>
         ) : !block ? (
           <>
-            <p className={s.muted}>Adds a “{title}” button to your public page. Anyone who sees your page can ask to join; you still approve each person.</p>
+            <p className={s.muted}>
+              Adds a “{title}” button to your public page. Anyone who sees your page can ask to join; you still approve
+              each person.
+            </p>
             <Button variant="cord" size="sm" icon="plus" busy={busy} onClick={add}>
               Add to my page
             </Button>
           </>
         ) : block.invite !== path || block.archived || !block.on ? (
           <>
-            <p className={s.muted}>{block.invite !== path ? "The button on your page still uses an old link." : "The button is on your page but hidden."}</p>
-            <Button variant="cord" size="sm" icon="check" busy={busy} onClick={() => run((x) => updateBlock(x, block.id, { invite: path, on: true, archived: false }), "The button on your page is updated")}>
+            <p className={s.muted}>
+              {block.invite !== path
+                ? "The button on your page still uses an old link."
+                : "The button is on your page but hidden."}
+            </p>
+            <Button
+              variant="cord"
+              size="sm"
+              icon="check"
+              busy={busy}
+              onClick={() =>
+                run(
+                  (x) => updateBlock(x, block.id, { invite: path, on: true, archived: false }),
+                  "The button on your page is updated",
+                )
+              }
+            >
               Update the button
             </Button>
           </>
@@ -86,7 +128,13 @@ export function AddToPage({ roomId, roomName, url }: { roomId: string; roomName:
         ) : (
           <>
             <p className={s.muted}>“{block.title}” is in your page draft, not published yet.</p>
-            <Button variant="cord" size="sm" icon="send" busy={busy} onClick={() => run((x) => x, "Your page is published")}>
+            <Button
+              variant="cord"
+              size="sm"
+              icon="send"
+              busy={busy}
+              onClick={() => run((x) => x, "Your page is published")}
+            >
               Publish my page
             </Button>
           </>

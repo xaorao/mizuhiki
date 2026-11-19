@@ -62,7 +62,15 @@ export function RatingLine({ rating, compact = false }: { rating: PublicProduct[
   );
 }
 
-export function Ribbon({ children, tone = "butter", big = false }: { children: ReactNode; tone?: "butter" | "sakura" | "matcha"; big?: boolean }) {
+export function Ribbon({
+  children,
+  tone = "butter",
+  big = false,
+}: {
+  children: ReactNode;
+  tone?: "butter" | "sakura" | "matcha";
+  big?: boolean;
+}) {
   return (
     <span className={[s.ribbon, big ? s.ribbonBig : ""].join(" ")}>
       <span className={[s.ribbonInner, s[`rb_${tone}`]].join(" ")}>{children}</span>
@@ -111,7 +119,11 @@ export function RichText({ text, className }: { text: string; className?: string
 // ---- pictures ------------------------------------------------------------------------------------
 
 export const thumbOf = (def: ProductDef): string | null =>
-  def.thumbnail ? mediaUrl(def.thumbnail.hash) : def.covers[0] && def.covers[0].type.startsWith("image/") ? mediaUrl(def.covers[0].hash) : null;
+  def.thumbnail
+    ? mediaUrl(def.thumbnail.hash)
+    : def.covers[0] && def.covers[0].type.startsWith("image/")
+      ? mediaUrl(def.covers[0].hash)
+      : null;
 
 const KIND_TONE: Record<ProductDef["kind"], string> = {
   file: "sora",
@@ -122,14 +134,29 @@ const KIND_TONE: Record<ProductDef["kind"], string> = {
   commission: "kinari",
   tip: "sakura",
 };
-const KIND_ICON = { file: "file", course: "text", report: "chart", bundle: "folder", call: "calendar", commission: "pen", tip: "heart" } as const;
+const KIND_ICON = {
+  file: "file",
+  course: "text",
+  report: "chart",
+  bundle: "folder",
+  call: "calendar",
+  commission: "pen",
+  tip: "heart",
+} as const;
 
 /** The square thumbnail, or a pastel tile with the kind's icon when the seller set none. */
 export function Thumb({ def, size }: { def: ProductDef; size?: number }) {
   const src = thumbOf(def);
   return (
-    <span className={[s.thumb, s[`tt_${KIND_TONE[def.kind]}`]].join(" ")} style={size ? { width: size, height: size } : undefined}>
-      {src ? <img src={src} alt="" loading="lazy" /> : <Icon name={KIND_ICON[def.kind]} size={size ? Math.round(size * 0.36) : 40} />}
+    <span
+      className={[s.thumb, s[`tt_${KIND_TONE[def.kind]}`]].join(" ")}
+      style={size ? { width: size, height: size } : undefined}
+    >
+      {src ? (
+        <img src={src} alt="" loading="lazy" />
+      ) : (
+        <Icon name={KIND_ICON[def.kind]} size={size ? Math.round(size * 0.36) : 40} />
+      )}
     </span>
   );
 }
@@ -147,7 +174,15 @@ export function useCartCount(name: string): number {
 }
 
 /** Knot home, the seller's page, Library and the cart with its count. */
-export function ShopBar({ name, children, inLibrary = false }: { name?: string; children?: ReactNode; inLibrary?: boolean }) {
+export function ShopBar({
+  name,
+  children,
+  inLibrary = false,
+}: {
+  name?: string;
+  children?: ReactNode;
+  inLibrary?: boolean;
+}) {
   return (
     <header className={s.bar}>
       <Link className={s.home} href="/" aria-label="Mizuhiki home">
@@ -175,7 +210,11 @@ export function ShopBar({ name, children, inLibrary = false }: { name?: string; 
 function CartLink({ name }: { name: string }) {
   const n = useCartCount(name);
   return (
-    <Link className={s.cartLink} href={`/@${name}/checkout`} aria-label={n ? `Cart, ${n} ${n === 1 ? "item" : "items"}` : "Cart, empty"}>
+    <Link
+      className={s.cartLink}
+      href={`/@${name}/checkout`}
+      aria-label={n ? `Cart, ${n} ${n === 1 ? "item" : "items"}` : "Cart, empty"}
+    >
       <Icon name="bag" size={20} />
       {n ? <span className={s.cartCount}>{n}</span> : null}
     </Link>
@@ -197,13 +236,16 @@ export function cachedShop(name: string): Promise<ShopItems> {
   return p;
 }
 
-export function useShop(name: string): { state: "loading" } | { state: "ok"; items: ShopItems } | { state: "error"; message: string } {
+export function useShop(
+  name: string,
+): { state: "loading" } | { state: "ok"; items: ShopItems } | { state: "error"; message: string } {
   const [st, setSt] = useState<ReturnType<typeof useShop>>({ state: "loading" });
   useEffect(() => {
     const life = { alive: true };
     cachedShop(name).then(
       (items) => life.alive && setSt({ state: "ok", items }),
-      (e: unknown) => life.alive && setSt({ state: "error", message: (e as Error).message || "The shop could not be loaded." }),
+      (e: unknown) =>
+        life.alive && setSt({ state: "error", message: (e as Error).message || "The shop could not be loaded." }),
     );
     return () => {
       life.alive = false;
@@ -224,8 +266,15 @@ export function sellerPage(name: string): Promise<SellerPage | null> {
   let p = pageCache.get(name);
   if (!p) {
     p = api
-      .get<{ record: Signed<Manifest>; card: RecipientCard | null; registry: { owner: string } }>(`/pages/${encodeURIComponent(name)}`)
-      .then((r) => ({ displayName: r.record.body.displayName, avatar: r.record.body.avatar, address: r.registry.owner, card: r.card }))
+      .get<{ record: Signed<Manifest>; card: RecipientCard | null; registry: { owner: string } }>(
+        `/pages/${encodeURIComponent(name)}`,
+      )
+      .then((r) => ({
+        displayName: r.record.body.displayName,
+        avatar: r.record.body.avatar,
+        address: r.registry.owner,
+        card: r.card,
+      }))
       .catch(() => null);
     pageCache.set(name, p);
   }
@@ -238,7 +287,11 @@ export function sellerPage(name: string): Promise<SellerPage | null> {
  * The keys that open an order here: the unlocked account, a buyer key kept on
  * this device, or an account restored from a buyer key's 12 words (same sealing key).
  */
-export async function keysForOrder(o: OrderView, account: Account | undefined, extra: BuyerKey[] = []): Promise<SealKeyPair | null> {
+export async function keysForOrder(
+  o: OrderView,
+  account: Account | undefined,
+  extra: BuyerKey[] = [],
+): Promise<SealKeyPair | null> {
   const r = o.request.recipient;
   if (r.kind === "account") return account && account.owner.address === r.address ? account.keys.seal : null;
   const all = [...extra, ...(await buyerKeys())];
@@ -253,6 +306,18 @@ export async function keysForOrder(o: OrderView, account: Account | undefined, e
 
 /** Short, readable dates: "19 Nov 2026, 14:05". */
 export const when = (iso: string) =>
-  new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  new Date(iso).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 export const slotLabel = (iso: string) =>
-  new Date(iso).toLocaleString("en-GB", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+  new Date(iso).toLocaleString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  });

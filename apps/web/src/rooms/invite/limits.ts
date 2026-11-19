@@ -107,7 +107,9 @@ export function usesLabel(uses: number, maxUses: number | null): string {
 /** What the use slider shows under it. */
 export function usesHelp(uses: number | null): string {
   if (uses === null) return "Anyone with the link can ask to join, any number of times.";
-  return uses === 1 ? "Works for one person, then stops." : `Works for ${uses.toLocaleString("en-US")} people, then stops.`;
+  return uses === 1
+    ? "Works for one person, then stops."
+    : `Works for ${uses.toLocaleString("en-US")} people, then stops.`;
 }
 
 /**

@@ -13,7 +13,13 @@ function text(page: PDFPage, s: string, x: number, y: number, size: number, font
   page.drawText(s, { x, y, size, font, color });
 }
 
-export async function buildBuyerKeySheet(input: { phrase: string; fingerprint: string; shop: string; site: string; createdAt: Date }): Promise<Uint8Array> {
+export async function buildBuyerKeySheet(input: {
+  phrase: string;
+  fingerprint: string;
+  shop: string;
+  site: string;
+  createdAt: Date;
+}): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle("Mizuhiki buyer key");
   doc.setCreator("Mizuhiki");
@@ -26,7 +32,14 @@ export async function buildBuyerKeySheet(input: { phrase: string; fingerprint: s
   let y = 790;
   for (let i = 0; i < 5; i++) {
     const a = ((-90 + i * 72) * Math.PI) / 180;
-    page.drawEllipse({ x: 64 + Math.cos(a) * 10, y: y - 4 - Math.sin(a) * 10, xScale: 7.5, yScale: 7.5, borderColor: CORD, borderWidth: 2.2 });
+    page.drawEllipse({
+      x: 64 + Math.cos(a) * 10,
+      y: y - 4 - Math.sin(a) * 10,
+      xScale: 7.5,
+      yScale: 7.5,
+      borderColor: CORD,
+      borderWidth: 2.2,
+    });
   }
   page.drawCircle({ x: 64, y: y - 4, size: 3.6, color: INK });
   text(page, "mizuhiki", 92, y - 12, 22, bold);
@@ -34,11 +47,34 @@ export async function buildBuyerKeySheet(input: { phrase: string; fingerprint: s
   y -= 52;
   text(page, "Your purchases open with these 12 words", 48, y, 22, bold);
   y -= 20;
-  text(page, `Made ${input.createdAt.toISOString().slice(0, 10)} on your device while buying from @${input.shop}. Mizuhiki never saw them.`, 48, y, 10, reg, MUTED);
+  text(
+    page,
+    `Made ${input.createdAt.toISOString().slice(0, 10)} on your device while buying from @${input.shop}. Mizuhiki never saw them.`,
+    48,
+    y,
+    10,
+    reg,
+    MUTED,
+  );
   y -= 30;
-  page.drawRectangle({ x: 40, y: y - 46, width: W - 80, height: 58, color: SAKURA, borderColor: INK, borderWidth: 1.5 });
+  page.drawRectangle({
+    x: 40,
+    y: y - 46,
+    width: W - 80,
+    height: 58,
+    color: SAKURA,
+    borderColor: INK,
+    borderWidth: 1.5,
+  });
   text(page, "Anyone with these words can open what you bought. Without them, nobody can.", 54, y - 10, 11.5, bold);
-  text(page, "Mizuhiki cannot reset them. Keep this sheet somewhere safe, like a receipt you cannot reprint.", 54, y - 30, 9.5, reg);
+  text(
+    page,
+    "Mizuhiki cannot reset them. Keep this sheet somewhere safe, like a receipt you cannot reprint.",
+    54,
+    y - 30,
+    9.5,
+    reg,
+  );
   y -= 84;
   text(page, "Key fingerprint", 48, y, 10, bold, MUTED);
   text(page, input.fingerprint, 48, y - 16, 12, mono);
@@ -47,7 +83,14 @@ export async function buildBuyerKeySheet(input: { phrase: string; fingerprint: s
   y -= 12;
   const words = input.phrase.split(" ");
   const colW = (W - 96) / 3;
-  page.drawRectangle({ x: 40, y: y - 4 * 30 - 10, width: W - 80, height: 4 * 30 + 4, borderColor: INK, borderWidth: 1.5 });
+  page.drawRectangle({
+    x: 40,
+    y: y - 4 * 30 - 10,
+    width: W - 80,
+    height: 4 * 30 + 4,
+    borderColor: INK,
+    borderWidth: 1.5,
+  });
   words.forEach((w, i) => {
     const col = Math.floor(i / 4);
     const row = i % 4;
@@ -63,6 +106,14 @@ export async function buildBuyerKeySheet(input: { phrase: string; fingerprint: s
     "2. Type the words in order. Your purchases open on that device; nothing is sent.",
     "3. Want a full Mizuhiki account? Log in with Use your recovery phrase and these same words.",
   ].forEach((h, i) => text(page, h, 48, y - 18 - i * 15, 10, reg));
-  text(page, "Public on chain: the payment, its amount and the paying address. Sealed: what you bought.", 48, 40, 8.5, reg, MUTED);
+  text(
+    page,
+    "Public on chain: the payment, its amount and the paying address. Sealed: what you bought.",
+    48,
+    40,
+    8.5,
+    reg,
+    MUTED,
+  );
   return doc.save();
 }

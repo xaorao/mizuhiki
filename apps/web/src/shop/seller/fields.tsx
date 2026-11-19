@@ -81,7 +81,10 @@ export function CountField({
     setText((t) => ((t === "" ? null : Number(t)) === value ? t : value === null ? "" : String(value)));
   }, [value]);
   const n = text === "" ? null : Number(text);
-  const err = n !== null && (!Number.isInteger(n) || n < min || n > max) ? `Use a whole number from ${min} to ${max.toLocaleString("en-GB")}.` : null;
+  const err =
+    n !== null && (!Number.isInteger(n) || n < min || n > max)
+      ? `Use a whole number from ${min} to ${max.toLocaleString("en-GB")}.`
+      : null;
   return (
     <TextField
       label={label}

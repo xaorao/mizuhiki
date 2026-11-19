@@ -33,7 +33,13 @@ function EncryptionRow({ room }: { room: RoomState }) {
   const latest = [...detail.epochs].sort((a, b) => b.epoch - a.epoch)[0];
   return (
     <div className={s.choiceList}>
-      <button type="button" className={s.lock} aria-expanded={open} aria-controls="room-how" onClick={() => setOpen((v) => !v)}>
+      <button
+        type="button"
+        className={s.lock}
+        aria-expanded={open}
+        aria-controls="room-how"
+        onClick={() => setOpen((v) => !v)}
+      >
         <span className={s.lockIcon} aria-hidden="true">
           <Icon name="lock" />
         </span>
@@ -47,14 +53,24 @@ function EncryptionRow({ room }: { room: RoomState }) {
         <div id="room-how" className={s.how}>
           <b>How it works</b>
           <ol>
-            <li>Everyone in the room shares one room key. Each message and file is sealed with it on the sender&apos;s device and signed by them.</li>
-            <li>When someone joins, leaves or is removed, an admin&apos;s device makes a new key and seals it to the current members only.</li>
-            <li>Each new key is recorded on QoreChain with a fingerprint of the member list, so nobody can quietly add a reader.</li>
+            <li>
+              Everyone in the room shares one room key. Each message and file is sealed with it on the sender&apos;s
+              device and signed by them.
+            </li>
+            <li>
+              When someone joins, leaves or is removed, an admin&apos;s device makes a new key and seals it to the
+              current members only.
+            </li>
+            <li>
+              Each new key is recorded on QoreChain with a fingerprint of the member list, so nobody can quietly add a
+              reader.
+            </li>
           </ol>
           <dl className={s.facts}>
             <dt>Room key</dt>
             <dd>
-              <span className={s.epochNum}>Key {detail.epoch}</span> (changed {detail.epoch - 1} {detail.epoch - 1 === 1 ? "time" : "times"})
+              <span className={s.epochNum}>Key {detail.epoch}</span> (changed {detail.epoch - 1}{" "}
+              {detail.epoch - 1 === 1 ? "time" : "times"})
             </dd>
             <dt>Member list</dt>
             <dd>
@@ -65,7 +81,10 @@ function EncryptionRow({ room }: { room: RoomState }) {
                   : "Being checked against the record on QoreChain."}
             </dd>
             <dt>Server sees</dt>
-            <dd>Who is a member and the size of sealed messages. Not the name, the messages or who wrote them; it checks that a sender is a member but keeps no record of who sent what.</dd>
+            <dd>
+              Who is a member and the size of sealed messages. Not the name, the messages or who wrote them; it checks
+              that a sender is a member but keeps no record of who sent what.
+            </dd>
             {latest?.txHash ? (
               <>
                 <dt>Record</dt>
@@ -79,7 +98,9 @@ function EncryptionRow({ room }: { room: RoomState }) {
               </>
             ) : null}
           </dl>
-          <p className={s.help}>Removed people keep what they already saw. They cannot open anything sent after the key changed.</p>
+          <p className={s.help}>
+            Removed people keep what they already saw. They cannot open anything sent after the key changed.
+          </p>
         </div>
       ) : null}
     </div>
@@ -184,7 +205,11 @@ export function RoomInfoPanel({
   const active = detail.members.filter((m) => m.status === "active");
   const mayEdit = can(me, "info");
   const tabs: { value: Tab; label: string; badge?: number }[] = [
-    { value: "members", label: "Members", ...(room.requests.length && can(me, "add") ? { badge: room.requests.length } : {}) },
+    {
+      value: "members",
+      label: "Members",
+      ...(room.requests.length && can(me, "add") ? { badge: room.requests.length } : {}),
+    },
     { value: "files", label: derived.files.length ? `Files ${derived.files.length}` : "Files" },
     { value: "actions", label: "Recent actions" },
   ];
@@ -226,7 +251,11 @@ export function RoomInfoPanel({
               <span>Room · {active.length === 1 ? "1 member" : `${active.length} members`}</span>
               <Chip tone={TYPE_TONE[info.type]}>{ROOM_TEMPLATES[info.type].label}</Chip>
             </p>
-            {info.description ? <p className={s.desc}>{info.description}</p> : mayEdit ? <p className={s.help}>No description yet.</p> : null}
+            {info.description ? (
+              <p className={s.desc}>{info.description}</p>
+            ) : mayEdit ? (
+              <p className={s.help}>No description yet.</p>
+            ) : null}
             {mayEdit ? (
               <div className={s.heroActions}>
                 <Button variant="line" size="sm" icon="pen" onClick={() => setEditing(true)}>

@@ -27,13 +27,28 @@ import { KIND_INFO, callSlots, formatAmount, parseAmount, type Manifest, type Pr
 import { mediaUrl } from "@/lib/api";
 import { pageUrl } from "@/lib/site";
 import { loadProduct, type PublicProduct } from "../engine";
-import { addDays, amountOnly, minAmount, dayKey, ribbonLabel, slotsByDay, startOfWeek, suggestedAmount, unitPrice, type CartLine } from "./model";
+import {
+  addDays,
+  amountOnly,
+  minAmount,
+  dayKey,
+  ribbonLabel,
+  slotsByDay,
+  startOfWeek,
+  suggestedAmount,
+  unitPrice,
+  type CartLine,
+} from "./model";
 import { RatingLine, RichText, Ribbon, ShopBar, Stars, Thumb, cachedShop, slotLabel, when } from "./parts";
 import { getCart, isSaved, onStoreChange, putInCart, startNewCart, toggleSaved } from "./store";
 import s from "./buyer.module.css";
 
 type Loaded = PublicProduct & { def: ProductDef };
-type Load = { state: "loading" } | { state: "ok"; p: Loaded } | { state: "failed"; reason: string } | { state: "gone"; reason: string };
+type Load =
+  | { state: "loading" }
+  | { state: "ok"; p: Loaded }
+  | { state: "failed"; reason: string }
+  | { state: "gone"; reason: string };
 
 export interface SellerInfo {
   displayName: string;
@@ -41,7 +56,17 @@ export interface SellerInfo {
   owner: string;
 }
 
-export function ProductPage({ name, slug, seller, line }: { name: string; slug: string; seller: SellerInfo; line?: number | undefined }) {
+export function ProductPage({
+  name,
+  slug,
+  seller,
+  line,
+}: {
+  name: string;
+  slug: string;
+  seller: SellerInfo;
+  line?: number | undefined;
+}) {
   const [load, setLoad] = useState<Load>({ state: "loading" });
   useEffect(() => {
     const life = { alive: true };
@@ -49,7 +74,10 @@ export function ProductPage({ name, slug, seller, line }: { name: string; slug: 
       (p) => {
         if (!life.alive) return;
         if (p.def.owner !== seller.owner || p.def.name !== name)
-          setLoad({ state: "failed", reason: "This product is signed by a different account than the one that owns this page." });
+          setLoad({
+            state: "failed",
+            reason: "This product is signed by a different account than the one that owns this page.",
+          });
         else setLoad({ state: "ok", p });
       },
       (e: unknown) => {
@@ -71,8 +99,8 @@ export function ProductPage({ name, slug, seller, line }: { name: string; slug: 
           <Musubi face="worried" size={110} />
           <h1>This product could not be verified</h1>
           <p>
-            Its record does not match <b>@{name}</b>&apos;s key on QoreChain, so it is not shown and nothing can be bought here. Nothing has left your
-            device.
+            Its record does not match <b>@{name}</b>&apos;s key on QoreChain, so it is not shown and nothing can be
+            bought here. Nothing has left your device.
           </p>
           <p className={s.mono}>{load.reason}</p>
           <ButtonLink href={`/@${name}`} variant="line" icon="back">
@@ -99,7 +127,11 @@ export function ProductPage({ name, slug, seller, line }: { name: string; slug: 
       <Sakura count={4} />
       <div className={s.wrap}>
         <ShopBar name={name} />
-        {load.state === "loading" ? <ProductSkeleton /> : <Product p={load.p} name={name} seller={seller} line={line} />}
+        {load.state === "loading" ? (
+          <ProductSkeleton />
+        ) : (
+          <Product p={load.p} name={name} seller={seller} line={line} />
+        )}
       </div>
     </div>
   );
@@ -123,7 +155,17 @@ function ProductSkeleton() {
   );
 }
 
-function Product({ p, name, seller, line }: { p: Loaded; name: string; seller: SellerInfo; line?: number | undefined }) {
+function Product({
+  p,
+  name,
+  seller,
+  line,
+}: {
+  p: Loaded;
+  name: string;
+  seller: SellerInfo;
+  line?: number | undefined;
+}) {
   const router = useRouter();
   const toast = useToast();
   const def = p.def;
@@ -135,7 +177,11 @@ function Product({ p, name, seller, line }: { p: Loaded; name: string; seller: S
   const [quantity, setQuantity] = useState(editingThis?.quantity ?? 1);
   const open = !!def.price.pwyw || def.kind === "tip";
   const [amount, setAmount] = useState(() =>
-    editingThis?.chosen ? amountOnly(editingThis.chosen, token) : open ? amountOnly(suggestedAmount(def, versionId), token) : "",
+    editingThis?.chosen
+      ? amountOnly(editingThis.chosen, token)
+      : open
+        ? amountOnly(suggestedAmount(def, versionId), token)
+        : "",
   );
   const [slot, setSlot] = useState<string | null>(editingThis?.slot ?? null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -154,7 +200,10 @@ function Product({ p, name, seller, line }: { p: Loaded; name: string; seller: S
   useEffect(() => {
     const el = cta.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(([e]) => setSticky(!!e && !e.isIntersecting && (e.boundingClientRect.top < 0 || window.innerWidth <= 980)), { threshold: 0 });
+    const io = new IntersectionObserver(
+      ([e]) => setSticky(!!e && !e.isIntersecting && (e.boundingClientRect.top < 0 || window.innerWidth <= 980)),
+      { threshold: 0 },
+    );
     io.observe(el);
     return () => io.disconnect();
   }, []);
@@ -237,7 +286,11 @@ function Product({ p, name, seller, line }: { p: Loaded; name: string; seller: S
             <Chip tone="kinari" icon="bag">
               {KIND_INFO[def.kind].label}
             </Chip>
-            {p.sales ? <span className={s.salesCount}>{p.sales.toLocaleString("en-US")} {p.sales === 1 ? "sale" : "sales"}</span> : null}
+            {p.sales ? (
+              <span className={s.salesCount}>
+                {p.sales.toLocaleString("en-US")} {p.sales === 1 ? "sale" : "sales"}
+              </span>
+            ) : null}
           </p>
           <h1 id="product-title" className={s.title}>
             {def.title}
@@ -245,7 +298,11 @@ function Product({ p, name, seller, line }: { p: Loaded; name: string; seller: S
           <div className={s.metaRow}>
             <Ribbon big>{ribbon}</Ribbon>
             <a className={s.sellerLink} href={`/@${name}`}>
-              <Avatar name={seller.displayName} {...(seller.avatar ? { src: mediaUrl(seller.avatar.hash) } : {})} size={30} />
+              <Avatar
+                name={seller.displayName}
+                {...(seller.avatar ? { src: mediaUrl(seller.avatar.hash) } : {})}
+                size={30}
+              />
               <span>{seller.displayName}</span>
             </a>
             <RatingLine rating={p.rating} />
@@ -284,7 +341,11 @@ function Product({ p, name, seller, line }: { p: Loaded; name: string; seller: S
                         <b>{v.name}</b>
                         {v.description ? <small>{v.description}</small> : null}
                       </span>
-                      {gone ? <span className={s.left}>Sold out</span> : left !== null ? <span className={s.left}>{left} left</span> : null}
+                      {gone ? (
+                        <span className={s.left}>Sold out</span>
+                      ) : left !== null ? (
+                        <span className={s.left}>{left} left</span>
+                      ) : null}
                     </button>
                   );
                 })}
@@ -294,7 +355,9 @@ function Product({ p, name, seller, line }: { p: Loaded; name: string; seller: S
             {open ? (
               <div className={s.pwyw}>
                 <TextField
-                  label={def.kind === "tip" ? `How much would you like to give? (${token})` : `Name a fair price (${token})`}
+                  label={
+                    def.kind === "tip" ? `How much would you like to give? (${token})` : `Name a fair price (${token})`
+                  }
                   inputMode="decimal"
                   value={amount}
                   onChange={(e) => {
@@ -302,7 +365,11 @@ function Product({ p, name, seller, line }: { p: Loaded; name: string; seller: S
                     if (/^\d{0,12}(\.\d{0,6})?$/.test(v)) setAmount(v);
                     setProblem(null);
                   }}
-                  error={amount && chosen !== null && unit === null && min !== null ? `At least ${formatAmount(min, token)}` : undefined}
+                  error={
+                    amount && chosen !== null && unit === null && min !== null
+                      ? `At least ${formatAmount(min, token)}`
+                      : undefined
+                  }
                   hint={`From ${formatAmount(min ?? 0n, token)}. Suggested ${formatAmount(suggestedAmount(def, versionId), token)}.`}
                 />
                 <div className={s.quick} role="group" aria-label="Quick amounts">
@@ -310,7 +377,12 @@ function Product({ p, name, seller, line }: { p: Loaded; name: string; seller: S
                     const v = suggestedAmount(def, versionId) * m;
                     const label = amountOnly(v, token);
                     return (
-                      <button key={String(m)} type="button" aria-pressed={amount === label} onClick={() => setAmount(label)}>
+                      <button
+                        key={String(m)}
+                        type="button"
+                        aria-pressed={amount === label}
+                        onClick={() => setAmount(label)}
+                      >
                         {label}
                       </button>
                     );
@@ -319,17 +391,33 @@ function Product({ p, name, seller, line }: { p: Loaded; name: string; seller: S
               </div>
             ) : null}
 
-            {def.kind === "call" && def.booking ? <SlotPicker booking={def.booking} booked={p.booked} value={slot} onChange={setSlot} /> : null}
+            {def.kind === "call" && def.booking ? (
+              <SlotPicker booking={def.booking} booked={p.booked} value={slot} onChange={setSlot} />
+            ) : null}
 
             {def.limits.quantity && !soldOut ? (
               <div className={s.qty}>
                 <span id="qty-label">Quantity</span>
                 <div className={s.qtyCtl} role="group" aria-labelledby="qty-label">
-                  <Button size="sm" variant="line" aria-label="One fewer" className={s.qtyBtn} disabled={quantity <= 1} onClick={() => setQuantity((q) => Math.max(1, q - 1))}>
+                  <Button
+                    size="sm"
+                    variant="line"
+                    aria-label="One fewer"
+                    className={s.qtyBtn}
+                    disabled={quantity <= 1}
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  >
                     −
                   </Button>
                   <output aria-live="polite">{quantity}</output>
-                  <Button size="sm" variant="line" aria-label="One more" className={s.qtyBtn} disabled={quantity >= maxQty} onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}>
+                  <Button
+                    size="sm"
+                    variant="line"
+                    aria-label="One more"
+                    className={s.qtyBtn}
+                    disabled={quantity >= maxQty}
+                    onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
+                  >
                     +
                   </Button>
                 </div>
@@ -342,8 +430,11 @@ function Product({ p, name, seller, line }: { p: Loaded; name: string; seller: S
               <Icon name="coin" size={18} />
               <span>
                 You pay a <b>{def.commission.depositPercent}% deposit</b> now
-                {unit !== null ? ` (${formatAmount((unit * BigInt(quantity) * BigInt(def.commission.depositPercent)) / 100n, token)})` : ""}. The rest is due when{" "}
-                {seller.displayName.split(" ")[0]} finishes and asks for it; your copy is sealed to you after that.
+                {unit !== null
+                  ? ` (${formatAmount((unit * BigInt(quantity) * BigInt(def.commission.depositPercent)) / 100n, token)})`
+                  : ""}
+                . The rest is due when {seller.displayName.split(" ")[0]} finishes and asks for it; your copy is sealed
+                to you after that.
               </span>
             </p>
           ) : null}
@@ -352,7 +443,11 @@ function Product({ p, name, seller, line }: { p: Loaded; name: string; seller: S
 
           <Button ref={cta} variant="cord" size="xl" full disabled={soldOut} onClick={() => add()} className={s.cta}>
             {soldOut ? "Sold out" : editingThis ? "Update cart" : def.cta}
-            {!soldOut && unit !== null ? <span className={s.ctaPrice}>{formatAmount(unit * BigInt(def.limits.quantity ? quantity : 1), token)}</span> : null}
+            {!soldOut && unit !== null ? (
+              <span className={s.ctaPrice}>
+                {formatAmount(unit * BigInt(def.limits.quantity ? quantity : 1), token)}
+              </span>
+            ) : null}
           </Button>
           {problem ? (
             <p className={s.problem} role="alert">
@@ -366,7 +461,14 @@ function Product({ p, name, seller, line }: { p: Loaded; name: string; seller: S
               icon="heart"
               aria-pressed={saved}
               onClick={() => {
-                const now = toggleSaved({ name, slug: def.slug, productId: def.id, title: def.title, ribbon, thumbnail: def.thumbnail ? mediaUrl(def.thumbnail.hash) : null });
+                const now = toggleSaved({
+                  name,
+                  slug: def.slug,
+                  productId: def.id,
+                  title: def.title,
+                  ribbon,
+                  thumbnail: def.thumbnail ? mediaUrl(def.thumbnail.hash) : null,
+                });
                 toast.show(now ? "Saved on this device" : "Removed from Saved");
               }}
             >
@@ -407,12 +509,13 @@ function Product({ p, name, seller, line }: { p: Loaded; name: string; seller: S
               <span>
                 {instant ? (
                   <>
-                    <b>Delivered at once by @{name}&apos;s helper.</b> The helper can read this product in order to deliver it; it is then sealed to you.
+                    <b>Delivered at once by @{name}&apos;s helper.</b> The helper can read this product in order to
+                    deliver it; it is then sealed to you.
                   </>
                 ) : (
                   <>
-                    <b>Sealed to you on your device after payment.</b> {seller.displayName.split(" ")[0]}&apos;s own device seals it to you, so Mizuhiki never
-                    holds a key that opens it.
+                    <b>Sealed to you on your device after payment.</b> {seller.displayName.split(" ")[0]}&apos;s own
+                    device seals it to you, so Mizuhiki never holds a key that opens it.
                   </>
                 )}
               </span>
@@ -443,7 +546,8 @@ function Product({ p, name, seller, line }: { p: Loaded; name: string; seller: S
       <Sheet open={!!tokenClash} onClose={() => setTokenClash(null)} title="One token per order">
         <div className={s.sheetBody}>
           <p>
-            Your cart with @{name} is paid in {getCart(name)?.token}. This is priced in {token}, and one order is paid in one token.
+            Your cart with @{name} is paid in {getCart(name)?.token}. This is priced in {token}, and one order is paid
+            in one token.
           </p>
           <div className={s.rowWrap}>
             <Button variant="line" onClick={() => router.push(`/@${name}/checkout`)}>
@@ -480,16 +584,40 @@ function Covers({ def, covers }: { def: ProductDef; covers: ProductDef["covers"]
         c.type.startsWith("video/") ? (
           <video key={c.hash} src={mediaUrl(c.hash)} controls playsInline className={s.coverMedia} />
         ) : (
-          <img key={c.hash} src={mediaUrl(c.hash)} alt={`${def.title}, picture ${i + 1} of ${covers.length}`} className={s.coverMedia} />
+          <img
+            key={c.hash}
+            src={mediaUrl(c.hash)}
+            alt={`${def.title}, picture ${i + 1} of ${covers.length}`}
+            className={s.coverMedia}
+          />
         )
       ) : null}
       {covers.length > 1 ? (
         <>
-          <IconButton icon="back" label="Previous picture" variant="line" className={s.coverPrev} onClick={() => setI((x) => (x - 1 + covers.length) % covers.length)} />
-          <IconButton icon="chev" label="Next picture" variant="line" className={s.coverNext} onClick={() => setI((x) => (x + 1) % covers.length)} />
+          <IconButton
+            icon="back"
+            label="Previous picture"
+            variant="line"
+            className={s.coverPrev}
+            onClick={() => setI((x) => (x - 1 + covers.length) % covers.length)}
+          />
+          <IconButton
+            icon="chev"
+            label="Next picture"
+            variant="line"
+            className={s.coverNext}
+            onClick={() => setI((x) => (x + 1) % covers.length)}
+          />
           <div className={s.dots} role="tablist" aria-label="Pictures">
             {covers.map((x, j) => (
-              <button key={x.hash} type="button" role="tab" aria-selected={j === i} aria-label={`Picture ${j + 1}`} onClick={() => setI(j)} />
+              <button
+                key={x.hash}
+                type="button"
+                role="tab"
+                aria-selected={j === i}
+                aria-label={`Picture ${j + 1}`}
+                onClick={() => setI(j)}
+              />
             ))}
           </div>
         </>
@@ -574,7 +702,8 @@ function SlotPicker({
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [day, setDay] = useState<string | null>(null);
   const firstFree = days.find((d) => d.slots.length)?.day;
-  const shown = days.find((d) => dayKey(d.day) === day) ?? (firstFree ? days.find((d) => d.day === firstFree) : undefined);
+  const shown =
+    days.find((d) => dayKey(d.day) === day) ?? (firstFree ? days.find((d) => d.day === firstFree) : undefined);
   const total = days.reduce((n, d) => n + d.slots.length, 0);
   return (
     <div className={s.slots}>
@@ -583,9 +712,23 @@ function SlotPicker({
           <Icon name="calendar" size={18} /> Pick a time · {booking.minutes} min
         </b>
         <span className={s.slotNav}>
-          <IconButton icon="back" label="Earlier week" size="sm" variant="line" disabled={week === 0} onClick={() => (setWeek((w) => w - 1), setDay(null))} />
+          <IconButton
+            icon="back"
+            label="Earlier week"
+            size="sm"
+            variant="line"
+            disabled={week === 0}
+            onClick={() => (setWeek((w) => w - 1), setDay(null))}
+          />
           <span>{start.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>
-          <IconButton icon="chev" label="Later week" size="sm" variant="line" disabled={week >= 7} onClick={() => (setWeek((w) => w + 1), setDay(null))} />
+          <IconButton
+            icon="chev"
+            label="Later week"
+            size="sm"
+            variant="line"
+            disabled={week >= 7}
+            onClick={() => (setWeek((w) => w + 1), setDay(null))}
+          />
         </span>
       </div>
       <div className={s.days} role="tablist" aria-label="Days">
@@ -593,7 +736,14 @@ function SlotPicker({
           const k = dayKey(d.day);
           const on = shown && dayKey(shown.day) === k;
           return (
-            <button key={k} type="button" role="tab" aria-selected={!!on} disabled={d.slots.length === 0} onClick={() => setDay(k)}>
+            <button
+              key={k}
+              type="button"
+              role="tab"
+              aria-selected={!!on}
+              disabled={d.slots.length === 0}
+              onClick={() => setDay(k)}
+            >
               <small>{d.day.toLocaleDateString("en-GB", { weekday: "short" })}</small>
               <b>{d.day.getDate()}</b>
             </button>
@@ -603,7 +753,11 @@ function SlotPicker({
       {total === 0 ? (
         <p className={s.fine}>No free times this week. Try the next one.</p>
       ) : shown ? (
-        <div className={s.times} role="radiogroup" aria-label={`Times on ${shown.day.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}`}>
+        <div
+          className={s.times}
+          role="radiogroup"
+          aria-label={`Times on ${shown.day.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}`}
+        >
           {shown.slots.map((iso) => (
             <button key={iso} type="button" role="radio" aria-checked={value === iso} onClick={() => onChange(iso)}>
               {new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
@@ -612,7 +766,8 @@ function SlotPicker({
         </div>
       ) : null}
       <p className={s.fine}>
-        {value ? <b>{slotLabel(value)}. </b> : null}Times shown in your time zone ({tz}).{booking.place ? ` Where: ${booking.place}` : ""}
+        {value ? <b>{slotLabel(value)}. </b> : null}Times shown in your time zone ({tz}).
+        {booking.place ? ` Where: ${booking.place}` : ""}
       </p>
     </div>
   );

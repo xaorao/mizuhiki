@@ -28,13 +28,20 @@ export function NewProduct() {
   const amount = parseAmount(price, token);
   const titleErr = !title.trim() ? "Give your product a name." : null;
   const kindErr = !kind ? "Pick what you are selling." : null;
-  const priceErr = amount === null ? `Price it in ${token}, like 12 or 4.50.` : amount <= 0n ? "Payments on QoreChain need an amount above zero." : null;
+  const priceErr =
+    amount === null
+      ? `Price it in ${token}, like 12 or 4.50.`
+      : amount <= 0n
+        ? "Payments on QoreChain need an amount above zero."
+        : null;
 
   const next = async () => {
     setTried(true);
     if (titleErr || kindErr || priceErr || !kind || amount === null) return;
     if (!name) {
-      setErr("Your page is not set up yet, so a product has nowhere to live. Finish setting up your page first. Nothing was saved.");
+      setErr(
+        "Your page is not set up yet, so a product has nowhere to live. Finish setting up your page first. Nothing was saved.",
+      );
       return;
     }
     setBusy(true);
@@ -49,7 +56,10 @@ export function NewProduct() {
     }
   };
 
-  const groups = (["Products", "Services"] as const).map((g) => ({ g, kinds: PRODUCT_KINDS.filter((k) => KIND_INFO[k].group === g) }));
+  const groups = (["Products", "Services"] as const).map((g) => ({
+    g,
+    kinds: PRODUCT_KINDS.filter((k) => KIND_INFO[k].group === g),
+  }));
   const show = (e: string | null) => (tried ? (e ?? undefined) : undefined);
 
   return (
@@ -71,10 +81,12 @@ export function NewProduct() {
       <div className={s.newGrid}>
         <aside className={s.newIntro}>
           <p>
-            Turn your idea into a live product in minutes. A name, a type and a price are enough to start; everything else waits in the editor.
+            Turn your idea into a live product in minutes. A name, a type and a price are enough to start; everything
+            else waits in the editor.
           </p>
           <p className={s.help}>
-            <Icon name="lock" size={15} /> What buyers get is sealed with a key only you hold, and each buyer receives their own sealed copy after their payment shows on QoreChain.
+            <Icon name="lock" size={15} /> What buyers get is sealed with a key only you hold, and each buyer receives
+            their own sealed copy after their payment shows on QoreChain.
           </p>
         </aside>
         <form
@@ -84,7 +96,15 @@ export function NewProduct() {
             void next();
           }}
         >
-          <TextField label="Name" value={title} maxLength={120} placeholder="Name of product" onChange={(e) => setTitle(e.target.value)} error={show(titleErr)} autoFocus />
+          <TextField
+            label="Name"
+            value={title}
+            maxLength={120}
+            placeholder="Name of product"
+            onChange={(e) => setTitle(e.target.value)}
+            error={show(titleErr)}
+            autoFocus
+          />
           {groups.map(({ g, kinds }) => (
             <fieldset key={g} className={s.typeGroup}>
               <legend>{g}</legend>
@@ -110,14 +130,25 @@ export function NewProduct() {
           ) : null}
           <div className={s.fieldRow}>
             <TextField
-              label={kind === "tip" ? "Smallest tip" : kind === "commission" ? "Full price (the deposit is part of it)" : "Price"}
+              label={
+                kind === "tip"
+                  ? "Smallest tip"
+                  : kind === "commission"
+                    ? "Full price (the deposit is part of it)"
+                    : "Price"
+              }
               inputMode="decimal"
               value={price}
               placeholder="Price your product"
               onChange={(e) => setPrice(e.target.value)}
               error={show(priceErr)}
             />
-            <Segmented<ShopToken> label="Token" value={token} onChange={setToken} options={TOKENS.map((t) => ({ value: t, label: t }))} />
+            <Segmented<ShopToken>
+              label="Token"
+              value={token}
+              onChange={setToken}
+              options={TOKENS.map((t) => ({ value: t, label: t }))}
+            />
           </div>
           {err ? <Oops title="Not created">{err}</Oops> : null}
           <button type="submit" hidden aria-hidden="true" tabIndex={-1} />

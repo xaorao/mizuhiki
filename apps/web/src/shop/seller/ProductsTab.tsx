@@ -32,7 +32,11 @@ export function ProductsTab() {
     setBusy(r.p.id);
     try {
       await setProductStatus(await tokened(), r.p.id, to);
-      toast.show(to === "published" ? "Published. The link is live again." : "Unpublished. The link now says it is not available.");
+      toast.show(
+        to === "published"
+          ? "Published. The link is live again."
+          : "Unpublished. The link now says it is not available.",
+      );
       await reload();
     } catch (e) {
       toast.show(e instanceof ApiFailure ? e.message : "That did not work. Nothing changed.", { tone: "error" });
@@ -65,7 +69,14 @@ export function ProductsTab() {
 
   if (error)
     return (
-      <Oops title="Not loaded" action={<Button variant="line" icon="undo" onClick={() => void reload()}>Try again</Button>}>
+      <Oops
+        title="Not loaded"
+        action={
+          <Button variant="line" icon="undo" onClick={() => void reload()}>
+            Try again
+          </Button>
+        }
+      >
         {error}
       </Oops>
     );
@@ -92,14 +103,17 @@ export function ProductsTab() {
             </ButtonLink>
           }
         >
-          Your first product does not need to be perfect. Put it out there and see if it sticks. Every buyer gets their own sealed copy.
+          Your first product does not need to be perfect. Put it out there and see if it sticks. Every buyer gets their
+          own sealed copy.
         </EmptyState>
       </div>
     );
 
   const totals = {
     sales: rows.reduce((n, r) => n + r.p.sales, 0),
-    revenue: sumByToken(rows.filter((r) => r.def).map((r) => ({ amount: r.p.revenue, token: r.def?.price.token ?? "fUSD" }))),
+    revenue: sumByToken(
+      rows.filter((r) => r.def).map((r) => ({ amount: r.p.revenue, token: r.def?.price.token ?? "fUSD" })),
+    ),
   };
 
   return (
@@ -152,9 +166,15 @@ export function ProductsTab() {
                       </span>
                     </div>
                   </td>
-                  <td className={s.num} data-label="Sales">{r.p.sales}</td>
-                  <td className={s.num} data-label="Revenue">{def ? formatAmount(r.p.revenue, def.price.token) : "—"}</td>
-                  <td className={s.num} data-label="Price">{def ? priceLabel(def) : "—"}</td>
+                  <td className={s.num} data-label="Sales">
+                    {r.p.sales}
+                  </td>
+                  <td className={s.num} data-label="Revenue">
+                    {def ? formatAmount(r.p.revenue, def.price.token) : "—"}
+                  </td>
+                  <td className={s.num} data-label="Price">
+                    {def ? priceLabel(def) : "—"}
+                  </td>
                   <td data-label="Status">
                     {r.p.status === "published" ? (
                       r.changed ? (
@@ -173,13 +193,40 @@ export function ProductsTab() {
                       label={`Actions for ${def?.title ?? "this product"}`}
                       items={[
                         { label: "Edit", icon: "pen", onSelect: () => router.push(`/app/shop/${r.p.id}`) },
-                        ...(link && live ? [{ label: "Copy link", icon: "link" as const, onSelect: () => void copy(link) }] : []),
+                        ...(link && live
+                          ? [{ label: "Copy link", icon: "link" as const, onSelect: () => void copy(link) }]
+                          : []),
                         ...(r.p.status === "published"
-                          ? [{ label: "Unpublish", icon: "eye" as const, disabled: busy === r.p.id, onSelect: () => void status(r, "unpublished") }]
+                          ? [
+                              {
+                                label: "Unpublish",
+                                icon: "eye" as const,
+                                disabled: busy === r.p.id,
+                                onSelect: () => void status(r, "unpublished"),
+                              },
+                            ]
                           : r.p.record
-                            ? [{ label: "Publish", icon: "send" as const, disabled: busy === r.p.id, onSelect: () => void status(r, "published") }]
-                            : [{ label: "Publish from the editor", icon: "send" as const, onSelect: () => router.push(`/app/shop/${r.p.id}`) }]),
-                        { label: "Delete", icon: "trash", danger: true, onSelect: () => (setDelError(null), setDel(r)) },
+                            ? [
+                                {
+                                  label: "Publish",
+                                  icon: "send" as const,
+                                  disabled: busy === r.p.id,
+                                  onSelect: () => void status(r, "published"),
+                                },
+                              ]
+                            : [
+                                {
+                                  label: "Publish from the editor",
+                                  icon: "send" as const,
+                                  onSelect: () => router.push(`/app/shop/${r.p.id}`),
+                                },
+                              ]),
+                        {
+                          label: "Delete",
+                          icon: "trash",
+                          danger: true,
+                          onSelect: () => (setDelError(null), setDel(r)),
+                        },
                       ]}
                     />
                   </td>
@@ -190,15 +237,20 @@ export function ProductsTab() {
           <tfoot>
             <tr>
               <th scope="row">Totals</th>
-              <td className={s.num} data-label="Sales">{totals.sales}</td>
-              <td className={s.num} data-label="Revenue">{totals.revenue}</td>
+              <td className={s.num} data-label="Sales">
+                {totals.sales}
+              </td>
+              <td className={s.num} data-label="Revenue">
+                {totals.revenue}
+              </td>
               <td colSpan={3} />
             </tr>
           </tfoot>
         </table>
       </div>
       <p className={s.footNote}>
-        Revenue counts paid and delivered orders, read from QoreChain. Money lands in your wallet straight away; there is no payout to wait for.
+        Revenue counts paid and delivered orders, read from QoreChain. Money lands in your wallet straight away; there
+        is no payout to wait for.
       </p>
       <Confirm
         open={del !== null}
@@ -209,7 +261,8 @@ export function ProductsTab() {
         onConfirm={() => void remove()}
       >
         <p>
-          &ldquo;{del?.def?.title ?? "This product"}&rdquo; and its sealed working copy are removed from Mizuhiki. If anyone bought it, it cannot be deleted; unpublish it instead so buyers keep their copies.
+          &ldquo;{del?.def?.title ?? "This product"}&rdquo; and its sealed working copy are removed from Mizuhiki. If
+          anyone bought it, it cannot be deleted; unpublish it instead so buyers keep their copies.
         </p>
         {delError ? <Oops title="Not deleted">{delError}</Oops> : null}
       </Confirm>

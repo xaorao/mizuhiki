@@ -41,7 +41,9 @@ export function StepList({ at }: { at: Step | null }) {
             <span>
               {STEP_LABEL[k]}
               {state === "running" ? "…" : ""}
-              <span className="sr-only">{state === "done" ? " (done)" : state === "running" ? " (in progress)" : ""}</span>
+              <span className="sr-only">
+                {state === "done" ? " (done)" : state === "running" ? " (in progress)" : ""}
+              </span>
             </span>
           </li>
         );

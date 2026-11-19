@@ -78,7 +78,14 @@ export function DiscountsTab() {
   return (
     <div className={s.stack}>
       {error ? (
-        <Oops title="Not loaded" action={<Button variant="line" icon="undo" onClick={() => void load()}>Try again</Button>}>
+        <Oops
+          title="Not loaded"
+          action={
+            <Button variant="line" icon="undo" onClick={() => void load()}>
+              Try again
+            </Button>
+          }
+        >
           {error}
         </Oops>
       ) : list === null ? (
@@ -95,7 +102,8 @@ export function DiscountsTab() {
               </Button>
             }
           >
-            Use discounts to make sweet deals for your people. Codes are checked by Mizuhiki and again by whoever seals the order.
+            Use discounts to make sweet deals for your people. Codes are checked by Mizuhiki and again by whoever seals
+            the order.
           </EmptyState>
         </div>
       ) : (
@@ -133,12 +141,22 @@ export function DiscountsTab() {
                         </button>
                       </td>
                       <td>{discountValue(d)}</td>
-                      <td className={s.wrapCell}>{d.productIds.length === 0 ? "All products" : d.productIds.map(titleOf).join(", ")}</td>
+                      <td className={s.wrapCell}>
+                        {d.productIds.length === 0 ? "All products" : d.productIds.map(titleOf).join(", ")}
+                      </td>
                       <td className={s.num}>
                         {d.uses}
                         {d.maxUses !== null ? ` / ${d.maxUses}` : ""}
                       </td>
-                      <td>{d.expiresAt ? new Date(d.expiresAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Never"}</td>
+                      <td>
+                        {d.expiresAt
+                          ? new Date(d.expiresAt).toLocaleDateString("en-GB", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })
+                          : "Never"}
+                      </td>
                       <td>
                         <StatusChip status={st.chip}>{st.label}</StatusChip>
                       </td>
@@ -147,7 +165,11 @@ export function DiscountsTab() {
                           label={`Actions for ${d.code}`}
                           items={[
                             { label: "Edit", icon: "pen", onSelect: () => setEditing(d) },
-                            { label: d.active ? "Turn off" : "Turn on", icon: d.active ? "eye" : "check", onSelect: () => void toggle(d) },
+                            {
+                              label: d.active ? "Turn off" : "Turn on",
+                              icon: d.active ? "eye" : "check",
+                              onSelect: () => void toggle(d),
+                            },
                             { label: "Delete", icon: "trash", danger: true, onSelect: () => setDel(d) },
                           ]}
                         />
@@ -165,7 +187,9 @@ export function DiscountsTab() {
         <DiscountSheet
           initial={editing === "new" ? null : editing}
           others={(list ?? []).filter((d) => editing === "new" || d.id !== editing.id).map((d) => d.code)}
-          products={(products ?? []).filter((p) => p.def).map((p) => ({ id: p.p.id, title: p.def?.title ?? "", token: p.def?.price.token ?? "fUSD" }))}
+          products={(products ?? [])
+            .filter((p) => p.def)
+            .map((p) => ({ id: p.p.id, title: p.def?.title ?? "", token: p.def?.price.token ?? "fUSD" }))}
           onClose={() => setEditing(null)}
           onSave={async (d) => {
             await saveDiscount(await tokened(), d);
@@ -175,7 +199,14 @@ export function DiscountsTab() {
           }}
         />
       ) : null}
-      <Confirm open={del !== null} title={`Delete ${del?.code ?? "this code"}?`} confirm="Delete" busy={busy} onClose={() => setDel(null)} onConfirm={() => void remove()}>
+      <Confirm
+        open={del !== null}
+        title={`Delete ${del?.code ?? "this code"}?`}
+        confirm="Delete"
+        busy={busy}
+        onClose={() => setDel(null)}
+        onConfirm={() => void remove()}
+      >
         <p>Buyers can no longer use it. Orders that already used it keep their price.</p>
       </Confirm>
     </div>
@@ -199,7 +230,9 @@ function DiscountSheet({
   const [mode, setMode] = useState<"percent" | "amount">(initial?.amountOff ? "amount" : "percent");
   const [percent, setPercent] = useState(initial?.percent?.toString() ?? "20");
   const [token, setToken] = useState<ShopToken>(initial?.token ?? products[0]?.token ?? "fUSD");
-  const [amount, setAmount] = useState(initial?.amountOff && initial.token ? amountInput(initial.amountOff, initial.token) : "");
+  const [amount, setAmount] = useState(
+    initial?.amountOff && initial.token ? amountInput(initial.amountOff, initial.token) : "",
+  );
   const [all, setAll] = useState((initial?.productIds.length ?? 0) === 0);
   const [picked, setPicked] = useState<string[]>(initial?.productIds ?? []);
   const [limit, setLimit] = useState(initial?.maxUses !== null && initial?.maxUses !== undefined);
@@ -212,15 +245,25 @@ function DiscountSheet({
 
   const codeErr = codeProblem(code, others);
   const pct = Number(percent);
-  const pctErr = mode === "percent" && (!/^\d{1,3}$/.test(percent) || pct < 1 || pct > 100) ? "Use a whole percent from 1 to 100." : null;
+  const pctErr =
+    mode === "percent" && (!/^\d{1,3}$/.test(percent) || pct < 1 || pct > 100)
+      ? "Use a whole percent from 1 to 100."
+      : null;
   const off = mode === "amount" ? parseAmount(amount, token) : null;
   const amtErr = mode === "amount" && (off === null || off <= 0n) ? `Use an amount in ${token}, like 5.` : null;
   const pickErr = !all && picked.length === 0 ? "Pick at least one product, or choose all products." : null;
-  const usesErr = limit && (!/^\d{1,7}$/.test(maxUses) || Number(maxUses) < 1) ? "Use a whole number, 1 or more." : null;
+  const usesErr =
+    limit && (!/^\d{1,7}$/.test(maxUses) || Number(maxUses) < 1) ? "Use a whole number, 1 or more." : null;
   const expiresAt = expires ? new Date(`${expires}T23:59:59`) : null;
-  const expErr = expires && (!expiresAt || Number.isNaN(expiresAt.getTime())) ? "Pick a date." : expiresAt && expiresAt < new Date() ? "Pick a day that has not passed." : null;
+  const expErr =
+    expires && (!expiresAt || Number.isNaN(expiresAt.getTime()))
+      ? "Pick a date."
+      : expiresAt && expiresAt < new Date()
+        ? "Pick a day that has not passed."
+        : null;
   const bad = codeErr ?? pctErr ?? amtErr ?? pickErr ?? usesErr ?? expErr;
-  const mismatched = mode === "amount" ? products.filter((p) => (all || picked.includes(p.id)) && p.token !== token) : [];
+  const mismatched =
+    mode === "amount" ? products.filter((p) => (all || picked.includes(p.id)) && p.token !== token) : [];
 
   const save = async () => {
     setTried(true);
@@ -277,16 +320,34 @@ function DiscountSheet({
           ]}
         />
         {mode === "percent" ? (
-          <TextField label="Percent off (%)" inputMode="numeric" value={percent} onChange={(e) => setPercent(e.target.value.replace(/\D/g, "").slice(0, 3))} error={show(pctErr)} />
+          <TextField
+            label="Percent off (%)"
+            inputMode="numeric"
+            value={percent}
+            onChange={(e) => setPercent(e.target.value.replace(/\D/g, "").slice(0, 3))}
+            error={show(pctErr)}
+          />
         ) : (
           <div className={s.fieldRow}>
-            <TextField label="Amount off per order" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} error={show(amtErr)} />
-            <Segmented<ShopToken> label="Token" value={token} onChange={setToken} options={TOKENS.map((t) => ({ value: t, label: t }))} />
+            <TextField
+              label="Amount off per order"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              error={show(amtErr)}
+            />
+            <Segmented<ShopToken>
+              label="Token"
+              value={token}
+              onChange={setToken}
+              options={TOKENS.map((t) => ({ value: t, label: t }))}
+            />
           </div>
         )}
         {mismatched.length ? (
           <p className={s.warn}>
-            {mismatched.map((p) => p.title).join(", ")} {mismatched.length === 1 ? "is" : "are"} priced in another token, so this code does not apply to {mismatched.length === 1 ? "it" : "them"}.
+            {mismatched.map((p) => p.title).join(", ")} {mismatched.length === 1 ? "is" : "are"} priced in another
+            token, so this code does not apply to {mismatched.length === 1 ? "it" : "them"}.
           </p>
         ) : null}
         <fieldset className={s.fieldset}>
@@ -316,9 +377,30 @@ function DiscountSheet({
           {tried && pickErr ? <p className={s.fieldErr}>{pickErr}</p> : null}
         </fieldset>
         <ToggleRow title="Limit how many times it can be used" checked={limit} onChange={setLimit} />
-        {limit ? <TextField label="Most uses" inputMode="numeric" value={maxUses} onChange={(e) => setMaxUses(e.target.value.replace(/\D/g, "").slice(0, 7))} error={show(usesErr)} hint={initial ? `Used ${initial.uses} times so far.` : undefined} /> : null}
-        <TextField label="Expires after (optional)" type="date" value={expires} onChange={(e) => setExpires(e.target.value)} error={show(expErr)} hint="It stops working at the end of that day, your time." />
-        <ToggleRow title="Active" detail={active ? "Buyers can use it now." : "Saved, but buyers cannot use it."} checked={active} onChange={setActive} />
+        {limit ? (
+          <TextField
+            label="Most uses"
+            inputMode="numeric"
+            value={maxUses}
+            onChange={(e) => setMaxUses(e.target.value.replace(/\D/g, "").slice(0, 7))}
+            error={show(usesErr)}
+            hint={initial ? `Used ${initial.uses} times so far.` : undefined}
+          />
+        ) : null}
+        <TextField
+          label="Expires after (optional)"
+          type="date"
+          value={expires}
+          onChange={(e) => setExpires(e.target.value)}
+          error={show(expErr)}
+          hint="It stops working at the end of that day, your time."
+        />
+        <ToggleRow
+          title="Active"
+          detail={active ? "Buyers can use it now." : "Saved, but buyers cannot use it."}
+          checked={active}
+          onChange={setActive}
+        />
         {err ? <Oops title="Not saved">{err}</Oops> : null}
         <div className={s.actionsEnd}>
           <Button variant="ghost" onClick={onClose} disabled={busy}>

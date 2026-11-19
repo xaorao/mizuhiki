@@ -71,7 +71,9 @@ describe("description renderer", () => {
     expect(safeHref("https://ok.example/a")).toBe("https://ok.example/a");
   });
   it("nests bold inside a link label", () => {
-    expect(parseInline("[**big**](https://a.example)")).toEqual([{ t: "a", href: "https://a.example/", c: [{ t: "b", c: [{ t: "text", v: "big" }] }] }]);
+    expect(parseInline("[**big**](https://a.example)")).toEqual([
+      { t: "a", href: "https://a.example/", c: [{ t: "b", c: [{ t: "text", v: "big" }] }] },
+    ]);
   });
   it("splits paragraphs on blank lines and keeps line breaks", () => {
     expect(paragraphs("one\ntwo\n\n\nthree\r\n\r\n   \n")).toEqual([["one", "two"], ["three"]]);
@@ -116,8 +118,14 @@ describe("cart", () => {
     if (!a.ok) return;
     const b = addToCart(a.cart, base, line({ quantity: 2 }));
     expect(b.ok && b.cart.lines).toEqual([line({ quantity: 2 })]);
-    expect(addToCart(a.cart, { ...base, token: "QOR" }, line({ productId: "prBBBBBBBB" }))).toEqual({ ok: false, reason: "token" });
-    expect(addToCart(a.cart, { ...base, seller: "qor1" + "p".repeat(38) }, line())).toEqual({ ok: false, reason: "seller" });
+    expect(addToCart(a.cart, { ...base, token: "QOR" }, line({ productId: "prBBBBBBBB" }))).toEqual({
+      ok: false,
+      reason: "token",
+    });
+    expect(addToCart(a.cart, { ...base, seller: "qor1" + "p".repeat(38) }, line())).toEqual({
+      ok: false,
+      reason: "seller",
+    });
   });
   it("keeps one line per call slot and replaces a configured line", () => {
     const one = addToCart(null, base, line({ slot: "2026-11-20T10:00:00.000Z" }));
@@ -131,7 +139,13 @@ describe("cart", () => {
     expect(removeLine({ ...two.cart, lines: [line()] }, 0)).toBeNull();
   });
   it("parses only well-formed carts for the right page", () => {
-    const c: Cart = { v: 1, name: "kinari", seller: OWNER, token: "fUSD", lines: [line(), line({ quantity: 0 }), line({ chosen: "1.5" })] };
+    const c: Cart = {
+      v: 1,
+      name: "kinari",
+      seller: OWNER,
+      token: "fUSD",
+      lines: [line(), line({ quantity: 0 }), line({ chosen: "1.5" })],
+    };
     expect(parseCart(JSON.stringify(c), "kinari")?.lines).toEqual([line()]);
     expect(parseCart(JSON.stringify(c), "other")).toBeNull();
     expect(parseCart("{not json", "kinari")).toBeNull();
@@ -143,9 +157,23 @@ describe("cart", () => {
     const defs = new Map([[d.id, d]]);
     expect(orderLines(cart, defs)[0]?.productVersion).toBe(4);
     expect(changedLines(cart, defs)).toEqual([0]);
-    const t = liveTotal({ seller: OWNER, token: "fUSD", lines: orderLines(cart, defs), tip: 500_000n, discountCode: null }, [d], { percent: 10, amountOff: null, productIds: [] });
+    const t = liveTotal(
+      { seller: OWNER, token: "fUSD", lines: orderLines(cart, defs), tip: 500_000n, discountCode: null },
+      [d],
+      { percent: 10, amountOff: null, productIds: [] },
+    );
     expect(t.ok && [t.total.subtotal, t.total.discount, t.total.total]).toEqual([5_000_000n, 500_000n, 5_000_000n]);
-    const bad = liveTotal({ seller: OWNER, token: "fUSD", lines: [{ ...orderLines(cart, defs)[0]!, quantity: 2 }], tip: 0n, discountCode: null }, [d], null);
+    const bad = liveTotal(
+      {
+        seller: OWNER,
+        token: "fUSD",
+        lines: [{ ...orderLines(cart, defs)[0]!, quantity: 2 }],
+        tip: 0n,
+        discountCode: null,
+      },
+      [d],
+      null,
+    );
     expect(bad).toEqual({ ok: false, problem: "“Brush pack” is sold one at a time." });
   });
 });
@@ -165,10 +193,30 @@ describe("call week", () => {
 
 describe("after payment", () => {
   it("moves through submitted, confirmed, preparing, ready", () => {
-    expect(afterPaySteps({ status: "awaiting", depositTx: null, delivery: null }, null)).toEqual(["running", "waiting", "waiting", "waiting"]);
-    expect(afterPaySteps({ status: "awaiting", depositTx: null, delivery: null }, "AB")).toEqual(["done", "running", "waiting", "waiting"]);
-    expect(afterPaySteps({ status: "paid", depositTx: "AB", delivery: null }, null)).toEqual(["done", "done", "running", "waiting"]);
-    expect(afterPaySteps({ status: "delivered", depositTx: "AB", delivery: "h" }, null)).toEqual(["done", "done", "done", "done"]);
+    expect(afterPaySteps({ status: "awaiting", depositTx: null, delivery: null }, null)).toEqual([
+      "running",
+      "waiting",
+      "waiting",
+      "waiting",
+    ]);
+    expect(afterPaySteps({ status: "awaiting", depositTx: null, delivery: null }, "AB")).toEqual([
+      "done",
+      "running",
+      "waiting",
+      "waiting",
+    ]);
+    expect(afterPaySteps({ status: "paid", depositTx: "AB", delivery: null }, null)).toEqual([
+      "done",
+      "done",
+      "running",
+      "waiting",
+    ]);
+    expect(afterPaySteps({ status: "delivered", depositTx: "AB", delivery: "h" }, null)).toEqual([
+      "done",
+      "done",
+      "done",
+      "done",
+    ]);
     expect(afterPaySteps({ status: "expired", depositTx: null, delivery: null }, null)[0]).toBe("failed");
   });
   it("says how long the hold lasts", () => {

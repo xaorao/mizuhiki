@@ -10,7 +10,9 @@ describe("passes", () => {
 
   it("says the boundary in plain words", () => {
     const q = quarterPeriod(2026, 3);
-    expect(boundaryText({ kind: "period", ...q, kinds: ["invoices", "payments"], keyIndex: passKeyIndex(0) }, null)).toBe(
+    expect(
+      boundaryText({ kind: "period", ...q, kinds: ["invoices", "payments"], keyIndex: passKeyIndex(0) }, null),
+    ).toBe(
       "Can read: invoices and payment notes, 1 July 2026 to 30 September 2026. Cannot read anything else. Cannot change anything.",
     );
     expect(boundaryText({ kind: "room", roomId: "room123456", label: "Payroll" }, "2027-01-01T00:00:00.000Z")).toMatch(
@@ -31,12 +33,27 @@ describe("passes", () => {
     const k = deriveSealKeys({ mnemonic: newPhrase(), index: passKeyIndex(3) });
     const q = quarterPeriod(2026, 4);
     const m: Pick<Manifest, "periodKeys"> = {
-      periodKeys: [{ label: "Q4 accountant", index: passKeyIndex(3), mlkem: toHex(k.mlkemPublicKey), x25519: toHex(k.x25519PublicKey), passId: "pass_one", ...q, kinds: ["messages", "invoices"] }],
+      periodKeys: [
+        {
+          label: "Q4 accountant",
+          index: passKeyIndex(3),
+          mlkem: toHex(k.mlkemPublicKey),
+          x25519: toHex(k.x25519PublicKey),
+          passId: "pass_one",
+          ...q,
+          kinds: ["messages", "invoices"],
+        },
+      ],
     };
     expect(passReaders(m, "messages", new Date("2026-11-19T12:00:00Z"))).toHaveLength(1);
     expect(passReaders(m, "payments", new Date("2026-11-19T12:00:00Z"))).toHaveLength(0);
     expect(passReaders(m, "messages", new Date("2027-01-01T00:00:00Z"))).toHaveLength(0);
     expect(passReaders(m, "messages", new Date("2026-09-30T23:59:59Z"))).toHaveLength(0);
-    expect(passReaders({ periodKeys: [{ label: "old", index: 1_000_100, mlkem: "ab", x25519: "0".repeat(64) }] }, "messages")).toHaveLength(0);
+    expect(
+      passReaders(
+        { periodKeys: [{ label: "old", index: 1_000_100, mlkem: "ab", x25519: "0".repeat(64) }] },
+        "messages",
+      ),
+    ).toHaveLength(0);
   });
 });

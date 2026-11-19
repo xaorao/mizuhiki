@@ -112,7 +112,13 @@ export function useRoomList(activeId?: string): ListState {
       onSummary((roomId, sum) => {
         setSummaries((all) => {
           const prev = all[roomId];
-          if (prev && prev.lastSeq === sum.lastSeq && prev.name === sum.name && prev.photo?.fileId === sum.photo?.fileId) return all;
+          if (
+            prev &&
+            prev.lastSeq === sum.lastSeq &&
+            prev.name === sum.name &&
+            prev.photo?.fileId === sum.photo?.fileId
+          )
+            return all;
           const next = { ...all, [roomId]: sum };
           if (account) void writeSummaries(account, next);
           return next;

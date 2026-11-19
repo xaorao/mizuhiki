@@ -22,7 +22,11 @@ async function signedManifest(address: string): Promise<Manifest | null> {
   return verifyRecord(r.record, { kind: "manifest", signer: address, pqPublicKey: pq.publicKey });
 }
 
-export async function passRecipients(address: string, kind: PeriodKind, at: Date = new Date()): Promise<SealRecipient[]> {
+export async function passRecipients(
+  address: string,
+  kind: PeriodKind,
+  at: Date = new Date(),
+): Promise<SealRecipient[]> {
   let hit = cache.get(address);
   if (!hit || Date.now() - hit.at > TTL) {
     hit = { at: Date.now(), m: signedManifest(address).catch(() => null) };

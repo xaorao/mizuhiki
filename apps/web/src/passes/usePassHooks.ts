@@ -29,7 +29,10 @@ export function usePassHooks(): () => Promise<{ t: Tokened; hooks: ConfirmHooks 
         await setRole(r, roomId, holder, "member", []);
       },
       removeRoomReader: async (roomId, holder) => {
-        await changeMembers(withToken(owner.account, await owner.token()), roomId, { remove: [{ address: holder, blocked: false }], reason: "pass revoked" });
+        await changeMembers(withToken(owner.account, await owner.token()), roomId, {
+          remove: [{ address: holder, blocked: false }],
+          reason: "pass revoked",
+        });
       },
       setFormReader: async (formId, holder, on) => {
         await setFormReader(owner.account, await owner.token(), formId, await readerOf(holder), on);

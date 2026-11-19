@@ -33,7 +33,12 @@ function MenuButton({
 }) {
   const blocked = check && !check.allowed ? check.reason : null;
   return (
-    <button type="button" className={[s.menuBtn, danger ? s.danger : ""].join(" ")} onClick={onClick} disabled={!!blocked}>
+    <button
+      type="button"
+      className={[s.menuBtn, danger ? s.danger : ""].join(" ")}
+      onClick={onClick}
+      disabled={!!blocked}
+    >
       <span className={s.menuIcon} aria-hidden="true">
         <Icon name={icon} size={18} />
       </span>
@@ -85,7 +90,12 @@ export function MemberSheet({
   }, [address, member?.permissions, resetSteps]);
 
   const me = room.detail?.me;
-  if (!member || !me || !room.detail) return <Sheet open={false} onClose={onClose} title="Member">{null}</Sheet>;
+  if (!member || !me || !room.detail)
+    return (
+      <Sheet open={false} onClose={onClose} title="Member">
+        {null}
+      </Sheet>
+    );
 
   const roomId = room.detail.id;
   const isMe = member.address === me.address;
@@ -128,8 +138,15 @@ export function MemberSheet({
     setErr(null);
     resetSteps();
     try {
-      await changeMembers(await room.acct(), roomId, { remove: [{ address: member.address, blocked: blockToo }], reason: blockToo ? "removed+blocked" : "removed" }, steps.onStep);
-      toast.show(blockToo ? `${who} was removed and blocked. Room key changed.` : `${who} was removed. Room key changed.`);
+      await changeMembers(
+        await room.acct(),
+        roomId,
+        { remove: [{ address: member.address, blocked: blockToo }], reason: blockToo ? "removed+blocked" : "removed" },
+        steps.onStep,
+      );
+      toast.show(
+        blockToo ? `${who} was removed and blocked. Room key changed.` : `${who} was removed. Room key changed.`,
+      );
       await room.reload();
       onClose();
     } catch (e) {
@@ -153,7 +170,24 @@ export function MemberSheet({
   };
 
   const vState = verifyState(verified[member.address], words);
-  const title = view === "menu" ? (isMe ? "You" : who) : view === "admin" ? (member.role === "admin" ? "Dismiss admin" : "Make admin") : view === "perms" ? "Change permissions" : view === "verify" ? (isMe ? "Your safety words" : "Verify keys") : blockToo ? "Remove and block" : "Remove from room";
+  const title =
+    view === "menu"
+      ? isMe
+        ? "You"
+        : who
+      : view === "admin"
+        ? member.role === "admin"
+          ? "Dismiss admin"
+          : "Make admin"
+        : view === "perms"
+          ? "Change permissions"
+          : view === "verify"
+            ? isMe
+              ? "Your safety words"
+              : "Verify keys"
+            : blockToo
+              ? "Remove and block"
+              : "Remove from room";
 
   return (
     <Sheet open onClose={onClose} title={title} dismissable={!busy}>
@@ -169,12 +203,23 @@ export function MemberSheet({
               <code>{member.address}</code>
             </div>
             <div className={s.menu}>
-              {isMe ? null : <MenuButton icon="mail" title="Message" detail={`A sealed message only ${who} can open.`} onClick={() => onMessage(member.address)} />}
+              {isMe ? null : (
+                <MenuButton
+                  icon="mail"
+                  title="Message"
+                  detail={`A sealed message only ${who} can open.`}
+                  onClick={() => onMessage(member.address)}
+                />
+              )}
               {!isMe && member.role !== "owner" && me.role === "owner" ? (
                 <MenuButton
                   icon="shield"
                   title={member.role === "admin" ? "Dismiss admin" : "Make admin"}
-                  detail={member.role === "admin" ? "They go back to being a member." : "Admins add and remove people and change the room."}
+                  detail={
+                    member.role === "admin"
+                      ? "They go back to being a member."
+                      : "Admins add and remove people and change the room."
+                  }
                   onClick={() => go("admin")}
                   check={adminCheck(me, member)}
                 />
@@ -268,7 +313,11 @@ export function MemberSheet({
                   title={PERMISSION_LABEL[p]}
                   checked={perms.includes(p)}
                   disabled={busy}
-                  onChange={(on) => setPerms((cur) => (on ? PERMISSIONS.filter((x) => x === p || cur.includes(x)) : cur.filter((x) => x !== p)))}
+                  onChange={(on) =>
+                    setPerms((cur) =>
+                      on ? PERMISSIONS.filter((x) => x === p || cur.includes(x)) : cur.filter((x) => x !== p),
+                    )
+                  }
                 />
               ))}
             </div>
@@ -280,7 +329,9 @@ export function MemberSheet({
               <Button
                 variant="cord"
                 busy={busy}
-                disabled={perms.length === member.permissions.length && perms.every((p) => member.permissions.includes(p))}
+                disabled={
+                  perms.length === member.permissions.length && perms.every((p) => member.permissions.includes(p))
+                }
                 onClick={() => void runRole("member", perms, `Permissions for ${who} saved.`)}
               >
                 {busy ? "Saving…" : "Save permissions"}
@@ -331,7 +382,8 @@ export function MemberSheet({
               <p className={[s.verifyNote, s.vChanged].join(" ")}>
                 <Icon name="alert" size={16} />
                 <span>
-                  These words changed since you verified {who}. Their keys on QoreChain are different now. Check with them again before you trust new messages.
+                  These words changed since you verified {who}. Their keys on QoreChain are different now. Check with
+                  them again before you trust new messages.
                 </span>
               </p>
             ) : null}
@@ -360,7 +412,9 @@ export function MemberSheet({
               {who} loses access to new messages now. The room key changes. They keep what they already saw.
               {blockToo ? ` They are also blocked: they cannot ask to join again until an admin unblocks them.` : ""}
             </p>
-            <p className={s.help}>The new key is sealed to everyone else and recorded on QoreChain. It takes a few seconds; keep this open.</p>
+            <p className={s.help}>
+              The new key is sealed to everyone else and recorded on QoreChain. It takes a few seconds; keep this open.
+            </p>
             <StepList at={busy ? steps.at : null} />
             <InlineError>{err}</InlineError>
             <div className={s.btnRow}>

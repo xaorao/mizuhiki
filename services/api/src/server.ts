@@ -84,9 +84,19 @@ export async function buildServer(
     req.log.error({ err }, chainDown ? "QoreChain unreachable" : "unhandled error");
     if (chainDown)
       return reply.code(503).send({
-        error: { code: "CHAIN_UNREACHABLE", message: "QoreChain could not be reached just now. Nothing was changed. Try again in a moment.", dataState: "nothing-changed" },
+        error: {
+          code: "CHAIN_UNREACHABLE",
+          message: "QoreChain could not be reached just now. Nothing was changed. Try again in a moment.",
+          dataState: "nothing-changed",
+        },
       });
-    return reply.code(500).send({ error: { code: "INTERNAL", message: "Something went wrong on our side. Nothing was changed.", dataState: "unknown" } });
+    return reply.code(500).send({
+      error: {
+        code: "INTERNAL",
+        message: "Something went wrong on our side. Nothing was changed.",
+        dataState: "unknown",
+      },
+    });
   });
   app.get("/health", () => ({ ok: true }));
   await app.register(authRoutes(ctx));

@@ -23,9 +23,16 @@ test.afterAll(() => {
   for (const [k, n] of rows.slice(0, 25)) console.log(`${String(n).padStart(5)}  ${k}`);
 });
 
-async function party(browser: Browser, problems: string[], tag: string, phone = false): Promise<{ ctx: BrowserContext; page: Page }> {
+async function party(
+  browser: Browser,
+  problems: string[],
+  tag: string,
+  phone = false,
+): Promise<{ ctx: BrowserContext; page: Page }> {
   const ctx = await browser.newContext(
-    phone ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: { width: 1440, height: 900 } },
+    phone
+      ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }
+      : { viewport: { width: 1440, height: 900 } },
   );
   const page = await ctx.newPage();
   page.on("request", (r) => {
@@ -66,7 +73,10 @@ async function nav(page: Page, label: string) {
   await page.getByRole("link", { name: label }).filter({ visible: true }).first().click();
 }
 
-test("a deal room: create, chat, invite with approval, remove, all checked against QoreChain", async ({ browser, problems }, info) => {
+test("a deal room: create, chat, invite with approval, remove, all checked against QoreChain", async ({
+  browser,
+  problems,
+}, info) => {
   test.skip(info.project.name !== "desktop", "one run covers every party; the phone layout is checked inside it");
   test.setTimeout(900_000);
   const ana: Person = await ensureOwner("room-ana", "mzk-room-ana");
@@ -92,7 +102,9 @@ test("a deal room: create, chat, invite with approval, remove, all checked again
   await A.page.waitForURL(/\/app\/rooms\/[0-9a-f]{20}\?new=1/, { timeout: 180_000 });
   const roomId = /rooms\/([0-9a-f]{20})/.exec(A.page.url())?.[1] ?? "";
   await expect(A.page.getByText("You created this room")).toBeVisible({ timeout: 60_000 });
-  await expect(A.page.getByText("Messages and files are sealed to the people in this room.", { exact: false })).toBeVisible();
+  await expect(
+    A.page.getByText("Messages and files are sealed to the people in this room.", { exact: false }),
+  ).toBeVisible();
   await expect(A.page.getByText("Key 1")).toBeVisible();
   await A.page.screenshot({ path: info.outputPath("1-created.png"), animations: "disabled" });
 
@@ -100,12 +112,7 @@ test("a deal room: create, chat, invite with approval, remove, all checked again
   const rid = roomIdBytes32(roomId);
   let chain = await readRoom(rid);
   expect(chain.epoch).toBe(1n);
-  expect(chain.membershipHash).toBe(
-    membershipHash(roomId, 1n, [
-      { address: ana.address },
-      { address: ben.address },
-    ]),
-  );
+  expect(chain.membershipHash).toBe(membershipHash(roomId, 1n, [{ address: ana.address }, { address: ben.address }]));
 
   // ---- Ana writes; Ben reads, replies with a mention, reacts
   const box = A.page.getByRole("textbox", { name: "Message" });
@@ -141,7 +148,14 @@ test("a deal room: create, chat, invite with approval, remove, all checked again
   await expect(A.page.getByRole("button", { name: /👍 1/ })).toBeVisible();
 
   // A sealed file from Ana opens for Ben with the same bytes.
-  await A.page.locator("input[type=file]").last().setInputFiles({ name: "cap-table.csv", mimeType: "text/csv", buffer: Buffer.from("holder,shares\nana,600\nben,400\n") });
+  await A.page
+    .locator("input[type=file]")
+    .last()
+    .setInputFiles({
+      name: "cap-table.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from("holder,shares\nana,600\nben,400\n"),
+    });
   await box.fill("Cap table attached");
   await box.press("Enter");
   const fileLine = B.page.getByRole("article").filter({ hasText: "cap-table.csv" });
@@ -153,7 +167,10 @@ test("a deal room: create, chat, invite with approval, remove, all checked again
   expect(Buffer.concat(bytes).toString()).toBe("holder,shares\nana,600\nben,400\n");
 
   // Ana pins her message; Ben sees the pinned bar.
-  await A.page.getByRole("article", { name: /^You,/ }).filter({ hasText: "Term sheet v4 is in" }).click({ button: "right" });
+  await A.page
+    .getByRole("article", { name: /^You,/ })
+    .filter({ hasText: "Term sheet v4 is in" })
+    .click({ button: "right" });
   await A.page.getByRole("button", { name: "Pin for everyone" }).click();
   await expect(B.page.getByRole("button", { name: /Pinned.*Term sheet v4/ })).toBeVisible({ timeout: 60_000 });
   await B.page.screenshot({ path: info.outputPath("2-ben-chat.png"), animations: "disabled" });
@@ -180,11 +197,15 @@ test("a deal room: create, chat, invite with approval, remove, all checked again
   }
   await expect(C.page.getByRole("heading", { name: roomName })).toBeVisible({ timeout: 60_000 });
   await C.page.getByRole("button", { name: "Ask to join" }).click();
-  await expect(C.page.getByRole("heading", { name: "Waiting for an admin to let you in" })).toBeVisible({ timeout: 60_000 });
+  await expect(C.page.getByRole("heading", { name: "Waiting for an admin to let you in" })).toBeVisible({
+    timeout: 60_000,
+  });
   await C.page.screenshot({ path: info.outputPath("4-cai-waiting.png"), animations: "disabled" });
 
   // Nothing is shared before approval: Cai has no key and sees no messages.
-  const caiEarly = await fetch(`${API}/rooms/${roomId}/keys`, { headers: { authorization: `Bearer ${await tokenFor(cai)}` } });
+  const caiEarly = await fetch(`${API}/rooms/${roomId}/keys`, {
+    headers: { authorization: `Bearer ${await tokenFor(cai)}` },
+  });
   expect(caiEarly.status).toBe(404);
 
   await expect(A.page.getByRole("button", { name: /1 person asked to join/ })).toBeVisible({ timeout: 60_000 });
@@ -193,14 +214,22 @@ test("a deal room: create, chat, invite with approval, remove, all checked again
   const approve = A.page.locator("dialog[open]").last();
   await approve.getByRole("radio", { name: /Only new messages/ }).click();
   await approve.getByRole("button", { name: "Approve" }).click();
-  await expect(A.page.getByText(/Room key updated\. @mzk-room-cai joined, history not shared\./)).toBeVisible({ timeout: 240_000 });
+  await expect(A.page.getByText(/Room key updated\. @mzk-room-cai joined, history not shared\./)).toBeVisible({
+    timeout: 240_000,
+  });
   chain = await readRoom(rid);
   expect(chain.epoch).toBe(2n);
 
   await expect(C.page.getByRole("heading", { name: "You’re in" })).toBeVisible({ timeout: 120_000 });
-  await C.page.getByRole("link", { name: /Open the room/ }).or(C.page.getByRole("button", { name: /Open the room/ })).first().click();
+  await C.page
+    .getByRole("link", { name: /Open the room/ })
+    .or(C.page.getByRole("button", { name: /Open the room/ }))
+    .first()
+    .click();
   await C.page.waitForURL(`**/app/rooms/${roomId}`);
-  await expect(C.page.getByText(/Room key updated\. You joined, history not shared\./)).toBeVisible({ timeout: 90_000 });
+  await expect(C.page.getByText(/Room key updated\. You joined, history not shared\./)).toBeVisible({
+    timeout: 90_000,
+  });
   // History hidden: the messages from before Cai joined are not served or readable.
   await expect(C.page.getByText("Term sheet v4 is in")).toHaveCount(0);
   const caiKeys = await asApi<{ epochs: { epoch: number }[]; history: unknown[] }>(cai, `/rooms/${roomId}/keys`);
@@ -208,34 +237,54 @@ test("a deal room: create, chat, invite with approval, remove, all checked again
   expect(caiKeys.history).toEqual([]);
 
   // ---- Ana removes Ben; Ben cannot read anything new
-  await A.page.getByRole("tab", { name: "Members" }).click().catch(() => undefined);
-  await A.page.locator("aside[aria-label='Room info']").getByRole("button", { name: /mzk-room-ben/ }).first().click();
+  await A.page
+    .getByRole("tab", { name: "Members" })
+    .click()
+    .catch(() => undefined);
+  await A.page
+    .locator("aside[aria-label='Room info']")
+    .getByRole("button", { name: /mzk-room-ben/ })
+    .first()
+    .click();
   await A.page.getByRole("button", { name: /^Remove from room/ }).click();
-  await expect(A.page.getByText(/loses access to new messages now\. The room key changes\. They keep what they already saw\./)).toBeVisible();
+  await expect(
+    A.page.getByText(/loses access to new messages now\. The room key changes\. They keep what they already saw\./),
+  ).toBeVisible();
   await A.page.getByRole("button", { name: /Remove @mzk-room-ben/ }).click();
-  await expect(A.page.getByText(/Room key updated\. @mzk-room-ben was removed and cannot read new messages\./)).toBeVisible({ timeout: 240_000 });
+  await expect(
+    A.page.getByText(/Room key updated\. @mzk-room-ben was removed and cannot read new messages\./),
+  ).toBeVisible({ timeout: 240_000 });
   chain = await readRoom(rid);
   expect(chain.epoch).toBe(3n);
-  expect(chain.membershipHash).toBe(
-    membershipHash(roomId, 3n, [
-      { address: ana.address },
-      { address: cai.address },
-    ]),
-  );
+  expect(chain.membershipHash).toBe(membershipHash(roomId, 3n, [{ address: ana.address }, { address: cai.address }]));
 
   // Ana's device checked the member list against QoreChain after the change.
   const panel = A.page.locator("aside[aria-label='Room info']");
   await panel.getByRole("button", { name: /Encryption/ }).click();
-  await expect(panel.getByText("Checked on this device against the record on QoreChain. It matches.")).toBeVisible({ timeout: 60_000 });
-  await A.page.getByRole("button", { name: "Close" }).first().click().catch(() => undefined);
+  await expect(panel.getByText("Checked on this device against the record on QoreChain. It matches.")).toBeVisible({
+    timeout: 60_000,
+  });
+  await A.page
+    .getByRole("button", { name: "Close" })
+    .first()
+    .click()
+    .catch(() => undefined);
   await box.fill("Final numbers after Ben left");
   await box.press("Enter");
-  await expect(C.page.getByRole("article").filter({ hasText: "Final numbers after Ben left" })).toBeVisible({ timeout: 90_000 });
+  await expect(C.page.getByRole("article").filter({ hasText: "Final numbers after Ben left" })).toBeVisible({
+    timeout: 90_000,
+  });
 
-  await expect(B.page.getByText(/You were removed from this room\. You keep what you already saw/)).toBeVisible({ timeout: 90_000 });
-  await expect(B.page.getByRole("link", { name: new RegExp(roomName) })).toContainText("You were removed from this room");
+  await expect(B.page.getByText(/You were removed from this room\. You keep what you already saw/)).toBeVisible({
+    timeout: 90_000,
+  });
+  await expect(B.page.getByRole("link", { name: new RegExp(roomName) })).toContainText(
+    "You were removed from this room",
+  );
   await expect(B.page.getByText("Final numbers after Ben left")).toHaveCount(0);
-  await expect(B.page.getByRole("article", { name: /^@mzk-room-ana,/ }).filter({ hasText: "Term sheet v4 is in" })).toBeVisible(); // keeps what he saw
+  await expect(
+    B.page.getByRole("article", { name: /^@mzk-room-ana,/ }).filter({ hasText: "Term sheet v4 is in" }),
+  ).toBeVisible(); // keeps what he saw
   const benKeys = await asApi<{ epochs: { epoch: number }[] }>(ben, `/rooms/${roomId}/keys`);
   expect(benKeys.epochs.map((e) => e.epoch)).toEqual([1, 2]);
   const benFeed = await asApi<{ batches: { epoch: number }[] }>(ben, `/rooms/${roomId}/batches`);
@@ -249,7 +298,9 @@ test("a deal room: create, chat, invite with approval, remove, all checked again
   await nav(P.page, "Rooms");
   await P.page.screenshot({ path: info.outputPath("7-phone-list.png"), animations: "disabled" });
   await P.page.getByRole("link", { name: new RegExp(roomName) }).click();
-  await expect(P.page.getByRole("article").filter({ hasText: "Final numbers after Ben left" })).toBeVisible({ timeout: 90_000 });
+  await expect(P.page.getByRole("article").filter({ hasText: "Final numbers after Ben left" })).toBeVisible({
+    timeout: 90_000,
+  });
   await P.page.screenshot({ path: info.outputPath("8-phone-chat.png"), animations: "disabled" });
 
   for (const x of [A, B, C, P]) await x.ctx.close();

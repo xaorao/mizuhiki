@@ -32,7 +32,12 @@ export function useProducts() {
         list.map(async (p): Promise<ProductRow> => {
           const d: EditorDraft | null = await openDraft(a, p).catch(() => null);
           const def = d?.def ?? p.record?.body ?? null;
-          return { p, def, draft: d, changed: !!p.record && !!d && d.publishedFp !== undefined && fingerprint(d) !== d.publishedFp };
+          return {
+            p,
+            def,
+            draft: d,
+            changed: !!p.record && !!d && d.publishedFp !== undefined && fingerprint(d) !== d.publishedFp,
+          };
         }),
       );
       setRows(opened);

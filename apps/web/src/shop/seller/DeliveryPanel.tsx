@@ -30,7 +30,13 @@ export function DeliveryPanel({ draft, patch }: EditorProps) {
     const t = setTimeout(() => {
       cardOf(agent).then(
         () => alive && setCheck({ addr: agent, ok: true }),
-        (e: unknown) => alive && setCheck({ addr: agent, ok: false, why: e instanceof Error ? e.message : "This address has no sealing key." }),
+        (e: unknown) =>
+          alive &&
+          setCheck({
+            addr: agent,
+            ok: false,
+            why: e instanceof Error ? e.message : "This address has no sealing key.",
+          }),
       );
     }, 400);
     return () => {
@@ -63,7 +69,8 @@ export function DeliveryPanel({ draft, patch }: EditorProps) {
         </div>
         {def.delivery === "seller" ? (
           <p className={s.note}>
-            The buyer&rsquo;s copy is sealed when your dashboard is open, or the next time it opens. Until then the buyer sees their payment confirmed and &ldquo;waiting for the seller to seal your copy&rdquo;.
+            The buyer&rsquo;s copy is sealed when your dashboard is open, or the next time it opens. Until then the
+            buyer sees their payment confirmed and &ldquo;waiting for the seller to seal your copy&rdquo;.
           </p>
         ) : (
           <div className={s.stack}>
@@ -74,7 +81,15 @@ export function DeliveryPanel({ draft, patch }: EditorProps) {
               autoCapitalize="none"
               placeholder="qor1…"
               onChange={(e) => patch({ agent: e.target.value.trim() || null }, "agent")}
-              error={agent && !valid ? "Use a full QoreChain address, starting with qor1." : !agent ? "Instant delivery needs a helper's address." : status && !status.ok ? status.why : undefined}
+              error={
+                agent && !valid
+                  ? "Use a full QoreChain address, starting with qor1."
+                  : !agent
+                    ? "Instant delivery needs a helper's address."
+                    : status && !status.ok
+                      ? status.why
+                      : undefined
+              }
               ok={status?.ok ? "This helper has a sealing key on QoreChain." : undefined}
               hint={
                 offered === undefined
@@ -92,7 +107,9 @@ export function DeliveryPanel({ draft, patch }: EditorProps) {
               </button>
             ) : null}
             <p className={s.warnStrong}>
-              <Icon name="alert" size={16} /> The helper can read this product. Publishing seals the product key to it, so it can open what buyers get. Choose this only for something you are comfortable sharing with the helper&rsquo;s operator.
+              <Icon name="alert" size={16} /> The helper can read this product. Publishing seals the product key to it,
+              so it can open what buyers get. Choose this only for something you are comfortable sharing with the
+              helper&rsquo;s operator.
             </p>
           </div>
         )}

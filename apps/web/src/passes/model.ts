@@ -24,7 +24,12 @@ export function scopeLine(s: PassScope): string {
   if (s.kind === "room") return `Room · ${s.label}`;
   if (s.kind === "form") return `Form answers · ${s.label}`;
   if (s.kind === "product") return `Product · ${s.label}`;
-  const words: Record<PeriodKind, string> = { messages: "Messages", payments: "Payment notes", forms: "Form answers", invoices: "Invoices" };
+  const words: Record<PeriodKind, string> = {
+    messages: "Messages",
+    payments: "Payment notes",
+    forms: "Form answers",
+    invoices: "Invoices",
+  };
   const list = s.kinds.map((k, i) => (i === 0 ? words[k] : words[k].toLowerCase()));
   const kinds = list.length > 1 ? `${list.slice(0, -1).join(", ")} and ${list.at(-1) ?? ""}` : (list[0] ?? "");
   return `${kinds} · ${periodLabel(s.from, s.until)}`;
@@ -38,7 +43,8 @@ export function periodLabel(from: string, until: string): string {
     const p = quarterPeriod(y, q);
     if (p.from === new Date(from).toISOString() && p.until === new Date(until).toISOString()) return `Q${q} ${y}`;
   }
-  const d = (x: Date) => x.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  const d = (x: Date) =>
+    x.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
   return `${d(f)} – ${d(new Date(Date.parse(until) - 1))}`;
 }
 
@@ -84,7 +90,8 @@ export function expiryOf(lasts: Lasts, scope: { kind: string; until?: string }, 
 export function personProblem(input: string): string | null {
   const raw = input.trim();
   if (!raw) return "Say who the pass is for.";
-  if (/^qor1/.test(raw)) return /^qor1[02-9ac-hj-np-z]{38}$/.test(raw) ? null : "That address is not complete. Check it and try again.";
+  if (/^qor1/.test(raw))
+    return /^qor1[02-9ac-hj-np-z]{38}$/.test(raw) ? null : "That address is not complete. Check it and try again.";
   return /^@?[a-z0-9._-]{3,30}$/i.test(raw) ? null : "Use their @name or their qor1… address.";
 }
 
@@ -111,8 +118,12 @@ export function periodKeysOf(account: WithPhrase, passes: PassView[], now = Date
   return out.slice(0, 16);
 }
 
-
-const KIND_OF: Record<string, PeriodKind> = { message: "messages", reply: "messages", paynote: "payments", form: "forms" };
+const KIND_OF: Record<string, PeriodKind> = {
+  message: "messages",
+  reply: "messages",
+  paynote: "payments",
+  form: "forms",
+};
 
 /** Does this active pass cover this kind of item? */
 export function covers(p: PassView, row: { kind: string; ref: string | null }): boolean {
@@ -124,4 +135,3 @@ export function covers(p: PassView, row: { kind: string; ref: string | null }): 
   }
   return sc.kind === "form" && row.kind === "form" && row.ref === `form:${sc.formId}`;
 }
-
