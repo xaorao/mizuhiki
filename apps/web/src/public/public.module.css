@@ -243,7 +243,7 @@
   gap: 8px;
   align-items: center;
   border: 2px dashed var(--cord);
-  background: #fff4f6;
+  background: var(--wash-rose);
   border-radius: var(--r-pill);
   padding: 6px 8px 6px 12px;
   font-size: 13.5px;
@@ -268,7 +268,7 @@
 .drop {
   border: 2.5px dashed var(--cord);
   border-radius: 20px;
-  background: #fff8f9;
+  background: var(--wash-rose-faint);
   padding: 14px;
   text-align: center;
   font-family: var(--font-round);
@@ -284,8 +284,13 @@
 }
 .drop:hover,
 .dropOn {
-  background: #ffeef2;
+  background: var(--wash-rose-active);
   transform: translateY(-2px);
+}
+/* High contrast: the drop zone is white either way, so a file held over it turns the dashed line solid ink. */
+:global([data-theme="contrast"]) .dropOn {
+  border-style: solid;
+  border-color: var(--ink);
 }
 .expiry {
   display: flex;
@@ -312,10 +317,10 @@
 .unlock {
   display: grid;
   gap: 10px;
-  border: 2px dashed var(--sora, #8fc3e8);
+  border: 2px dashed var(--sora);
   border-radius: 18px;
   padding: 12px 14px;
-  background: #f4f9fd;
+  background: var(--wash-sky);
   animation: mz-pop-in 0.25s var(--ease-pop);
 }
 /* pay sheet */
@@ -364,7 +369,7 @@
 .amountBox:focus-within {
   box-shadow:
     0 5px 0 var(--ink),
-    0 0 0 4px var(--focus-ring, #cfe6f7);
+    0 0 0 4px var(--focus-ring);
 }
 .tokenTag {
   font-family: var(--font-round);
@@ -449,7 +454,7 @@
   grid-template-columns: 130px minmax(0, 1fr);
   gap: 10px;
   padding: 10px 14px;
-  border-bottom: 2px dashed #f3e2e8;
+  border-bottom: 2px dashed var(--rule);
   align-items: center;
 }
 .review > div:last-child {
@@ -481,10 +486,10 @@
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  border: 2px dashed var(--sora, #8fc3e8);
+  border: 2px dashed var(--sora);
   border-radius: 18px;
   padding: 12px 14px;
-  background: #f4f9fd;
+  background: var(--wash-sky);
 }
 .waitBox b {
   display: block;

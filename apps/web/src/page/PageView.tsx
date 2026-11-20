@@ -142,7 +142,7 @@ export function PageView({
         {onInfo ? (
           <button type="button" className={s.badge} onClick={onInfo}>
             <Icon name="shield" size={16} />
-            Anything you send is sealed to {firstName}
+            <span>Anything you send is sealed to {firstName}</span>
           </button>
         ) : (
           <span className={s.badgeStatic}>

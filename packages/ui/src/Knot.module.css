@@ -36,7 +36,8 @@
 .kanji {
   font-family: var(--font-jp);
   font-weight: 700;
-  color: var(--cord);
+  /* Text, so it takes the text red (5.4:1 on the page), not the accent red of the knot. */
+  color: var(--cord-text);
   line-height: 1;
 }
 @media (prefers-reduced-motion: reduce) {

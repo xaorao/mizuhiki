@@ -19,9 +19,16 @@ const EMBEDDABLE = /^\/(@[^/]+|p\/[^/]+)\/f\/[a-z0-9-]{1,48}\/?$/;
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const dev = process.env.NODE_ENV === "development";
+  // Upgrade stray http:// subresources only on a page that came over HTTPS (directly or through a TLS proxy).
+  // On plain http, Safari would upgrade even localhost and every stylesheet and font would fail.
+  const https =
+    request.nextUrl.protocol === "https:" ||
+    request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() === "https";
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ""}`,
+    // 'wasm-unsafe-eval' lets WebAssembly compile (hash-wasm: Argon2id for the device vault, BLAKE3) and nothing else;
+    // JavaScript eval stays blocked. Dev mode adds 'unsafe-eval' for React's debugging tools only.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'${dev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' blob: data: ${API}`,
     "font-src 'self'",
@@ -32,7 +39,7 @@ export function proxy(request: NextRequest) {
     "base-uri 'self'",
     "form-action 'self'",
     `frame-ancestors ${EMBEDDABLE.test(request.nextUrl.pathname) ? "*" : "'none'"}`,
-    ...(dev ? [] : ["upgrade-insecure-requests"]),
+    ...(https ? ["upgrade-insecure-requests"] : []),
   ].join("; ");
 
   const headers = new Headers(request.headers);

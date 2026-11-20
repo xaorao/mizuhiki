@@ -478,6 +478,9 @@
   background: var(--sakura-soft);
   animation: mz-shimmer 1.4s ease-in-out infinite;
 }
+:global([data-theme="contrast"]) .gridSkel {
+  background: color-mix(in srgb, var(--ink) 18%, var(--white));
+}
 .productRow {
   display: flex;
   align-items: center;
@@ -570,6 +573,9 @@
   background: var(--sakura-soft);
   animation: mz-shimmer 1.4s ease-in-out infinite;
 }
+:global([data-theme="contrast"]) .coverSkel {
+  background: color-mix(in srgb, var(--ink) 18%, var(--white));
+}
 .coverMedia {
   width: 100%;
   height: 100%;
@@ -659,8 +665,8 @@
   gap: 12px 18px;
   align-items: center;
   padding: 12px 0;
-  border-top: 2px dashed var(--sakura-wave-2);
-  border-bottom: 2px dashed var(--sakura-wave-2);
+  border-top: 2px dashed var(--rule-wave-2);
+  border-bottom: 2px dashed var(--rule-wave-2);
 }
 .sellerLink {
   display: inline-flex;
@@ -719,6 +725,12 @@
   background: var(--sakura-soft);
   box-shadow: 0 3px 0 var(--cord-deep);
   border-color: var(--cord);
+}
+:global([data-theme="contrast"]) .versionOn {
+  border-color: var(--ink);
+  box-shadow:
+    inset 0 0 0 3px var(--ink),
+    0 3px 0 var(--ink);
 }
 .version:disabled {
   opacity: 0.55;
@@ -1182,7 +1194,7 @@
   animation: mz-pop-in var(--t-sheet) var(--ease-out) both;
 }
 .cartLine + .cartLine {
-  border-top: 2px dashed var(--sakura-wave-2);
+  border-top: 2px dashed var(--rule-wave-2);
 }
 .cartLine:first-child {
   padding-top: 0;
@@ -1356,6 +1368,9 @@
 }
 .keyRowOn {
   background: var(--matcha);
+}
+:global([data-theme="contrast"]) .keyRowOn {
+  box-shadow: inset 0 0 0 3px var(--ink);
 }
 .words {
   list-style: none;
@@ -1679,7 +1694,7 @@
   transform: scale(0.88);
 }
 .starOn svg {
-  fill: var(--knot-gold);
+  fill: var(--star-fill);
   animation: mz-pop-in var(--t-toggle) var(--ease-pop) both;
 }
 .select {
@@ -1714,7 +1729,7 @@
   background: var(--sakura-soft);
 }
 .sideLinks a + a {
-  border-top: 2px dashed var(--sakura-wave-2);
+  border-top: 2px dashed var(--rule-wave-2);
   border-radius: 0;
 }
 .opened {
@@ -1792,7 +1807,7 @@
 .pagePager {
   display: flex;
   justify-content: space-between;
-  border-top: 2px dashed var(--sakura-wave-2);
+  border-top: 2px dashed var(--rule-wave-2);
   padding-top: 14px;
 }
 .fileCard {

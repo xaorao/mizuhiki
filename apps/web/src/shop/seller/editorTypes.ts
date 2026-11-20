@@ -8,7 +8,8 @@ export interface EditorProps {
   /** Change the working copy. The same `coalesce` key within ~1 s is one undo step (typing). */
   update: (fn: (d: EditorDraft) => EditorDraft, coalesce?: string) => void;
   /** Shorthand: patch the product record being edited. */
-  patch: (p: Partial<ProductDef>, coalesce?: string) => void;
+  /** Merge into the latest product. Pass a function when the change depends on it (after an await, say). */
+  patch: (p: Partial<ProductDef> | ((def: ProductDef) => Partial<ProductDef>), coalesce?: string) => void;
   tokened: () => Promise<Tokened>;
   /** The owner's @name, without @. */
   name: string;

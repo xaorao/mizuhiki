@@ -7,6 +7,10 @@
   background: radial-gradient(1100px 520px at 50% -10%, var(--wp-a, var(--sakura)), transparent 70%), var(--cream);
   color: var(--ink);
 }
+/* High contrast: the owner's wallpaper colour (set inline from the page theme) gives way to a white field. */
+:global([data-theme="contrast"]) .stage {
+  --wp-a: var(--white) !important;
+}
 .card {
   width: min(680px, 100%);
   display: grid;
@@ -42,7 +46,7 @@
   gap: 6px;
   align-items: center;
   font-size: 13px;
-  color: var(--ok, #24461c);
+  color: var(--ok);
   font-weight: 600;
 }
 .titleRow {
@@ -84,7 +88,7 @@
   padding: 34px 20px;
   border-radius: var(--r-lg);
   border: 2.5px dashed var(--cord);
-  background: #fff8f9;
+  background: var(--wash-rose-faint);
   color: var(--ink);
   font: inherit;
   text-align: center;
@@ -95,8 +99,13 @@
 }
 .drop:hover,
 .dropOn {
-  background: #ffeef2;
+  background: var(--wash-rose-active);
   transform: translateY(-2px);
+}
+/* High contrast: the drop zone is white either way, so a file held over it turns the dashed line solid ink. */
+:global([data-theme="contrast"]) .dropOn {
+  border-style: solid;
+  border-color: var(--ink);
 }
 .drop b {
   font-family: var(--font-round);

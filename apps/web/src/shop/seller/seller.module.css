@@ -128,7 +128,7 @@
 }
 .indent {
   padding-left: 18px;
-  border-left: 3px dotted var(--sakura-wave);
+  border-left: 3px dotted var(--rule-wave);
   margin-left: 6px;
 }
 .subHead {
@@ -324,7 +324,7 @@
 }
 .table td {
   padding: 12px 14px;
-  border-bottom: 2px dashed #f3e2e8;
+  border-bottom: 2px dashed var(--rule);
   white-space: nowrap;
   vertical-align: middle;
 }
@@ -332,7 +332,7 @@
   transition: background var(--t-toggle);
 }
 .table tbody tr:hover {
-  background: #fff4f6;
+  background: var(--wash-rose);
 }
 .table tfoot th,
 .table tfoot td {
@@ -770,7 +770,7 @@
   z-index: 6;
   background: var(--cream);
   padding: 10px 0;
-  border-bottom: 2px dashed #f3e2e8;
+  border-bottom: 2px dashed var(--rule);
 }
 .edTop h1 {
   font-size: 26px;
@@ -1084,7 +1084,7 @@
   gap: 10px;
   align-items: center;
   padding: 8px 12px;
-  border-bottom: 2px dashed #f3e2e8;
+  border-bottom: 2px dashed var(--rule);
 }
 .weekDay:last-child {
   border-bottom: 0;
@@ -1131,6 +1131,9 @@
 }
 .pick:has(input:checked) {
   background: var(--sakura-soft);
+}
+:global([data-theme="contrast"]) .pick:has(input:checked) {
+  box-shadow: inset 0 0 0 3px var(--ink);
 }
 .pick span {
   display: grid;
@@ -1191,6 +1194,11 @@
   background: var(--sakura-soft);
   box-shadow: var(--drop-lg);
 }
+:global([data-theme="contrast"]) .dropOn {
+  box-shadow:
+    inset 0 0 0 3px var(--ink),
+    var(--drop-lg);
+}
 .pageHead {
   display: flex;
   gap: 8px;
@@ -1213,7 +1221,7 @@
   color: var(--ink-subtle);
   font-size: 15px;
   background: var(--cream);
-  border: 2px dashed var(--sakura-wave);
+  border: 2px dashed var(--rule-wave);
   border-radius: 16px;
   padding: 14px 16px;
 }
@@ -1235,7 +1243,7 @@
   animation: mz-pop-in var(--t-toggle) var(--ease-pop) both;
 }
 .blockRow:hover {
-  background: #fff7f9;
+  background: var(--wash-rose-hover);
 }
 .dragging {
   opacity: 0.45;
@@ -1342,7 +1350,7 @@
   gap: 8px;
   flex-wrap: wrap;
   align-items: center;
-  border-top: 2px dashed #f3e2e8;
+  border-top: 2px dashed var(--rule);
   padding-top: 12px;
 }
 
@@ -1566,6 +1574,11 @@
   background: var(--sakura-soft);
   box-shadow: var(--drop-sm);
 }
+:global([data-theme="contrast"]) .pvOption[aria-checked="true"] {
+  box-shadow:
+    inset 0 0 0 3px var(--ink),
+    var(--drop-sm);
+}
 .pvOption .pvChip {
   grid-row: span 2;
   align-self: center;
@@ -1637,7 +1650,7 @@
   justify-content: space-between;
   gap: 10px;
   padding: 8px 12px;
-  border-bottom: 2px dashed #f3e2e8;
+  border-bottom: 2px dashed var(--rule);
   font-size: 13.5px;
 }
 .pvDetails div:last-child {
@@ -1736,7 +1749,7 @@
   overflow-wrap: anywhere;
 }
 .rcChain {
-  border-top: 2px dashed #f3e2e8;
+  border-top: 2px dashed var(--rule);
   padding-top: 10px;
 }
 .rcChain dd {

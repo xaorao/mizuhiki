@@ -19,7 +19,8 @@
     "test:testnet": "pnpm --filter @mizuhiki/testnet test",
     "check": "pnpm audit:repo && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:contracts && pnpm test:integration && pnpm test:e2e",
     "dev": "node tools/dev.mjs",
-    "setup": "node tools/setup.mjs"
+    "setup": "node tools/setup.mjs",
+    "test:e2e:prod": "node tools/e2e-prod.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

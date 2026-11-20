@@ -42,7 +42,7 @@ export const SETUP_STEPS: { id: SetupStep; title: string; detail: string }[] = [
   {
     id: "window",
     title: "Allow on-chain actions for 2 hours",
-    detail: "Only Mizuhiki's two contracts, up to 20 actions. Signed with your post-quantum key.",
+    detail: "Only Mizuhiki's contracts, up to 20 actions. Signed with your post-quantum key.",
   },
   { id: "name", title: "Claim your name", detail: "Recorded on QoreChain in two steps so nobody can take it first." },
   { id: "publish", title: "Publish your page", detail: "Signed by you; every visitor checks the signature." },

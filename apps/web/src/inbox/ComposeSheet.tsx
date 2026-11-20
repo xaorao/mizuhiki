@@ -21,11 +21,12 @@ import {
 } from "@mizuhiki/ui";
 import { normalizeNameInput } from "@mizuhiki/core";
 import type { Account } from "@/account/AccountProvider";
-import { api, ApiFailure } from "@/lib/api";
+import { ApiFailure } from "@/lib/api";
 import { SEND_STEP_LABEL, SendFailure, sendSealed, type SendResult, type SendStep } from "@/lib/send";
 import type { InboxRow, OpenedMessage } from "./model";
 import type { SenderCheck } from "./useInbox";
 import s from "./inbox.module.css";
+import { ownerOfName } from "@mizuhiki/chain";
 
 export type ComposeMode = { kind: "reply"; to: string; toLabel: string } | { kind: "forward" };
 
@@ -61,18 +62,17 @@ export function ComposeSheet({
       return null;
     }
     try {
-      const r = await api.get<{ available: boolean; owner?: string; message: string }>(
-        `/names/${encodeURIComponent(name)}`,
-      );
-      if (r.available || !r.owner) {
+      // The owner of a name is read from QoreChain, not taken from our server.
+      const owner = await ownerOfName(name);
+      if (!owner) {
         setToErr(`Nobody has @${name}. Check the spelling.`);
         return null;
       }
-      if (r.owner === account.owner.address) {
+      if (owner === account.owner.address) {
         setToErr("That is you. Pick someone else.");
         return null;
       }
-      return { address: r.owner, label: `@${name}` };
+      return { address: owner, label: `@${name}` };
     } catch (e) {
       setToErr(e instanceof ApiFailure ? e.message : "That name could not be checked. Nothing was sent.");
       return null;

@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { normalizeNameInput } from "@mizuhiki/core";
 import { lookupPage } from "@/lib/server-api";
+import { verifiedFor } from "@/lib/server-verify";
 
 export const alt = "A Mizuhiki page";
 export const size = { width: 1200, height: 630 };
@@ -15,7 +16,8 @@ export default async function Image({ params }: { params: Promise<{ name: string
   const { name: raw } = await params;
   const name = normalizeNameInput(decodeURIComponent(raw));
   const page = await lookupPage(name);
-  const m = page.state === "ok" ? page.record.body : null;
+  // Only words that verify against QoreChain go on the card; otherwise it shows just the @name.
+  const m = page.state === "ok" ? await verifiedFor(name, page.record, "manifest") : null;
   const title = m?.displayName ?? `@${name}`;
   const a = m?.theme.wallpaper.a ?? "#ffc4d0";
   return new ImageResponse(

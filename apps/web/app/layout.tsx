@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { headers } from "next/headers";
 import { connection } from "next/server";
 import { ToastProvider } from "@mizuhiki/ui";
 import { AppLinks } from "@/lib/AppLinks";
 import { AccountProvider } from "@/account/AccountProvider";
+import { CONTRAST_SCRIPT, ContrastSync } from "@/lib/contrast";
 import { sans, mono } from "./fonts";
 import latinSlices from "./fonts-jp-latin.json";
 import "./fonts-jp.css";
@@ -26,9 +28,12 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   // Every page renders per request, so Next.js can put proxy.ts's fresh CSP nonce on its own scripts.
   await connection();
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
+    // data-theme is set before paint by CONTRAST_SCRIPT (high-contrast mode), so it may differ from the server's.
+    <html lang="en" className={`${sans.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: CONTRAST_SCRIPT }} />
         {/* Headings and buttons use these weights first: their Latin slices load with the page. */}
         {latinSlices
           .filter((f) => f.family === "M PLUS Rounded 1c" && f.weight >= 800)
@@ -37,6 +42,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           ))}
       </head>
       <body>
+        <ContrastSync />
         <ToastProvider>
           <AppLinks>
             <AccountProvider>{children}</AccountProvider>

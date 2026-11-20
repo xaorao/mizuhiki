@@ -16,7 +16,27 @@ export default defineConfig({
     video: "retain-on-failure",
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
-    { name: "phone", use: { ...devices["Pixel 7"], viewport: { width: 390, height: 844 } } },
+    {
+      name: "desktop",
+      testIgnore: /browsers\.spec/,
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
+    },
+    {
+      name: "phone",
+      testIgnore: /browsers\.spec/,
+      use: { ...devices["Pixel 7"], viewport: { width: 390, height: 844 } },
+    },
+    // The core journey, which runs post-quantum cryptography in the browser, in Firefox and Safari too.
+    {
+      name: "firefox",
+      testMatch: /browsers\.spec/,
+      use: { ...devices["Desktop Firefox"], viewport: { width: 1440, height: 900 } },
+    },
+    {
+      name: "webkit",
+      testMatch: /browsers\.spec/,
+      use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 } },
+    },
+    { name: "iphone", testMatch: /browsers\.spec/, use: { ...devices["iPhone 14"] } },
   ],
 });

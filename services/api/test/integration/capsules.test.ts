@@ -309,6 +309,14 @@ describe("capsules", () => {
       capsules: { id: string; state: string }[];
     }>();
     expect(forMe.capsules.find((c) => c.id === id)?.state).toBe("cancelled");
+    // The sealed contents and pieces are let go; the owner's own working copy stays, so the cancelled capsule
+    // still opens in their list after the sweep.
+    const pg = (await import("postgres")).default(DB);
+    const holds = await pg<{ purpose: string; n: number }[]>`
+      select purpose, count(*)::int as n from blob_holds where holder = ${owner.address} and purpose like ${`capsule%:${id}%`}
+      group by purpose`;
+    await pg.end();
+    expect(holds.map((h) => h.purpose)).toEqual([`capsule-draft:${id}`]);
   });
 
   it("capsule B: opens at a set time; after finalize the guardian re-seals and the recipient opens only their content", async () => {

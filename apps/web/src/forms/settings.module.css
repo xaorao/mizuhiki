@@ -87,7 +87,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   padding: 12px 14px;
-  border: 2px dashed #f3e2e8;
+  border: 2px dashed var(--rule);
   border-radius: var(--r-sm);
 }
 .fixed b {
@@ -262,7 +262,7 @@
 .card {
   width: min(420px, 100%);
   background: var(--white);
-  border: 2px solid #e6d9df;
+  border: 2px solid var(--rule-mauve);
   border-left: 4px solid var(--cord);
   border-radius: 14px;
   overflow: hidden;
@@ -379,7 +379,7 @@
   margin: 0;
   padding: 14px 16px;
   background: var(--ink);
-  color: #fff8ef;
+  color: var(--cream);
   border-radius: var(--r-sm);
   font-family: var(--font-mono);
   font-size: 12.5px;
@@ -395,7 +395,7 @@
   align-items: start;
 }
 .mount {
-  border: 2px dashed #e6d9df;
+  border: 2px dashed var(--rule-mauve);
   border-radius: var(--r-sm);
   padding: 10px;
   background: var(--paper);

@@ -248,7 +248,7 @@ export function Onboarding({ initialName, next: after }: { initialName: string; 
         <aside className={s.preview} aria-label="Preview of your page">
           <p className={s.previewLabel}>
             <Icon name="eye" size={14} />
-            Live preview · {draft.name ? `@${draft.name}` : "your page"}
+            <span>Live preview · {draft.name ? `@${draft.name}` : "your page"}</span>
           </p>
           <PhoneFrame width={320}>
             <PageView
@@ -1019,8 +1019,9 @@ function ReadyStep({
             body: (
               <div className={s.fund}>
                 <p>
-                  Your account needs about <b>0.2 test QOR</b> to finish setup. Get free test QOR from the QoreChain
-                  faucet for this address:
+                  Setup spends about 0.12 test QOR in network fees; this step waits for <b>0.2</b> so there is room to
+                  spare. The QoreChain faucet gives 100 test QOR once a day: sign in to the QoreChain dashboard (free),
+                  paste this address and choose Request Tokens.
                 </p>
                 <CopyValue value={acct.account.owner.address} label="address" />
                 <div className={s.actions}>
@@ -1030,9 +1031,10 @@ function ReadyStep({
                   </a>
                 </div>
                 <p className={s.fine}>
-                  Balance now:{" "}
-                  {balance === null ? "checking…" : `${fromBaseUnits(balance, DENOMS.QOR.decimals)} test QOR`}. This
-                  screen moves on by itself when it arrives (needs {fromBaseUnits(MIN_SETUP_UQOR, 6)}).
+                  {balance === null
+                    ? "Checking the balance…"
+                    : `Balance now: ${fromBaseUnits(balance, DENOMS.QOR.decimals)} test QOR.`}{" "}
+                  This screen moves on by itself when it arrives (needs {fromBaseUnits(MIN_SETUP_UQOR, 6)}).
                 </p>
               </div>
             ),

@@ -52,8 +52,8 @@
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
   gap: 14px;
-  border-top: 2px dashed #f3e2e8;
-  border-bottom: 2px dashed #f3e2e8;
+  border-top: 2px dashed var(--rule);
+  border-bottom: 2px dashed var(--rule);
   padding: 14px 0;
 }
 .meta dt {
@@ -89,7 +89,7 @@
 }
 .items td {
   padding: 10px 8px;
-  border-bottom: 2px dashed #f3e2e8;
+  border-bottom: 2px dashed var(--rule);
   vertical-align: top;
 }
 .items td b {
@@ -160,7 +160,7 @@
   border: 2px dashed var(--cord);
   border-radius: 14px;
   padding: 8px 10px;
-  background: #fff8f9;
+  background: var(--wash-rose-faint);
 }
 .attach b {
   display: block;
@@ -247,7 +247,7 @@
   display: grid;
   gap: 8px;
   padding-bottom: 12px;
-  border-bottom: 2px dashed #f3e2e8;
+  border-bottom: 2px dashed var(--rule);
 }
 .lineRow {
   display: grid;
@@ -284,7 +284,7 @@
 .attachDrop {
   border: 2.5px dashed var(--cord);
   border-radius: 18px;
-  background: #fff8f9;
+  background: var(--wash-rose-faint);
   padding: 14px;
   display: flex;
   gap: 8px;
@@ -308,8 +308,8 @@
   display: flex;
   gap: 8px;
   align-items: flex-start;
-  background: #fff7e0;
-  border: 2px solid #e9c46a;
+  background: var(--wash-amber);
+  border: 2px solid var(--rule-amber);
   border-radius: 14px;
   padding: 10px 12px;
   font-size: 14px;
@@ -389,14 +389,14 @@
 }
 .table td {
   padding: 12px 14px;
-  border-bottom: 2px dashed #f3e2e8;
+  border-bottom: 2px dashed var(--rule);
   white-space: nowrap;
 }
 .table tr:last-child td {
   border-bottom: 0;
 }
 .table tbody tr:hover {
-  background: #fff4f6;
+  background: var(--wash-rose);
 }
 .num {
   text-align: right !important;
@@ -498,6 +498,9 @@
     position: static;
   }
 }
+.items td .unitPhone {
+  display: none;
+}
 @media (max-width: 860px) {
   .editor,
   .listPage {
@@ -528,6 +531,9 @@
   .items th:nth-child(3),
   .items td:nth-child(3) {
     display: none;
+  }
+  .items td .unitPhone {
+    display: block;
   }
 }
 

@@ -58,6 +58,7 @@ import {
   ROOM_ROLE,
   setRoleOnChain,
   transferRoomOnChain,
+  ownerOfName,
 } from "@mizuhiki/chain";
 import type { Account } from "@/account/AccountProvider";
 import { api, ApiFailure } from "@/lib/api";
@@ -1010,9 +1011,9 @@ export async function lookupPerson(input: string): Promise<{ address: string; na
   if (/^qor1[02-9ac-hj-np-z]{38}$/.test(raw)) return { address: raw, name: await nameOf(raw) };
   const name = raw.replace(/^@/, "").toLowerCase();
   if (!/^[a-z0-9._-]{3,30}$/.test(name)) return null;
-  const r = await api.get<{ available: boolean; owner?: string }>(`/names/${encodeURIComponent(name)}`);
-  if (r.available || !r.owner) return null;
-  return { address: r.owner, name };
+  // Read from MizuhikiRegistry on QoreChain, never from our server's word for it (THREAT_MODEL A1).
+  const owner = await ownerOfName(name);
+  return owner ? { address: owner, name } : null;
 }
 
 /**

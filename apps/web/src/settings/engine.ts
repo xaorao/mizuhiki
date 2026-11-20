@@ -12,7 +12,7 @@ import {
   readWindow,
   type EvmWindow,
 } from "@mizuhiki/chain";
-import { zip, type Zippable } from "fflate";
+import { zipSync, type Zippable } from "fflate";
 import type { Account } from "@/account/AccountProvider";
 import { api } from "@/lib/api";
 import { openRow, type InboxRow, type Opened } from "@/inbox/model";
@@ -244,11 +244,40 @@ export async function exportEverything(
     }
   }
   onStep({ label: "Packing the zip", done: 0, total: 1 });
-  const bytes = await new Promise<Uint8Array>((res, rej) =>
-    zip(files, { level: 6 }, (err, out) => (err ? rej(err) : res(out))),
-  );
-  return { bytes, skipped };
+  return { bytes: await pack(files), skipped };
 }
 
 export const deletePage = (a: Tokened) =>
   api.del<{ ok: true; removed: number }>("/owner/page", T(a), { confirm: "delete my page" });
+
+/**
+ * Zip the export in a worker so a large export does not freeze the page. If no worker can start (an old browser,
+ * a blocked script), pack it here instead: slower for big exports, but it always finishes or says why it did not.
+ */
+async function pack(files: Zippable): Promise<Uint8Array> {
+  let worker: Worker;
+  try {
+    worker = new Worker(new URL("./zip.worker.ts", import.meta.url), { type: "module" });
+  } catch {
+    return zipSync(files, { level: 6 });
+  }
+  return new Promise<Uint8Array>((resolve, reject) => {
+    const done = () => worker.terminate();
+    worker.onmessage = (e: MessageEvent<{ ok: true; bytes: Uint8Array } | { ok: false; message: string }>) => {
+      done();
+      if (e.data.ok) resolve(e.data.bytes);
+      else reject(new Error(e.data.message));
+    };
+    // The worker failed to load or crashed: finish on the page rather than hang.
+    worker.onerror = (e) => {
+      e.preventDefault();
+      done();
+      try {
+        resolve(zipSync(files, { level: 6 }));
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error("The zip could not be made."));
+      }
+    };
+    worker.postMessage(files);
+  });
+}

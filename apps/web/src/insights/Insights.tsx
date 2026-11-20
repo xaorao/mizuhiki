@@ -30,13 +30,20 @@ interface Data {
   forms: { id: string; title: string; views: number; starts: number; submits: number }[];
 }
 
-const KIND_WORDS: Record<string, string> = {
-  message: "messages",
-  reply: "replies",
-  paynote: "payment notes",
-  form: "form answers",
-  order: "orders",
-  request: "requests",
+/** How each kind of received item is counted in words: [one, many]. */
+const KIND_WORDS: Record<string, [string, string]> = {
+  message: ["message", "messages"],
+  filedrop: ["file upload", "file uploads"],
+  reply: ["reply", "replies"],
+  paynote: ["payment note", "payment notes"],
+  form: ["form answer", "form answers"],
+  order: ["order", "orders"],
+  invoice: ["invoice", "invoices"],
+  request: ["request", "requests"],
+};
+const kindWords = (k: string, n: number) => {
+  const w = KIND_WORDS[k];
+  return `${n} ${w ? w[n === 1 ? 0 : 1] : k}`;
 };
 
 /** "+3 vs the previous 7 days" in words, never color alone. */
@@ -179,7 +186,7 @@ export function Insights() {
                 value={data.items.total}
                 detail={
                   Object.entries(data.items.byKind)
-                    .map(([k, n]) => `${n} ${KIND_WORDS[k] ?? k}`)
+                    .map(([k, n]) => kindWords(k, n))
                     .join(", ") || change(data.items.total, data.items.previous, data.range)
                 }
                 tone="sora"
@@ -366,6 +373,7 @@ function ViewsChart({ data, table, onTable }: { data: Data; table: boolean; onTa
                     onPointerEnter={() => setHover(i)}
                     onFocus={() => setHover(i)}
                     tabIndex={0}
+                    role="img"
                     aria-label={`${label(d.at)}: ${d.views} views, ${d.items} sealed items, ${d.payments} payments`}
                   />
                 </g>

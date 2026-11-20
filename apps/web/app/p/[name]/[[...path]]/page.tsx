@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { normalizeNameInput } from "@mizuhiki/core";
 import { lookupFileRequest, lookupForm, lookupPage, lookupProduct } from "@/lib/server-api";
+import { verifiedFor } from "@/lib/server-verify";
 import { RequestPage } from "@/requests/RequestPage";
 import { FormPage } from "@/forms/FormPage";
 import { SITE_URL, pageUrl } from "@/lib/site";
@@ -14,6 +15,15 @@ type Props = {
   searchParams?: Promise<{ line?: string | string[] }>;
 };
 
+/**
+ * Titles and previews use only records that verify against QoreChain (lib/server-verify.ts); anything else gets a
+ * plain title and is kept out of search, so changed words never reach a tab or a chat preview.
+ */
+const UNVERIFIED = (what: string): Metadata => ({
+  title: `This ${what} could not be verified`,
+  robots: { index: false },
+});
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { name: raw, path } = await params;
   const name = normalizeNameInput(decodeURIComponent(raw));
@@ -23,7 +33,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (link.kind === "form") {
     const f = await lookupForm(name, link.slug);
     if (f.state !== "ok") return { title: "Form not available", robots: { index: false } };
-    const d = f.record.body;
+    const d = await verifiedFor(name, f.record, "form");
+    if (!d) return UNVERIFIED("form");
     const title = d.preview.title || d.title;
     const description =
       d.preview.description ||
@@ -39,7 +50,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (link.kind === "product") {
     const p = await lookupProduct(name, link.slug);
     if (p.state !== "ok") return { title: "Product not available", robots: { index: false } };
-    const d = p.record.body;
+    const d = await verifiedFor(name, p.record, "product");
+    if (!d) return UNVERIFIED("product");
     const title = `${d.title} · @${name}`;
     const description =
       d.summary ||
@@ -67,11 +79,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (link.kind === "request") {
     const r = await lookupFileRequest(link.id);
     if (r.state !== "ok") return { title: "Request not available", robots: { index: false } };
-    const title = `${r.record.body.title} · @${name}`;
+    const req = await verifiedFor(name, r.record, "filerequest");
+    if (!req) return UNVERIFIED("request");
+    const title = `${req.title} · @${name}`;
     const description = `@${name} is asking for files. Uploads are sealed on your device; only @${name} can open them.`;
     return { title, description, robots: { index: false }, openGraph: { title, description, siteName: "Mizuhiki" } };
   }
-  const m = page.record.body;
+  const m = await verifiedFor(name, page.record, "manifest");
+  if (!m) return UNVERIFIED("page");
   const title = `${m.displayName} (@${m.name})`;
   const description = m.bio || `Pay ${m.displayName}, or send them a message or a file, sealed on your device.`;
   return {

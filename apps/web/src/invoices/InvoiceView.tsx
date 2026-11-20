@@ -124,6 +124,12 @@ export function InvoiceView({
               <td>
                 <b>{it.name || "Untitled item"}</b>
                 {it.description ? <small>{it.description}</small> : null}
+                {/* Phones drop the unit-price column; the price stays readable here. */}
+                {it.price ? (
+                  <small className={s.unitPhone}>
+                    {it.qty} × {it.price}
+                  </small>
+                ) : null}
               </td>
               <td>{it.qty}</td>
               <td>{it.price || "—"}</td>

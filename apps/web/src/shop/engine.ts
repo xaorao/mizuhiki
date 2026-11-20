@@ -61,6 +61,7 @@ import {
   resolveOwner,
   sendTx,
   waitForTx,
+  assertOwnsName,
 } from "@mizuhiki/chain";
 import type { Account } from "@/account/AccountProvider";
 import { api, ApiFailure } from "@/lib/api";
@@ -466,10 +467,12 @@ export async function refund(
 /** Fetch and verify a product against its owner's key on QoreChain. */
 export async function loadProduct(name: string, slug: string): Promise<PublicProduct & { def: ProductDef }> {
   const p = await api.get<PublicProduct>(`/products/${encodeURIComponent(name)}/${encodeURIComponent(slug)}`);
-  return { ...p, def: await verifyProduct(p.record) };
+  return { ...p, def: await verifyProduct(p.record, name) };
 }
 
-export async function verifyProduct(record: Signed<ProductDef>): Promise<ProductDef> {
+/** Verify a product record; with `name`, also that QoreChain says that name belongs to its signer. */
+export async function verifyProduct(record: Signed<ProductDef>, name?: string): Promise<ProductDef> {
+  if (name) await assertOwnsName(name, record.signer);
   const pq = await pqKeyViaEvm(record.signer);
   if (!pq.registered || !pq.publicKey || !pq.possessionProven)
     throw new Error("The seller's key is not on QoreChain, so this product cannot be checked.");
@@ -486,7 +489,7 @@ export async function loadShop(name: string): Promise<{ def: ProductDef; rating:
   const out: { def: ProductDef; rating: PublicProduct["rating"] }[] = [];
   for (const p of r.products) {
     try {
-      out.push({ def: await verifyProduct(p.record), rating: p.rating });
+      out.push({ def: await verifyProduct(p.record, name), rating: p.rating });
     } catch {
       // A product that does not verify is not shown.
     }

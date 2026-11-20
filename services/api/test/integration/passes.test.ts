@@ -336,6 +336,18 @@ describe("passes", () => {
       live: { envelope: string; kind: string }[];
     }>();
     expect(items.live).toHaveLength(1);
+    // A file uploaded to one of the owner's file requests is a file the pass covers ("messages and files").
+    const pg = (await import("postgres")).default(DB);
+    const dropHash = "f".repeat(64);
+    await pg`insert into envelopes (hash, owner, kind, size, readers, ref, created_at, expires_at)
+             select ${dropHash}, owner, 'filedrop', size, readers, 'freq:passcheck01', created_at, expires_at
+             from envelopes where hash = ${msg.hash}`;
+    const withDrop = (await app.inject({ url: `/passes/${periodId}/items`, headers: await auth(holder) })).json<{
+      live: { envelope: string; kind: string }[];
+    }>();
+    expect(withDrop.live.map((x) => x.kind).sort()).toEqual(["filedrop", "message"]);
+    await pg`delete from envelopes where hash = ${dropHash}`;
+    await pg.end();
     const env = new Uint8Array((await app.inject({ url: `/blobs/${items.live[0]?.envelope ?? ""}` })).rawPayload);
     expect(JSON.parse(fromUtf8(openItem({ purpose: Purpose.message, envelope: env, keys: got }))).text).toBe(
       "Q receipt",

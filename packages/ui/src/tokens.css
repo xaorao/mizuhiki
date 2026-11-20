@@ -91,6 +91,98 @@
   --t-seal: 640ms;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-pop: cubic-bezier(0.3, 1.6, 0.5, 1);
+  /* Role tokens for colours that used to be written inline in the screens. Light values are the exact colours
+     they replace; the contrast theme below turns every wash white, every rule and text colour black. */
+  /* washes: tinted backgrounds, hover rows, drop zones, glows and gradient stops */
+  --wash-rose: #fff4f6;
+  --wash-rose-faint: #fff8f9;
+  --wash-rose-hover: #fff7f9;
+  --wash-rose-active: #ffeef2;
+  --wash-rose-glow: #ffe6ec;
+  --wash-rose-deep: #ffe3ea;
+  --wash-rose-deeper: #ffd3de;
+  --wash-rose-mist: #fffafb;
+  --wash-rose-pale: #fffaf9;
+  --wash-blush: #fff1f4;
+  --wash-sky: #f4f9fd;
+  --wash-sky-glow: #e4f1fb;
+  --sora-soft: #e6f2fb;
+  --wash-mint: #eaf7e3;
+  --wash-mint-faint: #f0f9ea;
+  --wash-coral: #fff1ee;
+  --wash-error: #fde8e6;
+  --wash-cord: #ffe3e6;
+  --wash-amber: #fff7e0;
+  --wash-fuji: #efe7ff;
+  --wash-grey: #eeeeee;
+  --wash-warm: #fffaf6;
+  --wash-stone: #f4efe8;
+  --wash-ivory: #fffdfb;
+  --wash-shell: #fff6ee;
+  --wash-dawn: #fff6f0;
+  --wash-kinari: #fff4e3;
+  --wash-kinari-deep: #ffecd2;
+  --wash-sora: #dcedf9;
+  --wash-sora-deep: #cfe5f6;
+  --wash-matcha: #e3efd2;
+  --wash-matcha-deep: #d6e8c2;
+  --wash-apricot: #ffd9c9;
+  --tile-matcha: #b9d99a;
+  --tile-sakura: #ffd0dc;
+  --tile-apricot: #ffb08f;
+  --tile-sora: #bcd9f2;
+  --veil: rgba(255, 248, 239, 0.82);
+  --veil-strong: rgba(255, 248, 239, 0.86);
+  --cord-wash: rgba(226, 72, 61, 0.12);
+  /* rules: dividers, dashed separators and quiet borders */
+  --rule: #f3e2e8;
+  --rule-rose: #f0d4dd;
+  --rule-rose-deep: #e7c9d3;
+  --rule-rose-mid: #e7cdd6;
+  --rule-mauve: #e6d9df;
+  --rule-plum: #a0607a;
+  --rule-amber: #e9c46a;
+  --rule-fuji: #c9b6f2;
+  --rule-wave: #ffc4d0;
+  --rule-wave-2: #ffb3c3;
+  --rule-cord: rgba(226, 72, 61, 0.45);
+  --rule-dot: #f1d8de;
+  --hair-06: rgba(43, 35, 64, 0.06);
+  --hair-07: rgba(43, 35, 64, 0.07);
+  --hair-08: rgba(43, 35, 64, 0.08);
+  --hair-10: rgba(43, 35, 64, 0.1);
+  --hair-12: rgba(43, 35, 64, 0.12);
+  --hair-14: rgba(43, 35, 64, 0.14);
+  --hair-16: rgba(43, 35, 64, 0.16);
+  --hair-18: rgba(43, 35, 64, 0.18);
+  --hair-20: rgba(43, 35, 64, 0.2);
+  --rule-on-ink: #45395c;
+  /* text */
+  --text-plum: #5b3550;
+  --text-stone: #6b6262;
+  --text-mauve: #6b5a68;
+  --text-slate: #3d4152;
+  --text-umber: #7a5f3a;
+  --text-wine: #7a1d3e;
+  --text-rust: #5a1a08;
+  --text-ember: #b52a0a;
+  --text-error: #9b1c12;
+  --text-label: #8c546b; /* small caps labels on the sakura sidebar: 4.9:1 */
+  --placeholder: #b8a9b2;
+  /* on ink: text and marks on dark fills */
+  --on-ink-muted: #c9c1d6;
+  --on-ink-faint: #a99bbd;
+  --on-ink-sakura: #ffd9e1;
+  --on-ink-accent: #ff8f84;
+  /* solid accents, data marks and focus */
+  --cord-glow: #ff6b5e;
+  --cord-shade: #c8342b;
+  --live: #3f9a35;
+  --data-fill: #ffb3c3;
+  --star-fill: #f6c94a;
+  --focus-ring: #cfe6f7;
+  --cord-ring: rgba(226, 72, 61, 0.18);
+  --cord-ring-soft: rgba(226, 72, 61, 0.15);
 }
 [data-theme="contrast"] {
   --cream: #ffffff;
@@ -109,6 +201,112 @@
   --butter: #ffffff;
   --kinari: #ffffff;
   --fuji: #ffffff;
+  --sakura-wave: #ffffff;
+  --sakura-wave-2: #ffffff;
+  --sora-wave: #ffffff;
+  --matcha-tile: #ffffff;
+  --peach: #ffffff;
+  --ok-soft: #ffffff;
+  --wait-soft: #ffffff;
+  --danger-soft: #ffffff;
+  --info-soft: #ffffff;
+  --sakura-ink: #000000;
+  --sora-ink: #000000;
+  --matcha-ink: #000000;
+  --butter-ink: #000000;
+  --kinari-ink: #000000;
+  --fuji-ink: #000000;
+  --wait: #5e4309;
+  /* washes turn white */
+  --wash-rose: #ffffff;
+  --wash-rose-faint: #ffffff;
+  --wash-rose-hover: #ffffff;
+  --wash-rose-active: #ffffff;
+  --wash-rose-glow: #ffffff;
+  --wash-rose-deep: #ffffff;
+  --wash-rose-deeper: #ffffff;
+  --wash-rose-mist: #ffffff;
+  --wash-rose-pale: #ffffff;
+  --wash-blush: #ffffff;
+  --wash-sky: #ffffff;
+  --wash-sky-glow: #ffffff;
+  --sora-soft: #ffffff;
+  --wash-mint: #ffffff;
+  --wash-mint-faint: #ffffff;
+  --wash-coral: #ffffff;
+  --wash-error: #ffffff;
+  --wash-cord: #ffffff;
+  --wash-amber: #ffffff;
+  --wash-fuji: #ffffff;
+  --wash-grey: #ffffff;
+  --wash-warm: #ffffff;
+  --wash-stone: #ffffff;
+  --wash-ivory: #ffffff;
+  --wash-shell: #ffffff;
+  --wash-dawn: #ffffff;
+  --wash-kinari: #ffffff;
+  --wash-kinari-deep: #ffffff;
+  --wash-sora: #ffffff;
+  --wash-sora-deep: #ffffff;
+  --wash-matcha: #ffffff;
+  --wash-matcha-deep: #ffffff;
+  --wash-apricot: #ffffff;
+  --tile-matcha: #ffffff;
+  --tile-sakura: #ffffff;
+  --tile-apricot: #ffffff;
+  --tile-sora: #ffffff;
+  --veil: rgba(255, 255, 255, 0.82);
+  --veil-strong: rgba(255, 255, 255, 0.86);
+  /* a progress fill behind text: neutral grey, so the text on it stays black on near-white */
+  --cord-wash: rgba(0, 0, 0, 0.14);
+  /* rules turn black */
+  --rule: #000000;
+  --rule-rose: #000000;
+  --rule-rose-deep: #000000;
+  --rule-rose-mid: #000000;
+  --rule-mauve: #000000;
+  --rule-plum: #000000;
+  --rule-amber: #000000;
+  --rule-fuji: #000000;
+  --rule-wave: #000000;
+  --rule-wave-2: #000000;
+  --rule-cord: #000000;
+  --rule-dot: #000000;
+  --hair-06: #000000;
+  --hair-07: #000000;
+  --hair-08: #000000;
+  --hair-10: #000000;
+  --hair-12: #000000;
+  --hair-14: #000000;
+  --hair-16: #000000;
+  --hair-18: #000000;
+  --hair-20: #000000;
+  --rule-on-ink: #ffffff;
+  /* text turns black, or the dark cord red where it marks the brand accent or an error (9.3:1 on white) */
+  --text-plum: #000000;
+  --text-stone: #000000;
+  --text-mauve: #000000;
+  --text-slate: #000000;
+  --text-umber: #000000;
+  --text-wine: #000000;
+  --text-rust: #000000;
+  --text-ember: #8f1108;
+  --text-error: #8f1108;
+  --text-label: #000000;
+  --placeholder: #595959;
+  --on-ink-muted: #ffffff;
+  --on-ink-faint: #ffffff;
+  --on-ink-sakura: #ffffff;
+  --on-ink-accent: #ffffff;
+  /* solid accents and marks turn dark; focus rings turn black */
+  --cord-glow: #b3160c;
+  --cord-shade: #b3160c;
+  --live: #24461c;
+  --data-fill: #000000;
+  --star-fill: #000000;
+  --focus-ring: #000000;
+  --cord-ring: #000000;
+  --cord-ring-soft: #000000;
 }
 /* type scale */
 .h-hero {
@@ -163,7 +361,7 @@
   font-weight: 700;
   font-size: 16px;
   letter-spacing: 0.18em;
-  color: var(--cord);
+  color: var(--cord-text);
 }
 .mono {
   font-family: var(--font-mono);

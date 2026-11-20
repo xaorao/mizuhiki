@@ -150,21 +150,24 @@ export function OwnerProvider({ account, children }: { account: Account; childre
 
   const edit = useCallback(
     (fn: (d: Draft) => Draft, opts?: { coalesce?: string }) => {
-      setDraft((cur) => {
-        if (!cur) return cur;
-        const next = fn(cur);
-        if (next === cur) return cur;
-        // Typing in one field within 1.2 s is one undo step.
-        const now = Date.now();
-        const c = opts?.coalesce;
-        const merge = c && lastCoalesce.current?.key === c && now - lastCoalesce.current.at < 1200;
-        if (!merge) {
-          past.current = [...past.current.slice(-HISTORY + 1), cur];
-          future.current = [];
-        }
-        lastCoalesce.current = c ? { key: c, at: now } : null;
-        return next;
-      });
+      // History is kept here, not inside a state updater: updaters must be pure (React runs them twice in
+      // development), and doing it there once doubled undo steps. `latest` is updated at once so two edits before
+      // the next render each build on the one before.
+      const cur = latest.current;
+      if (!cur) return;
+      const next = fn(cur);
+      if (next === cur) return;
+      // Typing in one field within 1.2 s is one undo step.
+      const now = Date.now();
+      const c = opts?.coalesce;
+      const merge = c && lastCoalesce.current?.key === c && now - lastCoalesce.current.at < 1200;
+      if (!merge) {
+        past.current = [...past.current.slice(-HISTORY + 1), cur];
+        future.current = [];
+      }
+      lastCoalesce.current = c ? { key: c, at: now } : null;
+      latest.current = next;
+      setDraft(next);
       bump((x) => x + 1);
       persist();
     },
@@ -177,6 +180,7 @@ export function OwnerProvider({ account, children }: { account: Account; childre
     past.current = past.current.slice(0, -1);
     future.current = [latest.current, ...future.current];
     lastCoalesce.current = null;
+    latest.current = prev;
     setDraft(prev);
     bump((x) => x + 1);
     persist();
@@ -188,6 +192,7 @@ export function OwnerProvider({ account, children }: { account: Account; childre
     future.current = future.current.slice(1);
     past.current = [...past.current, latest.current];
     lastCoalesce.current = null;
+    latest.current = nxt;
     setDraft(nxt);
     bump((x) => x + 1);
     persist();

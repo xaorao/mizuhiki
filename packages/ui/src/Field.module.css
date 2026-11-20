@@ -223,6 +223,11 @@
   color: var(--ink);
   box-shadow: 0 3px 0 var(--ink);
 }
+/* High contrast: the track is white too, so the chosen option is an ink pill with white text. */
+:global([data-theme="contrast"]) .seg button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--white);
+}
 /* choice cards */
 .choice {
   position: relative;

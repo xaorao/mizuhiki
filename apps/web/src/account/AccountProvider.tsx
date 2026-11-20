@@ -45,7 +45,11 @@ interface Ctx {
   addPasskey: (name: string) => Promise<void>;
   changePassphrase: (passphrase: string) => Promise<void>;
   lock: () => void;
-  forgetDevice: () => Promise<void>;
+  /**
+   * Remove this device's key. With `then`, finish with a full page load there: no key stays in memory and no
+   * screen that needed the account can react to it first.
+   */
+  forgetDevice: (then?: string) => Promise<void>;
   takeOver: () => void;
   /** A signed-in API session token (Sign In With QoreChain), made on demand. */
   token: () => Promise<string>;
@@ -250,8 +254,13 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     [vault, account, store],
   );
 
-  const forgetDevice = useCallback(async () => {
+  const forgetDevice = useCallback(async (then?: string) => {
     await idb.del(VAULT_KEY);
+    tokenRef.current = undefined;
+    if (then) {
+      window.location.replace(then);
+      return;
+    }
     setVault(undefined);
     setAccount(undefined);
     tokenRef.current = undefined;

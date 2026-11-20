@@ -28,6 +28,7 @@ import { NETWORK } from "@mizuhiki/chain";
 import { SUBMIT_LABEL, SubmitFailure, formEvent, submitAnswers, type SubmitStep } from "./submit";
 import { SignaturePad } from "./SignaturePad";
 import s from "./runner.module.css";
+import { useSearch } from "@/lib/useClient";
 
 interface Step {
   ids: string[];
@@ -91,20 +92,18 @@ export function FormRunner({
   const [ending, setEnding] = useState<string>(def.endings[0]?.id ?? "");
   const [failure, setFailure] = useState<string | null>(null);
   const started = useRef<{ at: number; sent: boolean }>({ at: 0, sent: false });
+  // Read through useClient so the server's HTML and the first browser render agree (no hydration mismatch).
+  const search = useSearch();
   const hidden = useMemo(() => {
-    if (typeof window === "undefined") return {};
-    const p = new URLSearchParams(window.location.search);
+    const p = new URLSearchParams(search);
     const h: Record<string, string> = {};
     p.forEach((v, k) => {
       if (k !== "embed" && Object.keys(h).length < 10) h[k.slice(0, 40)] = v.slice(0, 200);
     });
     return h;
-  }, []);
+  }, [search]);
   // Inside another site's page (embed.js adds ?embed=1): fit the frame, no outer page chrome.
-  const embedded = useMemo(
-    () => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("embed") === "1",
-    [],
-  );
+  const embedded = useMemo(() => new URLSearchParams(search).get("embed") === "1", [search]);
   const readerNames = [`@${ownerName}`, ...def.readers.map((r) => `@${r.name}`)];
 
   // Restore a partial answer kept in this browser (never uploaded).

@@ -97,11 +97,11 @@ export function useInbox(account: Account, token: () => Promise<string>, onChang
 
   const remember = useCallback(
     (hash: string, item: Opened) => {
-      setOpened((o) => {
-        const next = { ...o, [hash]: item };
-        if (cacheReady.current) void writeCache(account, next).catch(() => undefined);
-        return next;
-      });
+      // Computed outside the state updater, which must stay free of side effects (the cache write).
+      const next = { ...openedRef.current, [hash]: item };
+      openedRef.current = next;
+      setOpened(next);
+      if (cacheReady.current) void writeCache(account, next).catch(() => undefined);
     },
     [account],
   );

@@ -93,8 +93,15 @@ test("editor: add, edit, reorder, hide, archive, restore, undo, design, publish"
   await expect(blocks).toHaveCount(3);
   await page.getByRole("button", { name: "Undo", exact: true }).last().click();
   await expect(blocks).toHaveCount(4);
+  // Each Undo reverses exactly one step: the archive is back, still hidden; the next Undo shows it again.
+  await expect(page.locator("aside").getByText("Pay Kinari")).toHaveCount(0);
   await page.getByRole("button", { name: "Undo", exact: true }).first().click();
   await expect(blocks).toHaveCount(4);
+  await expect(page.locator("aside").getByText("Pay Kinari")).toHaveCount(1);
+  await expect(pay.getByRole("switch")).toHaveAttribute("aria-checked", "true");
+  // Hide it again for the rest of the run.
+  await pay.getByRole("switch").click();
+  await expect(page.locator("aside").getByText("Pay Kinari")).toHaveCount(0);
 
   // Drag to reorder with the mouse: move the last block to the top
   const handles = page.getByRole("button", { name: /Drag to reorder/ });

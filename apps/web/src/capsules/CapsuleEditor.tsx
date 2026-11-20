@@ -124,31 +124,37 @@ export function CapsuleEditor({ id: given }: { id: string | null }) {
 
   // Autosave the sealed working copy, a moment after the last change.
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The newest working copy, moved at once by every change: a step that awaits (a name lookup, say) and then saves
+  // must not save an older copy over edits made meanwhile.
+  const latest = useRef<CapsuleDraft | null>(null);
+  latest.current = draft;
   const change = (fn: (d: CapsuleDraft) => CapsuleDraft) => {
-    setDraft((d) => {
-      if (!d) return d;
-      const next = fn(d);
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => {
-        setSave("saving");
-        void tokened()
-          .then((t) => saveDraft(t, next))
-          .then(() => {
-            setSave("saved");
-            // Give the new capsule its own address in place: no navigation, so nothing reloads or remounts.
-            if (!id) {
-              window.history.replaceState(null, "", `/app/capsules/${next.id}`);
-              setId(next.id);
-            }
-          })
-          .catch(() => setSave("failed"));
-      }, 700);
-      return next;
-    });
+    // Computed outside the state updater, which must stay free of side effects (the autosave timer).
+    const cur = latest.current;
+    if (!cur) return;
+    const next = fn(cur);
+    latest.current = next;
+    setDraft(next);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      setSave("saving");
+      void tokened()
+        .then((t) => saveDraft(t, next))
+        .then(() => {
+          setSave("saved");
+          // Give the new capsule its own address in place: no navigation, so nothing reloads or remounts.
+          if (!id) {
+            window.history.replaceState(null, "", `/app/capsules/${next.id}`);
+            setId(next.id);
+          }
+        })
+        .catch(() => setSave("failed"));
+    }, 700);
   };
   const flush = async (d: CapsuleDraft) => {
     if (timer.current) clearTimeout(timer.current);
-    await saveDraft(await tokened(), d);
+    const newest = latest.current && latest.current.id === d.id ? latest.current : d;
+    await saveDraft(await tokened(), newest);
     setSave("saved");
   };
 

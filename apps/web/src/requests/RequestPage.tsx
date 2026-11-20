@@ -16,7 +16,7 @@ import {
   type RecipientCard,
   type Signed,
 } from "@mizuhiki/core";
-import { pqKeyViaEvm } from "@mizuhiki/chain";
+import { assertOwnsName, pqKeyViaEvm } from "@mizuhiki/chain";
 import { mediaUrl } from "@/lib/api";
 import { themeVars } from "@/page/theme";
 import { MessageSheet } from "@/public/MessageSheet";
@@ -51,6 +51,7 @@ export function RequestPage({
     void (async () => {
       try {
         if (request.signer !== owner || r.owner !== owner || page.signer !== owner) throw new Error("mismatch");
+        await assertOwnsName(name, owner);
         const pq = await pqKeyViaEvm(owner);
         if (!pq.registered || !pq.publicKey || !pq.possessionProven) throw new Error("no key");
         verifyRecord(request, { kind: "filerequest", signer: owner, pqPublicKey: pq.publicKey });
@@ -62,7 +63,7 @@ export function RequestPage({
     return () => {
       life.alive = false;
     };
-  }, [request, r.owner, owner, page.signer]);
+  }, [request, r.owner, owner, page.signer, name]);
 
   const style = themeVars(m.theme);
   const state = requestState(r);

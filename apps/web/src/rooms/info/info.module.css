@@ -838,6 +838,9 @@
   background-size: 300% 100%;
   animation: shimmer 1.4s linear infinite;
 }
+:global([data-theme="contrast"]) .tileSkel {
+  background: color-mix(in srgb, var(--ink) 18%, var(--white));
+}
 .fileRow {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -968,7 +971,7 @@
   display: grid;
   gap: 8px;
   padding: 10px 0;
-  border-top: 2px dashed #f3e2e8;
+  border-top: 2px dashed var(--rule);
 }
 .settingBlock:first-child {
   border-top: 0;
@@ -993,7 +996,7 @@
   justify-content: space-between;
   gap: 12px;
   font-size: 14px;
-  border-bottom: 2px dashed #f3e2e8;
+  border-bottom: 2px dashed var(--rule);
   padding-bottom: 8px;
 }
 .summary > div:last-child {

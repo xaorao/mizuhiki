@@ -358,9 +358,9 @@ export const capsuleRoutes =
       if (chain.status !== "cancelled")
         return fail(reply, 409, "NOT_CANCELLED", "QoreChain does not show this capsule as cancelled yet.");
       await db.update(capsules).set({ state: "cancelled", updatedAt: new Date() }).where(eq(capsules.id, id));
-      // Cancelled on chain: nothing will open, so the owner's copies are let go.
+      // Cancelled on chain: nothing will open, so the sealed contents and every piece are let go. The owner's own
+      // working copy stays: the cancelled capsule is still in their list and opens to show what it was.
       await release(db, me, `capsule:${id}`);
-      await release(db, me, `capsule-draft:${id}`);
       const plan = planOf(c);
       if (plan)
         for (const a of new Set([...plan.body.guardians, ...plan.body.recipients.map((r) => r.address)]))

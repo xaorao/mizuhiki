@@ -35,7 +35,8 @@ type Status = "invited" | "accepted" | "active" | "expired" | "revoked" | "decli
 
 /** Inbox envelope kinds each period kind covers. */
 const ENVELOPE_KINDS: Record<string, string[]> = {
-  messages: ["message", "reply"],
+  // "messages and files": file-request uploads are files people sent, sealed to the period key like messages.
+  messages: ["message", "reply", "filedrop"],
   payments: ["paynote"],
   forms: ["form"],
 };

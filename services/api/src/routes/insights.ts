@@ -11,9 +11,11 @@ import { counters, envelopes, forms, payments } from "@mizuhiki/db";
 import type { Ctx } from "../server";
 import { sessionAddress } from "../lib/auth";
 import { fail } from "../lib/http";
+import { DROP_KINDS, SELF_KINDS } from "./drop";
 
 /** Item kinds a visitor or payer sends (not the owner's own notes, labels or proofs). */
-const RECEIVED = ["message", "reply", "paynote", "form", "order", "request"];
+/** Everything other people seal to this owner: every drop kind except the owner's own private labels. */
+const RECEIVED: string[] = DROP_KINDS.filter((k) => !SELF_KINDS.includes(k));
 const DAY = 86400_000;
 const dayKey = (t: number) => new Date(t).toISOString().slice(0, 10);
 

@@ -19,6 +19,7 @@ import {
   Skeleton,
   StatusChip,
   TextField,
+  Segmented,
   ToggleRow,
   useToast,
 } from "@mizuhiki/ui";
@@ -34,6 +35,7 @@ import {
 import { useAccount } from "@/account/AccountProvider";
 import { useOwner } from "@/owner/OwnerProvider";
 import { ApiFailure, api } from "@/lib/api";
+import { useContrast, type ContrastChoice } from "@/lib/contrast";
 import { SITE_URL, pageUrl } from "@/lib/site";
 import { buildSpareKeySheet, downloadBytes } from "@/lib/sparekey";
 import { cardOf } from "@/lib/send";
@@ -73,6 +75,7 @@ const SECTIONS = [
   { id: "security", label: "Security" },
   { id: "notifications", label: "Notifications" },
   { id: "readers", label: "Readers" },
+  { id: "display", label: "Display" },
   { id: "data", label: "Data" },
   { id: "window", label: "QoreChain access" },
   { id: "legal", label: "Legal" },
@@ -106,6 +109,7 @@ export function Settings() {
           <SecuritySection />
           <NotificationsSection tokened={tokened} />
           <ReadersSection tokened={tokened} />
+          <DisplaySection />
           <DataSection tokened={tokened} />
           <WindowSection />
           <LegalSection />
@@ -363,7 +367,6 @@ function SecuritySection() {
   const acct = useAccount();
   const owner = useOwner();
   const toast = useToast();
-  const router = useRouter();
   const [mode, setMode] = useState<"pass" | "phrase" | "sheet" | null>(null);
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -560,11 +563,7 @@ function SecuritySection() {
         title="Forget this device?"
         confirm="Forget this device"
         onClose={() => setForgetting(false)}
-        onConfirm={() =>
-          void acct.forgetDevice().then(() => {
-            router.push("/login");
-          })
-        }
+        onConfirm={() => void acct.forgetDevice("/login")}
       >
         <p>
           Your key is removed from this browser. Your page and everything sealed to you stay; open them again anywhere
@@ -874,13 +873,36 @@ function ReadersSection({ tokened }: { tokened: () => Promise<Tokened> }) {
   );
 }
 
+// ---- display --------------------------------------------------------------------------------------------
+
+function DisplaySection() {
+  const [choice, setChoice] = useContrast();
+  return (
+    <Section id="display" title="Display">
+      <Segmented<ContrastChoice>
+        label="High contrast"
+        value={choice}
+        onChange={setChoice}
+        options={[
+          { value: "device", label: "Follow this device" },
+          { value: "on", label: "On" },
+          { value: "off", label: "Off" },
+        ]}
+      />
+      <p className={p.hint}>
+        Black text on white with stronger lines, everywhere in Mizuhiki. Saved on this device only. With &ldquo;Follow
+        this device&rdquo; it turns on when your system asks for more contrast.
+      </p>
+    </Section>
+  );
+}
+
 // ---- data -----------------------------------------------------------------------------------------
 
 function DataSection({ tokened }: { tokened: () => Promise<Tokened> }) {
   const owner = useOwner();
   const acct = useAccount();
   const toast = useToast();
-  const router = useRouter();
   const [step, setStep] = useState<ExportStep | null>(null);
   const [asking, setAsking] = useState(false);
   const [typed, setTyped] = useState("");
@@ -905,31 +927,23 @@ function DataSection({ tokened }: { tokened: () => Promise<Tokened> }) {
     }
   };
 
-  // Delete with Undo: nothing is sent until 10 seconds pass.
+  // Delete with Undo: nothing is sent until 10 seconds pass. The interval only counts; the delete runs from the
+  // effect below once the count reaches zero (a state updater must not have side effects).
   const startDelete = () => {
     setAsking(false);
     setCountdown(10);
-    timer.current = setInterval(() => {
-      setCountdown((c) => {
-        if (c === null) return null;
-        if (c <= 1) {
-          if (timer.current) clearInterval(timer.current);
-          void tokened()
-            .then(deletePage)
-            .then(async () => {
-              toast.show("Your page is deleted. What is on QoreChain stays.");
-              await acct.forgetDevice();
-              router.push("/");
-            })
-            .catch((e: unknown) =>
-              toast.show(e instanceof Error ? e.message : "It was not deleted.", { tone: "error" }),
-            );
-          return null;
-        }
-        return c - 1;
-      });
-    }, 1000);
+    timer.current = setInterval(() => setCountdown((c) => (c === null ? null : c - 1)), 1000);
   };
+  useEffect(() => {
+    if (countdown !== 0) return;
+    if (timer.current) clearInterval(timer.current);
+    setCountdown(null);
+    void tokened()
+      .then(deletePage)
+      // A full load to the landing page: nothing in memory survives, and it says what happened there.
+      .then(() => acct.forgetDevice("/?left=deleted"))
+      .catch((e: unknown) => toast.show(e instanceof Error ? e.message : "It was not deleted.", { tone: "error" }));
+  }, [countdown, tokened, acct, toast]);
   const undo = () => {
     if (timer.current) clearInterval(timer.current);
     setCountdown(null);

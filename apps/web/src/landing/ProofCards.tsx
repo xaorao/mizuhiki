@@ -80,7 +80,8 @@ function Card({ p }: { p: Proof }) {
           "Reading QoreChain…"
         ) : live.state === "ok" ? (
           <>
-            <Icon name="check" size={14} /> Confirmed in block {Number(live.height).toLocaleString("en-US")}
+            <Icon name="check" size={14} />
+            <span>Confirmed in block {Number(live.height).toLocaleString("en-US")}</span>
           </>
         ) : live.state === "failed" ? (
           "QoreChain reports this transaction failed"
@@ -89,7 +90,7 @@ function Card({ p }: { p: Proof }) {
         )}
       </span>
       <code>
-        tx {p.hash.slice(0, 16)}… <Icon name="share" size={12} />
+        <span>tx {p.hash.slice(0, 16)}…</span> <Icon name="share" size={12} />
       </code>
     </a>
   );

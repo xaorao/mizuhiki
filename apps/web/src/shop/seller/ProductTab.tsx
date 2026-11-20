@@ -283,7 +283,7 @@ function Images({ draft, patch, tokened }: EditorProps) {
             ? "Eight covers is the most; the rest were skipped."
             : "One thumbnail; the first image was used.",
         );
-      if (where === "cover" && added.length) patch({ covers: [...def.covers, ...added].slice(0, 8) });
+      if (where === "cover" && added.length) patch((d) => ({ covers: [...d.covers, ...added].slice(0, 8) }));
       if (where === "thumb" && added[0]) patch({ thumbnail: added[0] });
       if (added.length)
         toast.show(

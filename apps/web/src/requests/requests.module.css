@@ -80,19 +80,19 @@
   text-transform: uppercase;
   color: var(--ink-muted);
   background: var(--paper);
-  border-bottom: var(--line) solid var(--line-strong, rgba(43, 35, 64, 0.15));
+  border-bottom: var(--line) solid var(--hair-16);
 }
 .trow {
   color: var(--ink);
   text-decoration: none;
-  border-top: 1.5px dashed rgba(43, 35, 64, 0.12);
+  border-top: 1.5px dashed var(--hair-12);
   transition: background var(--t-press);
 }
 .trow:first-of-type {
   border-top: 0;
 }
 .trow:hover {
-  background: #fff7f9;
+  background: var(--wash-rose-hover);
 }
 .trow:focus-visible {
   outline: 3px solid var(--focus);
@@ -286,7 +286,7 @@
   padding: 8px 10px 8px 12px;
   border-radius: 14px;
   background: var(--paper);
-  border: 1.5px solid rgba(43, 35, 64, 0.12);
+  border: 1.5px solid var(--hair-12);
 }
 .file span {
   flex: 1;

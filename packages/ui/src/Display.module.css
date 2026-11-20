@@ -76,7 +76,7 @@
 }
 .t_white {
   background: var(--white);
-  color: var(--cord);
+  color: var(--cord-text);
 }
 .t_cord {
   background: var(--cord-fill);
@@ -102,7 +102,6 @@
 }
 .feature .rowText small {
   color: inherit;
-  opacity: 0.9;
 }
 .chev {
   color: var(--ink-subtle);
@@ -226,7 +225,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 18px 22px;
-  border-bottom: 2.5px dashed #f0d4dd;
+  border-bottom: 2.5px dashed var(--rule-rose);
 }
 .panelHead h2 {
   font-size: 20px;
@@ -276,7 +275,7 @@
   color: var(--ink-muted);
 }
 .st_sakura {
-  background: #ffe3ea;
+  background: var(--wash-rose-deep);
 }
 .st_sora {
   background: var(--sora);
@@ -319,9 +318,14 @@
 }
 .skAvatar,
 .skLine {
-  background: linear-gradient(90deg, var(--sakura-soft) 0%, #fff4f6 40%, var(--sakura-soft) 80%);
+  background: linear-gradient(90deg, var(--sakura-soft) 0%, var(--wash-rose) 40%, var(--sakura-soft) 80%);
   background-size: 200% 100%;
   animation: sk 1.4s ease-in-out infinite;
+}
+/* High contrast: a pink shimmer on white turns invisible, so loading shapes are a solid neutral grey. */
+:global([data-theme="contrast"]) .skAvatar,
+:global([data-theme="contrast"]) .skLine {
+  background: color-mix(in srgb, var(--ink) 18%, var(--white));
 }
 @keyframes sk {
   0% {
@@ -367,7 +371,7 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  background: #fff4f6;
+  background: var(--wash-rose);
   border: var(--line) solid var(--ink);
   border-radius: 20px;
   padding: 10px 14px;

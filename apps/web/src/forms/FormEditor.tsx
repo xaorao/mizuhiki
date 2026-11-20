@@ -48,6 +48,8 @@ export function FormEditor({ id }: { id: string }) {
   if (!account) throw new Error("Forms need an unlocked account");
   const ownerName = owner.draft?.manifest.name ?? "";
   const [def, setDef] = useState<FormDef | null>(null);
+  const latest = useRef<FormDef | null>(null);
+  latest.current = def;
   const [published, setPublished] = useState<FormDef | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>((params.get("tab") as Tab | null) ?? "build");
@@ -82,41 +84,47 @@ export function FormEditor({ id }: { id: string }) {
     })();
   }, [account, id, owner, ownerName]);
 
+  // History lives outside state updaters (they must be pure: React runs them twice in development, which made one
+  // Undo skip two steps). `latest` moves at once so edits made before the next render build on each other.
   const update = useCallback<TabProps["update"]>((fn, coalesce) => {
-    setDef((cur) => {
-      if (!cur) return cur;
-      const next = fn(cur);
-      if (next === cur) return cur;
-      const now = Date.now();
-      const merge = coalesce && lastCoalesce.current?.key === coalesce && now - lastCoalesce.current.at < 1200;
-      if (!merge) {
-        past.current = [...past.current.slice(-99), cur];
-        future.current = [];
-      }
-      lastCoalesce.current = coalesce ? { key: coalesce, at: now } : null;
-      dirty.current = true;
-      setProblems([]);
-      return next;
-    });
+    const cur = latest.current;
+    if (!cur) return;
+    const next = fn(cur);
+    if (next === cur) return;
+    const now = Date.now();
+    const merge = coalesce && lastCoalesce.current?.key === coalesce && now - lastCoalesce.current.at < 1200;
+    if (!merge) {
+      past.current = [...past.current.slice(-99), cur];
+      future.current = [];
+    }
+    lastCoalesce.current = coalesce ? { key: coalesce, at: now } : null;
+    dirty.current = true;
+    setProblems([]);
+    latest.current = next;
+    setDef(next);
   }, []);
 
   const undo = useCallback(() => {
-    setDef((cur) => {
-      const prev = past.current.pop();
-      if (!prev || !cur) return cur;
-      future.current.push(cur);
-      dirty.current = true;
-      return prev;
-    });
+    const cur = latest.current;
+    const prev = past.current.at(-1);
+    if (!prev || !cur) return;
+    past.current = past.current.slice(0, -1);
+    future.current = [...future.current, cur];
+    lastCoalesce.current = null;
+    dirty.current = true;
+    latest.current = prev;
+    setDef(prev);
   }, []);
   const redo = useCallback(() => {
-    setDef((cur) => {
-      const next = future.current.pop();
-      if (!next || !cur) return cur;
-      past.current.push(cur);
-      dirty.current = true;
-      return next;
-    });
+    const cur = latest.current;
+    const next = future.current.at(-1);
+    if (!next || !cur) return;
+    future.current = future.current.slice(0, -1);
+    past.current = [...past.current, cur];
+    lastCoalesce.current = null;
+    dirty.current = true;
+    latest.current = next;
+    setDef(next);
   }, []);
 
   // Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z (not while typing in a field: the browser undoes text there).

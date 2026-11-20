@@ -6,6 +6,7 @@
  * window closed on chain.
  * Source of truth: the registry read from QoreChain, the API, the zip's files.
  */
+import { randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { unzipSync, strFromU8 } from "fflate";
 import { resolveOnChain, readWindow } from "@mizuhiki/chain";
@@ -180,6 +181,52 @@ test("settings: names on chain, security behind re-auth, notifications, a defaul
   await page.screenshot({ path: info.outputPath("02-settings-after.png"), fullPage: true });
 });
 
+test("settings: export packs large files in a same-origin worker, allowed by the CSP, with every byte", async ({
+  browser,
+}, info) => {
+  test.skip(info.project.name !== "desktop", "desktop");
+  test.setTimeout(600_000);
+  const owner = await ensureOwner("e2e-visitor", "mzk-e2e-visitor");
+  // A visitor sends a file large enough that the zip library would have used a worker (over 160 KB).
+  const big = {
+    name: `export-check-${Date.now()}.bin`,
+    mimeType: "application/octet-stream",
+    buffer: randomBytes(400 * 1024),
+  };
+  const gctx = await browser.newContext();
+  const g = await gctx.newPage();
+  await g.goto("/@mzk-e2e-visitor/message");
+  const sheet = g.getByRole("dialog", { name: /something private/ });
+  await sheet.getByLabel("Message").fill("For the export check");
+  await sheet.locator('input[type="file"]').setInputFiles(big);
+  await sheet.getByRole("button", { name: "Next" }).click();
+  await sheet.getByRole("button", { name: "Seal and send" }).click();
+  await expect(g.getByText(/Stored for .+, sealed\./)).toBeVisible({ timeout: 180_000 });
+  await gctx.close();
+
+  const octx = await browser.newContext({ acceptDownloads: true });
+  const o = await octx.newPage();
+  const workers: string[] = [];
+  o.on("worker", (w) => workers.push(w.url()));
+  const csp: string[] = [];
+  o.on(
+    "console",
+    (m) => /Content Security Policy|worker/i.test(m.text()) && m.type() === "error" && csp.push(m.text()),
+  );
+  await restoreInBrowser(o, owner.phrase);
+  await o.getByRole("link", { name: "Settings" }).filter({ visible: true }).first().click();
+  await o.waitForURL("**/app/settings");
+  const dl = o.waitForEvent("download", { timeout: 300_000 });
+  await o.locator("#data").getByRole("button", { name: "Export" }).click();
+  const zip = unzipSync(new Uint8Array(await readFile(await (await dl).path())));
+  const entry = Object.keys(zip).find((k) => k.endsWith(`/${big.name}`));
+  expect(entry).toBeDefined();
+  expect(Buffer.from(zip[entry ?? ""] ?? new Uint8Array()).equals(big.buffer)).toBe(true);
+  expect(csp).toEqual([]);
+  expect(workers.some((u) => u.startsWith("http://localhost:3000/"))).toBe(true);
+  await octx.close();
+});
+
 test("settings: a real delete removes the page and everything stored, chain stays", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop", "desktop");
   test.setTimeout(600_000);
@@ -191,7 +238,13 @@ test("settings: a real delete removes the page and everything stored, chain stay
   await del.getByLabel('Type "delete my page" to confirm').fill("delete my page");
   await del.getByRole("button", { name: "Delete my page" }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 60_000 });
+  // The landing page says what happened, once, and the address is tidied; this device holds no key any more.
+  await expect(page.getByText("Your page is deleted. What is on QoreChain stays.")).toBeVisible();
+  await expect.poll(() => new URL(page.url()).search).toBe("");
   expect((await call(`/pages/${GONE}`)).status).toBe(404);
+  // No key left on this device: the app asks for the 24 words, not for the device passphrase.
+  await page.goto("/app");
+  await expect(page.getByRole("heading", { name: "Use your recovery phrase" })).toBeVisible();
   // The name stays on QoreChain.
   expect((await resolveOnChain(GONE)).owner?.toLowerCase()).toBe(gone.evm.toLowerCase());
 });

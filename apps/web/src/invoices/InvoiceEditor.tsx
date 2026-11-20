@@ -5,12 +5,12 @@
  * totals rail, due presets, Message to customer vs Memo to self, attachments,
  * Preview. Drafts autosave sealed to the owner only.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Chip, Icon, IconButton, LockLine, Oops, Segmented, TextArea, TextField, useToast } from "@mizuhiki/ui";
 import { normalizeNameInput } from "@mizuhiki/core";
 import type { Account } from "@/account/AccountProvider";
-import { api, ApiFailure } from "@/lib/api";
+import { ApiFailure } from "@/lib/api";
 import { fmtBytes } from "@/public/MessageSheet";
 import {
   DUE_LABEL,
@@ -29,6 +29,7 @@ import { attach, saveDraft, sendInvoice } from "./useInvoices";
 import { InvoiceView } from "./InvoiceView";
 import { ShareSheet } from "./ShareSheet";
 import s from "./invoices.module.css";
+import { ownerOfName } from "@mizuhiki/chain";
 
 type Save = "idle" | "saving" | "saved" | "error";
 
@@ -69,6 +70,12 @@ export function InvoiceEditor({
     setProblems([]);
     setCopy((c) => ({ ...c, doc: { ...c.doc, ...patch } }));
   };
+  /** Merge into the latest "bill to" (a lookup can finish after the person typed more). */
+  const setBillTo = (patch: Partial<InvoiceDoc["billTo"]>) => {
+    dirty.current = true;
+    setProblems([]);
+    setCopy((c) => ({ ...c, doc: { ...c.doc, billTo: { ...c.doc.billTo, ...patch } } }));
+  };
   const setItem = (id: string, patch: Partial<Item>) =>
     set({ items: doc.items.map((it) => (it.id === id ? { ...it, ...patch } : it)) });
 
@@ -92,32 +99,44 @@ export function InvoiceEditor({
     return () => clearTimeout(h);
   }, [persist]);
 
+  // Only the newest lookup may write: an older, slower answer for a name the person already changed is dropped.
+  const lookup = useRef(0);
   const checkName = async (raw: string) => {
     const name = normalizeNameInput(raw);
+    const mine = ++lookup.current;
     if (!name) {
       setNameState({ state: "idle" });
-      set({ billTo: { ...doc.billTo, name: "", address: "" } });
+      setBillTo({ name: "", address: "" });
       return;
     }
     setNameState({ state: "checking" });
     try {
-      const r = await api.get<{ available: boolean; owner?: string }>(`/names/${encodeURIComponent(name)}`);
-      if (r.available || !r.owner) {
+      // The owner of a name is read from QoreChain, not taken from our server.
+      const r = { owner: await ownerOfName(name) };
+      if (mine !== lookup.current) return;
+      if (!r.owner) {
         setNameState({ state: "bad", message: `Nobody has @${name} yet. Send it as a link instead.` });
-        set({ billTo: { ...doc.billTo, name, address: "" } });
+        setBillTo({ name, address: "" });
       } else if (r.owner === account.owner.address) {
         setNameState({ state: "bad", message: "That is you." });
-        set({ billTo: { ...doc.billTo, name, address: "" } });
+        setBillTo({ name, address: "" });
       } else {
         setNameState({ state: "ok", message: `@${name} is on Mizuhiki. The invoice is sealed to their key too.` });
-        set({ billTo: { ...doc.billTo, name, address: r.owner } });
+        setBillTo({ name, address: r.owner });
       }
     } catch {
-      setNameState({ state: "bad", message: "That name could not be checked right now." });
+      if (mine === lookup.current) setNameState({ state: "bad", message: "That name could not be checked right now." });
     }
   };
 
+  // Send pressed while the @name is still being looked up: wait for the answer, then send the invoice as it is
+  // then. Sending at once would fail on an empty payer and the lookup's update would wipe that message.
+  const [sendQueued, setSendQueued] = useState(false);
   const onSend = async () => {
+    if (nameState.state === "checking") {
+      setSendQueued(true);
+      return;
+    }
     const p = sendProblems(doc);
     setProblems(p);
     if (p.length) return;
@@ -132,6 +151,14 @@ export function InvoiceEditor({
       setSending(false);
     }
   };
+
+  // Runs the latest onSend (with the invoice as it is now) once the lookup has settled.
+  const sendNow = useEffectEvent(() => void onSend());
+  useEffect(() => {
+    if (!sendQueued || nameState.state === "checking") return;
+    setSendQueued(false);
+    sendNow();
+  }, [sendQueued, nameState.state]);
 
   const addFiles = async (files: FileList) => {
     for (const f of Array.from(files)) {
@@ -174,7 +201,7 @@ export function InvoiceEditor({
           <Button variant="line" icon="eye" onClick={() => setPreview((p) => !p)} aria-pressed={preview}>
             {preview ? "Edit" : "Preview"}
           </Button>
-          <Button variant="cord" icon="send" busy={sending} onClick={() => void onSend()}>
+          <Button variant="cord" icon="send" busy={sending || sendQueued} onClick={() => void onSend()}>
             Send
           </Button>
         </div>
@@ -201,9 +228,7 @@ export function InvoiceEditor({
               <Segmented<InvoiceDoc["billTo"]["kind"]>
                 label="Bill to"
                 value={doc.billTo.kind}
-                onChange={(kind) =>
-                  set({ billTo: { ...doc.billTo, kind, ...(kind === "link" ? { address: "", name: "" } : {}) } })
-                }
+                onChange={(kind) => setBillTo({ kind, ...(kind === "link" ? { address: "", name: "" } : {}) })}
                 options={[
                   { value: "name", label: "A Mizuhiki @name" },
                   { value: "address", label: "An address" },
@@ -227,7 +252,7 @@ export function InvoiceEditor({
                   label="Their QoreChain address"
                   value={doc.billTo.address}
                   spellCheck={false}
-                  onChange={(e) => set({ billTo: { ...doc.billTo, address: e.target.value.trim() } })}
+                  onChange={(e) => setBillTo({ address: e.target.value.trim() })}
                   placeholder="qor1…"
                 />
               ) : null}
@@ -236,14 +261,14 @@ export function InvoiceEditor({
                   label="Who it is for (optional, shown on the invoice)"
                   value={doc.billTo.label}
                   maxLength={120}
-                  onChange={(e) => set({ billTo: { ...doc.billTo, label: e.target.value } })}
+                  onChange={(e) => setBillTo({ label: e.target.value })}
                 />
               ) : null}
               <TextField
                 label="Their business name (optional)"
                 value={doc.billTo.business}
                 maxLength={120}
-                onChange={(e) => set({ billTo: { ...doc.billTo, business: e.target.value } })}
+                onChange={(e) => setBillTo({ business: e.target.value })}
               />
               <TextField
                 label="Your business name (optional)"

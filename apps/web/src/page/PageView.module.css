@@ -126,8 +126,8 @@
   display: flex;
   gap: 8px;
   align-items: center;
-  border: 2px dashed #a0607a;
-  background: #fff4f6;
+  border: 2px dashed var(--rule-plum);
+  background: var(--wash-rose);
   border-radius: var(--r-pill);
   padding: 10px 14px;
   font-size: 13px;
@@ -165,6 +165,21 @@
 }
 .wp_image {
   background: var(--wp-image, var(--wp-a)) center / cover no-repeat;
+}
+/* High contrast: whatever wallpaper, text and button colours the owner chose, a visitor who asks for more contrast
+   gets white fields and black ink. The theme arrives as inline custom properties, so these need !important. */
+:global([data-theme="contrast"]) .page {
+  --page-text: var(--ink) !important;
+  --wp-a: var(--white) !important;
+  --wp-b: var(--white) !important;
+  --wp-image: none !important;
+  --row-bg: var(--white) !important;
+  --row-blur: none !important;
+  --row-ink: var(--ink) !important;
+}
+:global([data-theme="contrast"]) .cover {
+  --a: var(--white) !important;
+  --b: var(--white) !important;
 }
 .hero .cover {
   height: 210px;

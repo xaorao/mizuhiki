@@ -110,6 +110,16 @@
   filter: none;
   cursor: progress;
 }
+/* High contrast: a faded button is a muddy tint with weak text, so an unavailable one turns white with a dashed ink
+   line and black text instead. */
+:global([data-theme="contrast"]) .btn:disabled:not(.busy) {
+  opacity: 1;
+  filter: none;
+  background: var(--white);
+  color: var(--ink);
+  border-style: dashed;
+  box-shadow: none;
+}
 .icon {
   padding: 0;
   aspect-ratio: 1;

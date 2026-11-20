@@ -47,7 +47,7 @@
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #a0607a;
+  color: var(--text-label);
   margin: 16px 12px 4px;
 }
 .navItem {
@@ -180,6 +180,11 @@
     color: var(--cord-text);
     box-shadow: 0 3px 0 var(--ink);
   }
+  /* High contrast: the tab bar is white, so the current tab is an ink pill with white text. */
+  :global([data-theme="contrast"]) .tab[aria-current="page"] {
+    background: var(--ink);
+    color: var(--white);
+  }
 }
 .tab {
   position: relative;
@@ -226,4 +231,7 @@
 .moreItem[aria-current="page"] {
   background: var(--sakura-soft);
   border: 2px solid var(--ink);
+}
+:global([data-theme="contrast"]) .moreItem[aria-current="page"] {
+  box-shadow: inset 0 0 0 3px var(--ink);
 }

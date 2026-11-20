@@ -438,6 +438,11 @@
   color: var(--cord-text);
   transform: scale(1.06);
 }
+:global([data-theme="contrast"]) .stops .stopOn {
+  color: var(--ink);
+  text-decoration: underline 3px;
+  text-underline-offset: 4px;
+}
 
 /* QR + forward */
 .qrView {

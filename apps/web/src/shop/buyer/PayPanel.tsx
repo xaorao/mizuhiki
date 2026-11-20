@@ -36,6 +36,7 @@ import {
 import { orderPayment, reportTx, type OrderView } from "../engine";
 import { rememberOrder, rememberTx } from "./store";
 import s from "./buyer.module.css";
+import { useHere } from "@/lib/useClient";
 
 export type BuyMethod = "qorex" | "mizuhiki" | "manual";
 
@@ -79,6 +80,7 @@ export function PayPanel({
   allowManual?: boolean;
 }) {
   const acct = useAccount();
+  const here = useHere();
   const [hasQorex, setHasQorex] = useState(false);
   const myAddr = acct.account?.owner.address ?? "";
   const self = myAddr === seller;
@@ -326,12 +328,7 @@ export function PayPanel({
       {method === "mizuhiki" && acct.status === "none" ? (
         <p className={s.fine}>
           No Mizuhiki account on this device. Pay with QoreX or send it yourself, or{" "}
-          <Link
-            href={`/login?next=${encodeURIComponent(typeof window === "undefined" ? "/" : `${window.location.pathname}${window.location.search}`)}`}
-          >
-            log in
-          </Link>
-          .
+          <Link href={`/login?next=${encodeURIComponent(here)}`}>log in</Link>.
         </p>
       ) : null}
 

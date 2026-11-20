@@ -45,7 +45,7 @@
   width: 42px;
   height: 42px;
   border-radius: 14px;
-  background: #e8dcff;
+  background: var(--fuji);
   border: 2px solid var(--ink);
   display: grid;
   place-items: center;
@@ -135,7 +135,7 @@ button.startCard {
   font-weight: 800;
 }
 .err {
-  color: #9b1c12;
+  color: var(--text-error);
   font-size: 13.5px;
 }
 /* editor shell */
@@ -250,7 +250,7 @@ button.startCard {
 }
 .welcome,
 .ending {
-  border: 2px dashed #e7cdd6;
+  border: 2px dashed var(--rule-rose-mid);
   border-radius: 18px;
   padding: 12px 14px;
   background: var(--paper);
@@ -295,7 +295,7 @@ button.startCard {
   display: flex;
   gap: 8px;
   align-items: center;
-  border: 2px dashed #e7cdd6;
+  border: 2px dashed var(--rule-rose-mid);
   border-radius: 14px;
   padding: 6px 10px;
   background: var(--white);
@@ -355,7 +355,7 @@ button.startCard {
   opacity: 0.55;
 }
 .blockHalf {
-  border-left: 4px solid #c9b6f2;
+  border-left: 4px solid var(--rule-fuji);
 }
 .gutter {
   display: flex;
@@ -397,15 +397,15 @@ button.startCard {
   padding: 1px 7px;
 }
 .kindTag {
-  background: #efe7ff;
-  color: #4b2a8a;
+  background: var(--wash-fuji);
+  color: var(--fuji-ink);
 }
 .reqTag {
-  background: #ffe3e6;
-  color: #9b1c12;
+  background: var(--wash-cord);
+  color: var(--text-error);
 }
 .hiddenTag {
-  background: #eee;
+  background: var(--wash-grey);
   color: var(--ink-muted);
 }
 .titleWrap {
@@ -496,7 +496,7 @@ button.startCard {
 .choices input {
   flex: 1;
   min-width: 0;
-  border: 2px solid #e7cdd6;
+  border: 2px solid var(--rule-rose-mid);
   border-radius: 12px;
   padding: 6px 10px;
   font: inherit;
@@ -518,7 +518,7 @@ button.startCard {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: 8px;
-  border-top: 2px dashed #f3e2e8;
+  border-top: 2px dashed var(--rule);
   padding-top: 10px;
   margin-top: 4px;
 }
@@ -598,7 +598,7 @@ button.startCard {
   margin-left: auto;
 }
 .danger {
-  color: #9b1c12;
+  color: var(--text-error);
 }
 .rotUp {
   transform: rotate(-90deg);
@@ -620,7 +620,7 @@ button.startCard {
 .pageBreak::after {
   content: "";
   flex: 1;
-  border-top: 2px dashed #e7cdd6;
+  border-top: 2px dashed var(--rule-rose-mid);
 }
 .emptyDoc {
   color: var(--ink-muted);
@@ -706,6 +706,9 @@ button.startCard {
   background: var(--sakura-soft) !important;
   font-weight: 700;
 }
+:global([data-theme="contrast"]) .pickOn {
+  box-shadow: inset 0 0 0 3px var(--ink);
+}
 .pickerNone {
   padding: 10px;
   color: var(--ink-muted);
@@ -723,7 +726,7 @@ button.startCard {
   width: 46px;
   height: 46px;
   border-radius: 14px;
-  background: #efe7ff;
+  background: var(--wash-fuji);
   border: 2px solid var(--ink);
   display: grid;
   place-items: center;
@@ -732,7 +735,7 @@ button.startCard {
   color: var(--ink-muted);
 }
 .pickerExample {
-  border: 2px dashed #e7cdd6;
+  border: 2px dashed var(--rule-rose-mid);
   border-radius: 12px;
   padding: 10px 12px;
   display: grid;

@@ -243,7 +243,7 @@
 .barFill {
   display: block;
   height: 100%;
-  background: var(--sakura-wave-2);
+  background: var(--data-fill);
   border-radius: inherit;
   transform-origin: left;
   animation: grow var(--t-seal) var(--ease-out) both;
@@ -328,7 +328,7 @@
 }
 .texts li {
   background: var(--white);
-  border: 2px solid var(--sakura-wave);
+  border: 2px solid var(--rule-wave);
   border-radius: 14px;
   padding: 8px 12px;
   display: grid;
@@ -436,6 +436,10 @@
 .pick[aria-pressed="true"] {
   background: var(--sakura);
 }
+:global([data-theme="contrast"]) .pick[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--white);
+}
 .filterActions {
   display: flex;
   gap: 8px;
@@ -487,7 +491,7 @@
 }
 .table td {
   padding: 9px 12px;
-  border-bottom: 2px dashed #f3e2e8;
+  border-bottom: 2px dashed var(--rule);
   max-width: 260px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -672,7 +676,7 @@
   display: grid;
   gap: 6px;
   padding-bottom: 12px;
-  border-bottom: 2px dashed #f3e2e8;
+  border-bottom: 2px dashed var(--rule);
   min-width: 0;
 }
 .qaQ {
@@ -725,7 +729,7 @@
 }
 .ratingOn {
   color: var(--cord);
-  fill: var(--sakura-wave-2);
+  fill: var(--data-fill);
 }
 .ratingOff {
   color: var(--ink-subtle);
@@ -746,7 +750,7 @@
   border: 2px dashed var(--cord);
   border-radius: 16px;
   padding: 10px 12px;
-  background: #fff8f9;
+  background: var(--wash-rose-faint);
 }
 .fileIcon {
   width: 38px;
@@ -837,8 +841,8 @@
   display: flex;
   gap: 8px;
   align-items: flex-start;
-  background: #fff7e0;
-  border: 2px solid #e9c46a;
+  background: var(--wash-amber);
+  border: 2px solid var(--rule-amber);
   border-radius: 14px;
   padding: 10px 12px;
   font-size: 14px;

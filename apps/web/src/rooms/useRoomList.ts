@@ -37,6 +37,8 @@ export function useRoomList(activeId?: string): ListState {
   const [rooms, setRooms] = useState<RoomListItem[]>([]);
   const [waiting, setWaiting] = useState<ListState["waiting"]>([]);
   const [summaries, setSummaries] = useState<Record<string, RoomSummary>>({});
+  const summariesRef = useRef(summaries);
+  summariesRef.current = summaries;
   const [cards, setCards] = useState<Record<string, InviteCard>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -110,19 +112,15 @@ export function useRoomList(activeId?: string): ListState {
   useEffect(
     () =>
       onSummary((roomId, sum) => {
-        setSummaries((all) => {
-          const prev = all[roomId];
-          if (
-            prev &&
-            prev.lastSeq === sum.lastSeq &&
-            prev.name === sum.name &&
-            prev.photo?.fileId === sum.photo?.fileId
-          )
-            return all;
-          const next = { ...all, [roomId]: sum };
-          if (account) void writeSummaries(account, next);
-          return next;
-        });
+        // Computed outside the state updater, which must stay free of side effects (the device write).
+        const all = summariesRef.current;
+        const prev = all[roomId];
+        if (prev && prev.lastSeq === sum.lastSeq && prev.name === sum.name && prev.photo?.fileId === sum.photo?.fileId)
+          return;
+        const next = { ...all, [roomId]: sum };
+        summariesRef.current = next;
+        setSummaries(next);
+        if (account) void writeSummaries(account, next);
       }),
     [account],
   );

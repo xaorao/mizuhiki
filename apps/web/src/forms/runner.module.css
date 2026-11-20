@@ -8,6 +8,12 @@
   font-family: var(--page-font, var(--font-sans));
   color: var(--ink);
 }
+/* High contrast: the owner's wallpaper and accent give way to a white field and black ink. The wallpaper colour is
+   set inline from the page theme, so it needs !important to be overridden. */
+:global([data-theme="contrast"]) .stage {
+  --accent: var(--ink);
+  --wp-a: var(--white) !important;
+}
 .progress {
   position: sticky;
   top: 0;
@@ -24,8 +30,8 @@
 }
 .previewBanner {
   margin: 10px auto 0;
-  background: #fff7e0;
-  border: 2px solid #e9c46a;
+  background: var(--wash-amber);
+  border: 2px solid var(--rule-amber);
   border-radius: var(--r-pill);
   padding: 6px 14px;
   font-family: var(--font-round);
@@ -129,7 +135,7 @@
   margin-right: 8px;
 }
 .req {
-  color: var(--cord);
+  color: var(--cord-text);
   margin-left: 4px;
 }
 .pickHint {
@@ -205,6 +211,15 @@
   background: var(--accent);
   color: var(--white);
   border-color: var(--accent);
+}
+:global([data-theme="contrast"]) .choice,
+:global([data-theme="contrast"]) .scaleBtn,
+:global([data-theme="contrast"]) .drop {
+  background: var(--white);
+}
+:global([data-theme="contrast"]) .on {
+  background: var(--white) !important;
+  box-shadow: inset 0 0 0 3px var(--ink);
 }
 .tick {
   margin-left: auto;
@@ -346,8 +361,8 @@
   display: inline-flex;
   gap: 6px;
   align-items: center;
-  background: #fde8e6;
-  color: #9b1c12;
+  background: var(--wash-error);
+  color: var(--text-error);
   border-radius: var(--r-pill);
   padding: 5px 12px;
   font-family: var(--font-round);
@@ -381,8 +396,8 @@
   gap: 6px;
   align-items: center;
   justify-self: start;
-  background: #eaf7e3;
-  color: #24461c;
+  background: var(--wash-mint);
+  color: var(--ok);
   border-radius: var(--r-pill);
   padding: 4px 12px;
   font-family: var(--font-round);

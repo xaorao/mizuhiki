@@ -63,8 +63,11 @@ const SignedShape = z.object({
 const MAX_CONTACTS = 10;
 const OPEN_PER_OWNER = 3;
 const REQUEST_DAYS = 7;
-/** Kinds of the owner's items an offline reader can read (as the inbox). */
-const OFFLINE_KINDS = ["message", "reply", "paynote", "form"];
+/**
+ * Kinds of the owner's items an offline reader can read (as the inbox): everything sealed to the owner's
+ * recipient card, which carries the offline key. File-request uploads and invoices sent to the owner included.
+ */
+const OFFLINE_KINDS = ["message", "reply", "filedrop", "invoice", "paynote", "form"];
 
 export const recoveryRoutes =
   (ctx: Ctx): FastifyPluginCallback =>

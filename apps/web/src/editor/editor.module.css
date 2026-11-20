@@ -72,7 +72,7 @@
   min-height: 48px;
 }
 .checklist li:hover {
-  background: #fff4f6;
+  background: var(--wash-rose);
 }
 .clDot {
   width: 24px;
@@ -130,7 +130,7 @@
   animation: mz-rise var(--t-sheet) var(--ease-out);
 }
 .off {
-  background: #fffaf9;
+  background: var(--wash-rose-pale);
 }
 .off .cardText input {
   color: var(--ink-subtle);
@@ -221,7 +221,7 @@
 }
 .inlineTitle:hover,
 .inlineSub:hover {
-  background: #fff4f6;
+  background: var(--wash-rose);
 }
 .inlineTitle:focus,
 .inlineSub:focus {
@@ -298,8 +298,8 @@
   margin: 0 12px 12px;
   padding: 12px 14px;
   border-radius: 16px;
-  background: #fff4f6;
-  border: 2px dashed #e7c9d3;
+  background: var(--wash-rose);
+  border: 2px dashed var(--rule-rose-deep);
   font-size: 14px;
 }
 .confirmRow {
@@ -309,7 +309,7 @@
   margin-top: 10px;
 }
 .settings {
-  border-top: 2.5px dashed #f0d4dd;
+  border-top: 2.5px dashed var(--rule-rose);
   padding: 14px 16px 16px;
   display: grid;
   gap: 14px;
@@ -373,8 +373,8 @@
   display: flex;
   gap: 8px;
   align-items: center;
-  border: 2px dashed #a0607a;
-  background: #fff4f6;
+  border: 2px dashed var(--rule-plum);
+  background: var(--wash-rose);
   border-radius: var(--r-pill);
   padding: 10px 16px;
   font-size: 14px;
@@ -612,6 +612,11 @@
   background: var(--sakura-soft);
   color: var(--cord-text);
 }
+/* High contrast: the chosen category is an ink pill with white text. */
+:global([data-theme="contrast"]) .cats button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--white);
+}
 .catalog {
   list-style: none;
   margin: 0;
@@ -632,7 +637,7 @@
   border-radius: 16px;
 }
 .catalog button:hover {
-  background: #fff4f6;
+  background: var(--wash-rose);
 }
 .catalog b {
   display: block;

@@ -364,7 +364,9 @@ function WhoBar({ keys, onForget }: { keys: BuyerKey[]; onForget: (hash: string)
         </form>
       ) : acct.status === "none" ? (
         <p className={s.fine}>
-          No Mizuhiki account on this device. <a href="/login?next=/library">Log in</a> to see its purchases too.
+          <span>
+            No Mizuhiki account on this device. <a href="/login?next=/library">Log in</a> to see its purchases too.
+          </span>
         </p>
       ) : null}
       {keys.map((k) => (

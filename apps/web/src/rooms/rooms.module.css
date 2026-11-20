@@ -358,7 +358,7 @@
   display: grid;
   gap: 10px;
   padding: 12px 0;
-  border-top: 1.5px dashed var(--sakura-wave);
+  border-top: 1.5px dashed var(--rule-wave);
 }
 .ruleRow span {
   display: grid;
@@ -463,7 +463,7 @@
   padding: 4px 10px;
   border-radius: var(--r-pill);
   background: var(--sakura-soft);
-  border: 1.5px solid var(--blush);
+  border: 1.5px solid var(--rule-wave-2);
   color: var(--cord-text);
   font-family: var(--font-round);
   font-weight: 800;
@@ -655,7 +655,7 @@
   align-items: center;
   gap: 8px;
   background: var(--sakura-soft);
-  border: 1.5px solid var(--blush);
+  border: 1.5px solid var(--rule-wave-2);
   color: var(--cord-text);
 }
 .problem {
@@ -834,6 +834,11 @@
 }
 .reactions button[aria-pressed="true"] {
   background: var(--sakura);
+}
+/* High contrast: tints are white, so a chosen reaction is filled with ink. */
+:global([data-theme="contrast"]) .reactions button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--white);
 }
 .reactions button:active {
   transform: scale(0.9);
@@ -1109,7 +1114,7 @@
   justify-content: space-between;
   gap: 4px;
   padding: 4px 0 10px;
-  border-bottom: 1.5px dashed var(--sakura-wave);
+  border-bottom: 1.5px dashed var(--rule-wave);
   margin-bottom: 4px;
 }
 .reactRow button {
@@ -1125,6 +1130,9 @@
 .reactRow button[aria-pressed="true"] {
   border-color: var(--ink);
   background: var(--sakura);
+}
+:global([data-theme="contrast"]) .reactRow button[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 3px var(--ink);
 }
 .reactRow button:active {
   transform: scale(0.86);

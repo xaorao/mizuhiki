@@ -33,6 +33,7 @@ import {
 import { buildBuyerKeySheet } from "./buyerKeySheet";
 import { fingerprint } from "./model";
 import s from "./buyer.module.css";
+import { ownerOfName } from "@mizuhiki/chain";
 
 export interface SealChoice {
   recipient: OrderRequest["recipient"];
@@ -519,11 +520,10 @@ function GiftChoice({
         name = (await api.get<{ name: string | null }>(`/names/of/${address}`).catch(() => ({ name: null }))).name;
       } else {
         const n = raw.replace(/^@/, "").toLowerCase();
-        const r = await api.get<{ available: boolean; owner?: string; problem?: string }>(
-          `/names/${encodeURIComponent(n)}`,
-        );
-        if (!r.owner) throw new Error(`Nobody has @${n} yet. Check the name, or paste their qor1 address.`);
-        address = r.owner;
+        // The owner of a name is read from QoreChain, not taken from our server.
+        const owner = await ownerOfName(n);
+        if (!owner) throw new Error(`Nobody has @${n} yet. Check the name, or paste their qor1 address.`);
+        address = owner;
         name = n;
       }
       const card = await cardOf(address);

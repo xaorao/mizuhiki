@@ -84,7 +84,7 @@
   grid-template-columns: 170px minmax(0, 1fr);
   gap: 12px;
   padding: 12px 16px;
-  border-bottom: 2px dashed #f3e2e8;
+  border-bottom: 2px dashed var(--rule);
 }
 .facts > div:last-child {
   border-bottom: 0;
@@ -161,10 +161,10 @@
   font-size: 14px;
 }
 .match {
-  background: #eaf7e3;
+  background: var(--wash-mint);
 }
 .nomatch {
-  background: #fff1ee;
+  background: var(--wash-coral);
 }
 .share {
   border: 0;
@@ -194,7 +194,7 @@
   width: 100%;
   border: 2.5px dashed var(--cord);
   border-radius: 22px;
-  background: #fff8f9;
+  background: var(--wash-rose-faint);
   padding: 26px 16px;
   font-family: var(--font-round);
   font-weight: 800;
@@ -214,14 +214,19 @@
 }
 .drop:hover:not(:disabled),
 .dropOn {
-  background: #ffeef2;
+  background: var(--wash-rose-active);
   transform: translateY(-2px);
+}
+/* High contrast: the drop zone is white either way, so a file held over it turns the dashed line solid ink. */
+:global([data-theme="contrast"]) .dropOn {
+  border-style: solid;
+  border-color: var(--ink);
 }
 .bar {
   position: absolute;
   inset: 0 auto 0 0;
   width: var(--p);
-  background: rgba(226, 72, 61, 0.12);
+  background: var(--cord-wash);
   transition: width 0.2s linear;
 }
 .dropNote {
@@ -233,7 +238,7 @@
   color: var(--ink-muted);
 }
 .err {
-  color: var(--danger, #b42318);
+  color: var(--danger);
   font-size: 13.5px;
   margin-top: 6px;
 }
@@ -283,13 +288,13 @@
   gap: 12px;
   align-items: center;
   padding: 12px 6px;
-  border-bottom: 2px dashed #f3e2e8;
+  border-bottom: 2px dashed var(--rule);
   color: var(--ink);
   text-decoration: none;
   transition: background-color var(--t-toggle);
 }
 .item:hover {
-  background: #fff4f6;
+  background: var(--wash-rose);
 }
 .itemIcon {
   width: 38px;
@@ -297,7 +302,7 @@
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: #eaf7e3;
+  background: var(--wash-mint);
   border: 2px solid var(--ink);
 }
 .itemText {
@@ -371,7 +376,7 @@
   gap: 12px;
   align-items: flex-start;
   padding: 12px 16px;
-  border-bottom: 2px dashed #f3e2e8;
+  border-bottom: 2px dashed var(--rule);
   animation: mz-pop-in 0.3s var(--ease-pop) both;
 }
 .others li:last-child {

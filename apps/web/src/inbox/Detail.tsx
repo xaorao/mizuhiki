@@ -199,14 +199,16 @@ export function FileItem({ f, onProve }: { f: FileFacts; onProve?: (() => void) 
               : "Sealed"}
         </small>
       </span>
-      {isImage && state.s !== "ready" ? (
-        <Button variant="line" size="sm" icon="eye" onClick={() => void unseal()} disabled={state.s === "busy"}>
-          Preview
+      <span className={s.fileActions}>
+        {isImage && state.s !== "ready" ? (
+          <Button variant="line" size="sm" icon="eye" onClick={() => void unseal()} disabled={state.s === "busy"}>
+            Preview
+          </Button>
+        ) : null}
+        <Button variant="cord" size="sm" icon="download" onClick={() => void save()} disabled={state.s === "busy"}>
+          Save
         </Button>
-      ) : null}
-      <Button variant="cord" size="sm" icon="download" onClick={() => void save()} disabled={state.s === "busy"}>
-        Save
-      </Button>
+      </span>
       {onProve ? (
         <button type="button" className={s.proveLink} onClick={onProve}>
           <Icon name="check" size={13} /> Prove it existed
@@ -571,9 +573,16 @@ function ItemDetail({
           <Readers readers={readersOf(row, box)} />
           {row.expiresAt ? (
             <p className={s.expires}>
-              <Icon name="clock" size={13} /> Sealed copy kept until{" "}
-              {new Date(row.expiresAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-              . Save files you want to keep.
+              <Icon name="clock" size={13} />
+              <span>
+                Sealed copy kept until{" "}
+                {new Date(row.expiresAt).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}
+                . Save files you want to keep.
+              </span>
             </p>
           ) : null}
         </div>

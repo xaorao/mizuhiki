@@ -308,6 +308,11 @@ test("closed and forged forms are refused", async ({ page }, info) => {
   await page.goto(`/@${NAME}/f/${slug2}`);
   await expect(page.getByRole("heading", { name: "This form could not be verified" })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText("Send us your password")).toHaveCount(0);
+  // Not in the tab title or the link preview either: the server verifies before using a record's words.
+  await expect(page).toHaveTitle("This form could not be verified · Mizuhiki");
+  for (const sel of ['meta[property="og:title"]', 'meta[name="twitter:title"]', 'meta[name="description"]'])
+    for (const c of await page.locator(sel).evaluateAll((els) => els.map((e) => e.getAttribute("content") ?? "")))
+      expect(c, sel).not.toContain("Send us your password");
   await page.goto(`/@${NAME}/f/no-such-form`);
   await expect(page.getByRole("heading", { name: "This form isn't available." })).toBeVisible();
 });

@@ -30,7 +30,7 @@
 .bar i {
   display: block;
   height: 100%;
-  background: repeating-linear-gradient(-45deg, var(--cord) 0 10px, #ff6b5e 10px 20px);
+  background: repeating-linear-gradient(-45deg, var(--cord) 0 10px, var(--cord-glow) 10px 20px);
   background-size: 28px 28px;
   animation: stripes 0.8s linear infinite;
   transition: width 0.3s var(--ease-out);
@@ -109,7 +109,7 @@
 /* receipt: perforated bottom edge and the 封 stamp */
 .receipt {
   position: relative;
-  background: #fff4f6;
+  background: var(--wash-rose);
   border: var(--line) solid var(--ink);
   border-radius: 18px;
   padding: 18px 18px 28px;
@@ -171,7 +171,7 @@
 .hash {
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 2px dashed #e7c9d3;
+  border-top: 2px dashed var(--rule-rose-deep);
   font-family: var(--font-mono);
   font-size: 12px;
   word-break: break-all;

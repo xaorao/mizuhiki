@@ -65,7 +65,8 @@ export function Chip({
   return (
     <span className={[s.chip, s[`c_${tone}`]].join(" ")}>
       {icon ? <Icon name={icon} size={14} /> : null}
-      {children}
+      {/* One flex item, so "Sealed to {name}" never splits into pieces that wrap apart. */}
+      <span>{children}</span>
     </span>
   );
 }
@@ -83,7 +84,7 @@ export function StatusChip({ status, children }: { status: Status; children: Rea
   return (
     <span className={[s.status, s[`s_${status}`]].join(" ")}>
       <Icon name={STATUS_ICON[status]} size={14} />
-      {children}
+      <span>{children}</span>
     </span>
   );
 }

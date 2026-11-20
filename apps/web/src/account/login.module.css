@@ -1,6 +1,6 @@
 .shell {
   min-height: 100dvh;
-  background: radial-gradient(900px 480px at 50% -10%, #ffe6ec 0, transparent 60%), var(--cream);
+  background: radial-gradient(900px 480px at 50% -10%, var(--wash-rose-glow) 0, transparent 60%), var(--cream);
 }
 .bar {
   display: flex;

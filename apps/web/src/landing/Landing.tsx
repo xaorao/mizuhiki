@@ -10,7 +10,17 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import QRCode from "qrcode";
-import { Icon, Knot, Musubi, Wordmark, burstFrom, useMusubi, useReducedMotion, type IconName } from "@mizuhiki/ui";
+import {
+  Icon,
+  Knot,
+  Musubi,
+  Wordmark,
+  burstFrom,
+  useMusubi,
+  useReducedMotion,
+  useToast,
+  type IconName,
+} from "@mizuhiki/ui";
 import { useAccount } from "@/account/AccountProvider";
 import { SITE_HOST, pageUrl } from "@/lib/site";
 import { ClaimBox } from "./ClaimBox";
@@ -54,8 +64,8 @@ const MARQUEE: [string, string][] = [
 const BLOCKS: { icon: IconName; bg: string; fg: string; title: string; body: string; tag: string; pub?: boolean }[] = [
   {
     icon: "coin",
-    bg: "#d8efc4",
-    fg: "#24461c",
+    bg: "var(--matcha-tile)",
+    fg: "var(--matcha-ink)",
     title: "Pay me",
     body: "Any amount, with a note only you can read.",
     tag: "Note sealed · amount public",
@@ -63,80 +73,80 @@ const BLOCKS: { icon: IconName; bg: string; fg: string; title: string; body: str
   },
   {
     icon: "form",
-    bg: "#d3e9f7",
-    fg: "#1f2d6b",
+    bg: "var(--sora)",
+    fg: "var(--sora-ink)",
     title: "Invoices",
     body: "Line items open for you, your client and your accountant.",
     tag: "Sealed to its readers",
   },
   {
     icon: "mail",
-    bg: "#ffd9e1",
-    fg: "#c2300f",
+    bg: "var(--sakura)",
+    fg: "var(--cord-text)",
     title: "Messages and files",
     body: "A drop box for notes and files up to 2 GB. No account needed.",
     tag: "Sealed before upload",
   },
   {
     icon: "inbox",
-    bg: "#fff0b8",
-    fg: "#7d5a0e",
+    bg: "var(--butter)",
+    fg: "var(--butter-ink)",
     title: "File requests",
     body: "Ask for exactly the documents you need, with a checklist.",
     tag: "Sealed before upload",
   },
   {
     icon: "pen",
-    bg: "#e8dcff",
-    fg: "#4b2a8a",
+    bg: "var(--fuji)",
+    fg: "var(--fuji-ink)",
     title: "Forms",
     body: "Intake, applications, feedback. Answers encrypted in the browser.",
     tag: "Answers sealed",
   },
   {
     icon: "bag",
-    bg: "#ffe3d6",
-    fg: "#c2300f",
+    bg: "var(--peach)",
+    fg: "var(--cord-text)",
     title: "Shop",
     body: "Sell files and templates. Each buyer gets their own sealed copy.",
     tag: "Sealed per buyer",
   },
   {
     icon: "chat",
-    bg: "#d3e9f7",
-    fg: "#1f2d6b",
+    bg: "var(--sora)",
+    fg: "var(--sora-ink)",
     title: "Rooms",
     body: "Group chats and files. Remove someone and the lock changes.",
     tag: "Sealed to members",
   },
   {
     icon: "pass",
-    bg: "#d8efc4",
-    fg: "#24461c",
+    bg: "var(--matcha-tile)",
+    fg: "var(--matcha-ink)",
     title: "Passes",
     body: "Give your accountant one quarter, not everything. Revoke any time.",
     tag: "Scoped readers",
   },
   {
     icon: "hour",
-    bg: "#fff0b8",
-    fg: "#7d5a0e",
+    bg: "var(--butter)",
+    fg: "var(--butter-ink)",
     title: "Capsules",
     body: "Files that open on a date, or if you stop checking in.",
     tag: "Sealed until release",
   },
   {
     icon: "key",
-    bg: "#ffd9e1",
-    fg: "#c2300f",
+    bg: "var(--sakura)",
+    fg: "var(--cord-text)",
     title: "Spare key",
     body: "Recovery contacts and a printable sheet, so a lost phone loses nothing.",
     tag: "Shared 2 of 3",
   },
   {
     icon: "check",
-    bg: "#e8dcff",
-    fg: "#4b2a8a",
+    bg: "var(--fuji)",
+    fg: "var(--fuji-ink)",
     title: "Receipts and proof",
     body: "Every seal gets a receipt. Anchor any file on QoreChain to prove it existed.",
     tag: "Hash on chain",
@@ -144,8 +154,8 @@ const BLOCKS: { icon: IconName; bg: string; fg: string; title: string; body: str
   },
   {
     icon: "chart",
-    bg: "#ffe3d6",
-    fg: "#c2300f",
+    bg: "var(--peach)",
+    fg: "var(--cord-text)",
     title: "Insights",
     body: "Visits, taps and payments. We count, we never read.",
     tag: "Counts only",
@@ -428,6 +438,16 @@ export function Landing() {
   const [tour, setTour] = useState(0);
   const [menu, setMenu] = useState(false);
   useReveal();
+  // Arriving after deleting a page (Settings > Data): say what happened, once, then tidy the address.
+  const toast = useToast();
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("left") !== "deleted") return;
+    toast.show("Your page is deleted. What is on QoreChain stays.");
+    q.delete("left");
+    const rest = q.toString();
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${rest ? `?${rest}` : ""}`);
+  }, [toast]);
   useEffect(() => {
     if (!menu) return;
     const close = (e: KeyboardEvent) => {
@@ -671,7 +691,10 @@ export function Landing() {
               </a>
             </div>
             <div className={[s.vis, s.stack].join(" ")} aria-hidden="true">
-              <div className={s.sc} style={{ left: "40%", top: "0%", background: "#fff4e3", color: "#3a2a10" }}>
+              <div
+                className={s.sc}
+                style={{ left: "40%", top: "0%", background: "var(--wash-kinari)", color: "var(--kinari-ink)" }}
+              >
                 <span className={s.scTop}>
                   <span className={s.scAv}>AK</span>
                   <span>
@@ -681,7 +704,10 @@ export function Landing() {
                 </span>
                 <Icon name="mail" size={28} className={s.scIc} />
               </div>
-              <div className={s.sc} style={{ left: "31%", top: "13%", background: "#ffd9e1", color: "#3a1730" }}>
+              <div
+                className={s.sc}
+                style={{ left: "31%", top: "13%", background: "var(--sakura)", color: "var(--sakura-ink)" }}
+              >
                 <span className={s.scTop}>
                   <span className={s.scAv}>AK</span>
                   <span>
@@ -691,7 +717,10 @@ export function Landing() {
                 </span>
                 <Icon name="share" size={28} className={s.scIc} />
               </div>
-              <div className={s.sc} style={{ left: "22%", top: "26%", background: "#fff", color: "#2b2340" }}>
+              <div
+                className={s.sc}
+                style={{ left: "22%", top: "26%", background: "var(--white)", color: "var(--ink)" }}
+              >
                 <span className={s.scTop}>
                   <span className={s.scAv}>AK</span>
                   <span>
@@ -702,7 +731,10 @@ export function Landing() {
                 <QrCard />
                 <Icon name="qr" size={28} className={s.scIc} />
               </div>
-              <div className={s.sc} style={{ left: "13%", top: "39%", background: "var(--cord-fill)", color: "#fff" }}>
+              <div
+                className={s.sc}
+                style={{ left: "13%", top: "39%", background: "var(--cord-fill)", color: "var(--white)" }}
+              >
                 <span className={s.scTop}>
                   <span className={s.scAv}>AK</span>
                   <span>
@@ -714,7 +746,7 @@ export function Landing() {
               </div>
               <span className={s.urlpill}>
                 <Knot size={22} />
-                {SITE_HOST}/@aria
+                <span>{SITE_HOST}/@aria</span>
               </span>
             </div>
           </div>

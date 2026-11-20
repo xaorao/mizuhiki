@@ -406,7 +406,7 @@ export function MyPage() {
       <aside className={s.preview} aria-label="Live preview">
         <p className={s.previewLabel}>
           <Icon name="eye" size={14} />
-          Live preview · {pageUrl(d.manifest.name).replace(/^https?:\/\//, "")}
+          <span>Live preview · {pageUrl(d.manifest.name).replace(/^https?:\/\//, "")}</span>
         </p>
         <PhoneFrame width={320}>
           <PageView manifest={d.manifest} compact pending={d.pending.map((p) => ({ key: p.key, title: p.title }))} />

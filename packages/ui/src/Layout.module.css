@@ -19,7 +19,7 @@
   left: 17px;
   top: 44px;
   bottom: 0;
-  border-left: 3px dashed #f0d4dd;
+  border-left: 3px dashed var(--rule-rose);
 }
 .done:not(:last-child)::before {
   border-left: 3px solid var(--ok);
@@ -51,20 +51,20 @@
   background: var(--danger-soft);
   color: var(--danger);
 }
-.stepText b {
+.stepText > b {
   display: block;
   font-family: var(--font-round);
   font-size: 17px;
   line-height: 36px;
 }
-.stepText small {
+.stepText > small {
   display: block;
   color: var(--ink-muted);
   font-size: 14px;
   line-height: 1.45;
   margin-top: -4px;
 }
-.waiting .stepText b {
+.waiting .stepText > b {
   color: var(--ink-subtle);
 }
 .tabs {
@@ -111,7 +111,7 @@
 }
 .tabs button[aria-selected="true"] .badge {
   background: var(--white);
-  color: var(--cord);
+  color: var(--cord-text);
 }
 .phone {
   border-radius: 40px;

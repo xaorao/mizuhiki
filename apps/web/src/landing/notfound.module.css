@@ -7,8 +7,8 @@
   text-align: center;
   padding: 48px 20px;
   background:
-    radial-gradient(700px 500px at 80% 20%, #ffe6ec 0, transparent 60%),
-    radial-gradient(600px 400px at 10% 90%, #e4f1fb 0, transparent 60%), var(--cream);
+    radial-gradient(700px 500px at 80% 20%, var(--wash-rose-glow) 0, transparent 60%),
+    radial-gradient(600px 400px at 10% 90%, var(--wash-sky-glow) 0, transparent 60%), var(--cream);
   color: var(--ink);
 }
 .jp {

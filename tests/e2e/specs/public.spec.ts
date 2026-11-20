@@ -11,6 +11,7 @@ import { test, expect } from "./fixtures";
 import { Purpose, decryptFile, fromUtf8, openItem, sha256Hex, isMizuhikiError } from "@mizuhiki/core";
 import { generateSealKeys } from "@qorechain/qoreseal";
 import { API, apiToken, ensureOwner } from "./owner";
+import { assertOwnsName, ownerOfName } from "@mizuhiki/chain";
 
 const NAME = "mzk-e2e-editor";
 
@@ -182,4 +183,19 @@ test("browser back and sheets: back closes an open sheet; after closing one in p
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.goBack();
   await expect(page).toHaveURL(/\/proof$/, { timeout: 20_000 });
+});
+
+test("a name's owner comes from QoreChain: a server that names another account is refused (THREAT_MODEL A1)", async ({
+  request: _request,
+}, info) => {
+  test.skip(info.project.name !== "desktop", "chain reads; once");
+  const owner = await ensureOwner("e2e-editor", NAME);
+  const other = await ensureOwner("e2e-visitor", "mzk-e2e-visitor");
+  // The registry on chain is the source of truth.
+  expect(await ownerOfName(NAME)).toBe(owner.address);
+  await assertOwnsName(NAME, owner.address);
+  // What a compromised server would claim: the name belongs to an account it controls. Refused.
+  await expect(assertOwnsName(NAME, other.address)).rejects.toThrow(/belongs to a different account/);
+  // A name nobody holds is refused too, rather than trusted.
+  await expect(assertOwnsName(`nobody${Date.now().toString(36)}`, owner.address)).rejects.toThrow(/Nobody holds/);
 });

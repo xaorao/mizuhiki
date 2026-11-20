@@ -51,7 +51,8 @@ beforeAll(async () => {
   ] as const)
     await sql`insert into counters (owner, day, kind, subject, count) values (${o}, ${day(ago)}, 'view', '', ${n})`;
   await sql`insert into counters (owner, day, kind, subject, count) values (${o}, ${day(1)}, 'tap', 'blockPay', 4), (${o}, ${day(2)}, 'tap', 'blockMsg', 6), (${o}, ${day(20)}, 'tap', 'blockMsg', 9)`;
-  // items: 2 messages and 1 pay note this week, 1 form answer last week, 1 proof (the owner's own; excluded)
+  // items: 2 messages, 1 pay note and 1 file-request upload this week, 1 form answer last week,
+  // 1 proof (the owner's own; excluded)
   const env = async (hash: string, kind: string, ago: number, ref: string | null = null) =>
     sql`insert into envelopes (hash, owner, kind, ref, size, readers, created_at) values (${hash.padEnd(64, "0")}, ${o}, ${kind}, ${ref}, 100, 1, ${at(ago)})`;
   await env("a1", "message", 0);
@@ -59,6 +60,7 @@ beforeAll(async () => {
   await env("a3", "paynote", 3);
   await env("a4", "form", 9, "form:frm1");
   await env("a5", "proof", 1);
+  await env("a6", "filedrop", 1, "freq:req1");
   // money: 2.5 fUSD this week, 1 QOR thirty days ago, through the page; a plain 5 QOR top-up does not count
   await sql`insert into payments (tx_hash, msg_index, from_addr, to_addr, denom, amount, memo, kind, ref, height, time) values
     ('t1', 0, 'qor1x', ${o}, 'ufusd', '2000000', 'mzk:pay:r1', 'pay', 'r1', 1, ${at(1)}),
@@ -110,9 +112,9 @@ describe("insights", () => {
   it("last 7 days: tiles, the previous week, daily bars, most clicked blocks, form completion", async () => {
     const r = await get("7");
     expect(r.views).toEqual({ total: 5, previous: 3 });
-    expect(r.items.total).toBe(3);
+    expect(r.items.total).toBe(4);
     expect(r.items.previous).toBe(1);
-    expect(r.items.byKind).toEqual({ message: 2, paynote: 1 });
+    expect(r.items.byKind).toEqual({ message: 2, paynote: 1, filedrop: 1 });
     expect(r.money.byDenom).toEqual([{ denom: "ufusd", total: "2500000", count: 2 }]);
     expect(r.money.previous).toEqual([]);
     expect(r.series).toHaveLength(7);
@@ -128,7 +130,7 @@ describe("insights", () => {
   it("28 days and lifetime widen the window; lifetime has no previous period and monthly bars", async () => {
     const r28 = await get("28");
     expect(r28.views.total).toBe(8);
-    expect(r28.items.total).toBe(4);
+    expect(r28.items.total).toBe(5);
     expect(r28.taps.find((t) => t.subject === "blockMsg")?.count).toBe(15);
     expect(r28.series).toHaveLength(28);
     const all = await get("all");

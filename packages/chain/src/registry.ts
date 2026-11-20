@@ -10,6 +10,7 @@ import { CONTRACTS } from "./deployment";
 import { ChainError } from "./errors";
 import { closeWindow, openWindow, readWindow, windowCovers, type EvmWindow } from "./window";
 import type { Signer } from "./native";
+import { parseAddress } from "@qorechain/qoresign";
 
 export type Owner = Signer & { evm: Address };
 const reg = { address: CONTRACTS.registry, abi: mizuhikiRegistryAbi } as const;
@@ -87,6 +88,27 @@ export async function setCardOnChain(owner: Owner, cardHash: Hex): Promise<Hex> 
 export async function resolveOnChain(name: string): Promise<{ owner: Address | undefined; cardHash: Hex }> {
   const [o, c] = await publicClient().readContract({ ...reg, functionName: "resolve", args: [name] });
   return { owner: /^0x0{40}$/i.test(o) ? undefined : o, cardHash: c };
+}
+
+/**
+ * Who owns a name, read from MizuhikiRegistry on QoreChain (bech32), or null if nobody does. Anything that turns a
+ * name into an account (a visitor page, an @name typed by the owner) checks it here instead of trusting our API,
+ * so a server that swapped the account would be caught (THREAT_MODEL A1).
+ */
+export async function ownerOfName(name: string): Promise<string | null> {
+  const { owner } = await resolveOnChain(name);
+  return owner ? parseAddress(owner).bech32 : null;
+}
+
+/** Throws unless QoreChain says `name` belongs to `address`. */
+export async function assertOwnsName(name: string, address: string): Promise<void> {
+  const owner = await ownerOfName(name);
+  if (!owner) throw new ChainError("REFUSED", `Nobody holds @${name} on QoreChain. Nothing was sent.`);
+  if (owner !== parseAddress(address).bech32)
+    throw new ChainError(
+      "REFUSED",
+      `QoreChain says @${name} belongs to a different account than the one shown. Nothing was sent.`,
+    );
 }
 
 export async function primaryNameOf(owner: Address): Promise<Hex> {

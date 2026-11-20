@@ -280,6 +280,37 @@ test("invoices: bad links, cancel, record payment (unverified)", async ({ browse
   await ctx.close();
 });
 
+test("invoices: Send pressed while the @name is still being checked waits for it, then sends", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "desktop", "desktop");
+  test.setTimeout(240_000);
+  const owner = await ensureOwner("e2e-editor", OWNER);
+  await ensureOwner("e2e-visitor", VISITOR);
+  await restoreInBrowser(page, owner.phrase);
+  await page.getByRole("link", { name: "Invoices" }).first().click();
+  await page.waitForURL("**/app/invoices");
+  await page.getByRole("link", { name: "New invoice" }).first().click();
+  await page.getByLabel("Item 1 name").fill("Quick send");
+  await page.getByLabel("Price (fUSD)").first().fill("0.01");
+  // A slow name lookup, as on a slow network: the person presses Send before it answers.
+  // The name is read from MizuhikiRegistry through the EVM endpoint; slow every read down.
+  await page.route("https://evm-testnet.qore.host/**", async (route) => {
+    await new Promise((r) => setTimeout(r, 3000));
+    await route.continue();
+  });
+  await page.getByRole("button", { name: "A Mizuhiki @name" }).click();
+  await page.getByLabel("Their @name").fill(VISITOR);
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  // The button shows it is working while the name is checked; no false "pick a name" error appears.
+  await expect(page.getByRole("button", { name: "Send", exact: true })).toHaveAttribute("aria-busy", "true");
+  await expect(page.getByText("Pick a Mizuhiki @name to bill, or send it as a link.")).toHaveCount(0);
+  const share = page.getByRole("dialog", { name: /Invoice #\d{4} is ready/ });
+  await expect(share).toBeVisible({ timeout: 60_000 });
+  await expect(share.getByRole("button", { name: `Send to @${VISITOR}` })).toBeVisible();
+  await page.screenshot({ path: info.outputPath("queued-send.png") });
+});
+
 test("invoices on a phone: list and payer page fit", async ({ page }, info) => {
   test.skip(info.project.name !== "phone", "phone");
   const owner = await ensureOwner("e2e-editor", OWNER);

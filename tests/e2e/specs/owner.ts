@@ -25,7 +25,11 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; to
   return j;
 }
 
-export async function apiToken(p: ReadyPersona): Promise<string> {
+export async function apiToken(p: {
+  address: string;
+  classical: ReadyPersona["classical"];
+  pq: ReadyPersona["pq"];
+}): Promise<string> {
   const ch = await call<{ message: string; nonce: string }>("/auth/challenge", {
     method: "POST",
     body: { address: p.address },

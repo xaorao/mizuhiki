@@ -8,7 +8,7 @@
 import { useEffect, useState } from "react";
 import { ButtonLink, Musubi, Skeleton } from "@mizuhiki/ui";
 import { verifyRecord, type FormDef, type Manifest, type RecipientCard, type Signed } from "@mizuhiki/core";
-import { pqKeyViaEvm } from "@mizuhiki/chain";
+import { assertOwnsName, pqKeyViaEvm } from "@mizuhiki/chain";
 import { themeVars } from "@/page/theme";
 import { FormRunner } from "./FormRunner";
 import s from "./runner.module.css";
@@ -36,6 +36,7 @@ export function FormPage({
         const def = form.body;
         if (form.signer !== owner || def.owner !== owner || page.signer !== owner || def.name !== name)
           throw new Error("mismatch");
+        await assertOwnsName(name, owner);
         const pq = await pqKeyViaEvm(owner);
         if (!pq.registered || !pq.publicKey || !pq.possessionProven) throw new Error("no key");
         verifyRecord(form, { kind: "form", signer: owner, pqPublicKey: pq.publicKey });

@@ -209,7 +209,7 @@ export function ProductEditor({ id }: { id: string }) {
     [schedule],
   );
   const patch = useCallback<EditorProps["patch"]>(
-    (p, key) => update((d) => ({ ...d, def: { ...d.def, ...p } }), key),
+    (p, key) => update((d) => ({ ...d, def: { ...d.def, ...(typeof p === "function" ? p(d.def) : p) } }), key),
     [update],
   );
 

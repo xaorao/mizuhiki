@@ -25,7 +25,7 @@ import {
   useToast,
 } from "@mizuhiki/ui";
 import { verifyRecord, type Block, type Manifest, type RecipientCard, type Signed } from "@mizuhiki/core";
-import { pqKeyViaEvm } from "@mizuhiki/chain";
+import { assertOwnsName, pqKeyViaEvm } from "@mizuhiki/chain";
 import { PageView } from "@/page/PageView";
 import { api } from "@/lib/api";
 import { pageUrl } from "@/lib/site";
@@ -38,6 +38,7 @@ import { pendingNotesFor, retryPending } from "@/lib/pay";
 import { ShopBlockView } from "@/shop/buyer/ShopBlocks";
 import { useShop } from "@/shop/buyer/parts";
 import s from "./public.module.css";
+import { useCanShare } from "@/lib/useClient";
 
 type Verify = { state: "checking" } | { state: "ok" } | { state: "failed"; reason: string };
 
@@ -78,6 +79,8 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
         if (m.name !== name) throw new Error("This page is for a different name.");
         if (record.signer !== registry.owner || m.address !== registry.owner)
           throw new Error("This page is not signed by the account that owns the name.");
+        // The name's owner comes from QoreChain, not from our server's word for it.
+        await assertOwnsName(name, registry.owner);
         const pq = await pqKeyViaEvm(registry.owner);
         if (!pq.registered || !pq.publicKey || !pq.possessionProven)
           throw new Error("The owner's signing key is not registered on QoreChain.");
@@ -288,7 +291,7 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
           {ready ? (
             <>
               <Icon name="shield" size={14} />
-              Signed by @{name}&apos;s post-quantum key, checked on QoreChain just now
+              <span>Signed by @{name}&apos;s post-quantum key, checked on QoreChain just now</span>
             </>
           ) : (
             <>
@@ -385,7 +388,7 @@ function ShareBody({ name }: { name: string }) {
         color: { dark: "#2b2340", light: "#ffffff" },
       });
   }, [url]);
-  const nav = typeof navigator === "undefined" ? undefined : (navigator as { share?: Navigator["share"] });
+  const canShare = useCanShare();
   return (
     <div className={s.share}>
       <canvas ref={canvas} className={s.qr} aria-label={`QR code for ${url}`} role="img" />
@@ -396,12 +399,12 @@ function ShareBody({ name }: { name: string }) {
           onCopied={(ok) => toast.show(ok ? "Link copied" : "Copy is not allowed here", { tone: ok ? "ok" : "error" })}
         />
       </div>
-      {nav?.share ? (
+      {canShare ? (
         <Button
           variant="cord"
           icon="share"
           full
-          onClick={() => void nav.share?.call(navigator, { title: `@${name} on Mizuhiki`, url }).catch(() => undefined)}
+          onClick={() => void navigator.share({ title: `@${name} on Mizuhiki`, url }).catch(() => undefined)}
         >
           Share
         </Button>

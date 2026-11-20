@@ -72,8 +72,10 @@ export function Wordmark({ size = 24, href }: { size?: number | undefined; href?
     </>
   );
   return href ? (
-    <a className={s.mark} href={href} aria-label="Mizuhiki home">
+    // Named by its visible text (WCAG 2.5.3, label in name), with "home" for screen readers only.
+    <a className={s.mark} href={href}>
       {inner}
+      <span className="sr-only"> home</span>
     </a>
   ) : (
     <span className={s.mark}>{inner}</span>

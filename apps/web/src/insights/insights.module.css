@@ -42,9 +42,9 @@
   overflow: visible;
 }
 .grid {
-  stroke: var(--line-strong, #e9dfe8);
+  /* Recessive guide lines (they were never drawn: --line-strong is a width, not a colour). */
+  stroke: var(--hair-12);
   stroke-width: 1;
-  opacity: 0.35;
 }
 .axis {
   stroke: var(--ink-subtle);
