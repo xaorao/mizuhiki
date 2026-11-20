@@ -1,0 +1,76 @@
+.shell {
+  min-height: 100dvh;
+  background: var(--cream);
+  padding: 20px 16px 80px;
+}
+.bar {
+  max-width: 760px;
+  margin: 0 auto 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.bar nav {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.bar a {
+  color: var(--ink-muted);
+  font-weight: 700;
+  text-decoration: none;
+}
+.bar a[aria-current="page"] {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.card {
+  max-width: 760px;
+  margin: 0 auto;
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--drop-lg);
+  padding: 32px;
+}
+.doc {
+  display: grid;
+  gap: 12px;
+  line-height: 1.6;
+}
+.doc h1 {
+  margin: 0;
+  font-size: 34px;
+}
+.doc h2 {
+  margin: 14px 0 0;
+  font-size: 19px;
+}
+.doc p,
+.doc ul {
+  margin: 0;
+}
+.doc ul {
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+}
+.lead {
+  font-size: 17px;
+  color: var(--ink-muted);
+}
+.hint {
+  color: var(--ink-subtle);
+  font-size: 14px;
+}
+.done {
+  font-weight: 700;
+}
+@media (max-width: 640px) {
+  .card {
+    padding: 20px;
+  }
+}

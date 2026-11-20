@@ -68,7 +68,7 @@ export const api = {
   post: <T>(path: string, body: unknown, o: ApiOpts = {}) => request<T>("POST", path, body, o),
   put: <T>(path: string, body: unknown, o: ApiOpts = {}) => request<T>("PUT", path, body, o),
   patch: <T>(path: string, body: unknown, o: ApiOpts = {}) => request<T>("PATCH", path, body, o),
-  del: <T>(path: string, o: ApiOpts = {}) => request<T>("DELETE", path, undefined, o),
+  del: <T>(path: string, o: ApiOpts = {}, body?: unknown) => request<T>("DELETE", path, body, o),
   bytes: (path: string, o: ApiOpts = {}) => request<Uint8Array>("GET", path, undefined, o, true),
 };
 

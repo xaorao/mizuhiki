@@ -91,6 +91,7 @@ function Frame({ children }: { children: ReactNode }) {
         { href: "/app/passes", label: "Passes", icon: "pass" },
         { href: "/app/capsules", label: "Capsules", icon: "hour" },
         { href: "/app/spare-key", label: "Spare key", icon: "key" },
+        { href: "/app/settings", label: "Settings", icon: "gear" },
       ],
     },
   ];

@@ -29,7 +29,7 @@ import {
   type SealStep,
 } from "@mizuhiki/ui";
 import type { Content, FileFacts } from "@mizuhiki/core";
-import { useOwner } from "@/owner/OwnerProvider";
+import { useOwnerSession } from "@/owner/OwnerProvider";
 import { ApiFailure } from "@/lib/api";
 import { SITE_URL } from "@/lib/site";
 import { nameOf, safetyWords } from "@/rooms/engine";
@@ -74,7 +74,7 @@ const lastDay = (iso: string) =>
   });
 
 export function PassDetail({ id }: { id: string }) {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   const [pass, setPass] = useState<PassView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [names, setNames] = useState<Record<string, string | null>>({});
@@ -280,7 +280,7 @@ function stepsFor(pass: PassView, at: ConfirmStep | null, failed: boolean): Seal
 }
 
 function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string; onChanged: () => Promise<void> }) {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   const toast = useToast();
   const hooksFor = usePassHooks();
   const [words, setWords] = useState<string | null>(null);
@@ -541,7 +541,7 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
 }
 
 function HolderSide({ pass, from, onChanged }: { pass: PassView; from: string; onChanged: () => Promise<void> }) {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   const toast = useToast();
   const [busy, setBusy] = useState<"accept" | "decline" | null>(null);
   const [words, setWords] = useState<string | null>(null);
@@ -635,7 +635,7 @@ function HolderSide({ pass, from, onChanged }: { pass: PassView; from: string; o
 }
 
 function HolderContent({ pass, from }: { pass: PassView; from: string }) {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   const scope = pass.invite.body.scope;
   const [items, setItems] = useState<PassItem[] | null>(null);
   const [product, setProduct] = useState<Content | null | "none">(null);

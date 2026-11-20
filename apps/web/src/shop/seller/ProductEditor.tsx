@@ -80,7 +80,8 @@ export function ProductEditor({ id }: { id: string }) {
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [, bump] = useState(0);
 
-  const tokened = useCallback(async () => withToken(owner.account, await owner.token()), [owner]);
+  const { account: ownerAccount, token: ownerToken } = owner;
+  const tokened = useCallback(async () => withToken(ownerAccount, await ownerToken()), [ownerAccount, ownerToken]);
 
   const refreshRow = useCallback(async () => {
     const r = (await listMyProducts(await tokened())).find((p) => p.id === id);

@@ -56,14 +56,15 @@ export function Insights() {
   const [error, setError] = useState<string | null>(null);
   const [table, setTable] = useState(false);
 
+  const { token } = owner;
   const load = useCallback(async () => {
     try {
-      setData(await api.get<Data>(`/owner/insights?range=${range}`, { token: await owner.token() }));
+      setData(await api.get<Data>(`/owner/insights?range=${range}`, { token: await token() }));
       setError(null);
     } catch (e) {
       setError(e instanceof ApiFailure ? e.message : "Insights could not be loaded. Nothing changed.");
     }
-  }, [owner, range]);
+  }, [token, range]);
   useEffect(() => {
     setData(null);
     void load();

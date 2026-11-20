@@ -416,7 +416,7 @@ const REASONS = [
   { id: "other", label: "Something else" },
 ] as const;
 
-function ReportBody({ name, onDone }: { name: string; onDone: () => void }) {
+export function ReportBody({ name, onDone }: { name: string; onDone: () => void }) {
   const toast = useToast();
   const [reason, setReason] = useState<(typeof REASONS)[number]["id"] | null>(null);
   const [detail, setDetail] = useState("");

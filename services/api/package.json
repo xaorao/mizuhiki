@@ -7,28 +7,32 @@
     "dev": "tsx watch --clear-screen=false src/main.ts",
     "start": "tsx src/main.ts",
     "migrate": "pnpm --filter @mizuhiki/db migrate",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "push:keys": "node tools/push-keys.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.10.0",
     "@fastify/cors": "11.4.3",
     "@fastify/rate-limit": "11.2.2",
     "@fastify/websocket": "11.3.7",
     "@mizuhiki/chain": "workspace:*",
     "@mizuhiki/core": "workspace:*",
+    "@mizuhiki/db": "workspace:*",
+    "@mizuhiki/indexer": "workspace:*",
     "@qorechain/qoreseal": "0.1.0",
     "@qorechain/qoresign": "0.2.0",
     "drizzle-orm": "0.45.4",
     "fastify": "5.12.8",
     "postgres": "3.4.9",
-    "zod": "4.6.7",
     "viem": "2.58.0",
-    "@mizuhiki/db": "workspace:*",
-    "@anthropic-ai/sdk": "1.10.0",
-    "@mizuhiki/indexer": "workspace:*"
+    "web-push": "3.6.7",
+    "zod": "4.6.7"
   },
   "devDependencies": {
+    "@mizuhiki/delivery-agent": "workspace:*",
     "@mizuhiki/testnet": "workspace:*",
+    "@types/web-push": "3.6.4",
     "@types/ws": "8.18.1",
-    "@mizuhiki/delivery-agent": "workspace:*"
+    "http_ece": "1.2.0"
   }
 }

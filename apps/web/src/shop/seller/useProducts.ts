@@ -2,7 +2,7 @@
 /** The seller's products with their working copies opened on this device. */
 import { useCallback, useEffect, useState } from "react";
 import type { ProductDef } from "@mizuhiki/core";
-import { useOwner } from "@/owner/OwnerProvider";
+import { useOwnerSession } from "@/owner/OwnerProvider";
 import { ApiFailure } from "@/lib/api";
 import { listMyProducts, openDraft, withToken, type OwnerProduct, type Tokened } from "../engine";
 import { fingerprint, type EditorDraft } from "./model";
@@ -17,7 +17,7 @@ export interface ProductRow {
 }
 
 export function useProducts() {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   const [rows, setRows] = useState<ProductRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 

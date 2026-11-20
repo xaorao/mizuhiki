@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ButtonLink, Chip, Kicker, Tabs } from "@mizuhiki/ui";
-import { useOwner } from "@/owner/OwnerProvider";
+import { useOwnerSession } from "@/owner/OwnerProvider";
 import { listSales, withToken } from "../engine";
 import { canDeliver } from "./model";
 import { useOutcomes } from "./delivery";
@@ -25,7 +25,7 @@ export function ShopHome() {
   const q = params.get("tab");
   const [tab, setTabState] = useState<Tab>(isTab(q) ? q : "products");
   const [waiting, setWaiting] = useState(0);
-  const owner = useOwner();
+  const owner = useOwnerSession();
   const outcomes = useOutcomes();
   // The Sales badge: paid orders not sealed yet (refreshed after every delivery pass).
   useEffect(() => {

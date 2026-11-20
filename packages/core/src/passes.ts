@@ -84,7 +84,11 @@ export function boundaryText(scope: PassScope, expiresAt: string | null): string
       const last = new Date(new Date(scope.until).getTime() - 1).toISOString();
       const kinds = scope.kinds.map((k) => PERIOD_KIND_LABEL[k]);
       const list = kinds.length > 1 ? `${kinds.slice(0, -1).join(", ")} and ${kinds.at(-1) ?? ""}` : (kinds[0] ?? "");
-      return `Can read: ${list}, ${fmtDate(scope.from)} to ${fmtDate(last)}. Cannot read anything else. Cannot change anything.${lasts}`;
+      // A default reader (spec 5.17) has no end: "from 20 November 2026 on".
+      const when = isOpenEnded(scope.until)
+        ? `from ${fmtDate(scope.from)} on`
+        : `${fmtDate(scope.from)} to ${fmtDate(last)}`;
+      return `Can read: ${list}, ${when}. Cannot read anything else. Cannot change anything.${lasts}`;
     }
     case "room":
       return `Can read: the room “${scope.label}”, including its past messages. Cannot send, add people or change anything. Cannot read anything else.${lasts}`;
@@ -94,6 +98,10 @@ export function boundaryText(scope: PassScope, expiresAt: string | null): string
       return `Can read: the product “${scope.label}” (what buyers get). Cannot change it or see sales. Cannot read anything else.${lasts}`;
   }
 }
+
+/** Default readers' passes run to this far date: no end in practice. */
+export const OPEN_END = "2999-01-01T00:00:00.000Z";
+export const isOpenEnded = (until: string): boolean => Date.parse(until) >= Date.parse("2900-01-01T00:00:00.000Z");
 
 /** A quarter as a period: [first day, first day of the next quarter), UTC. */
 export function quarterPeriod(year: number, quarter: 1 | 2 | 3 | 4): { from: string; until: string } {

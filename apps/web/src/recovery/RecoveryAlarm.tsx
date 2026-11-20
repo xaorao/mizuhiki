@@ -7,13 +7,13 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@mizuhiki/ui";
-import { useOwner } from "@/owner/OwnerProvider";
+import { useOwnerSession } from "@/owner/OwnerProvider";
 import { loadMine, strangerRequests } from "./engine";
 import { useRecoveryEvents } from "./useRecoveryEvents";
 import s from "./recovery.module.css";
 
 export function RecoveryAlarm() {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   const [n, setN] = useState(0);
   const check = useCallback(async () => {
     try {

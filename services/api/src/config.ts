@@ -19,6 +19,10 @@ const Env = z.object({
   DROP_RETENTION_DAYS: z.coerce.number().int().default(30),
   SESSION_HOURS: z.coerce.number().int().default(12),
   /** Wait between the last needed contact answering and pieces being released to a new device (spec 5.13: 48 hours). */
+  /** Web Push (spec 5.17): this server's VAPID key pair, made by `pnpm --filter @mizuhiki/api push:keys`. */
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().optional(),
   RECOVERY_DELAY_SECONDS: z.coerce
     .number()
     .int()

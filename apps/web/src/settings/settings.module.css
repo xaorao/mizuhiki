@@ -1,0 +1,170 @@
+/* Settings (spec 5.17). Shares the Passes panel layout; these are its own parts. */
+
+.layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.toc {
+  position: sticky;
+  top: 20px;
+  display: grid;
+  gap: 2px;
+}
+.toc a {
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  color: var(--ink-muted);
+  font-weight: 700;
+  text-decoration: none;
+}
+.toc a:hover,
+.toc a:focus-visible {
+  background: var(--white);
+  color: var(--ink);
+}
+.toc a:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.sections {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.section {
+  scroll-margin-top: 20px;
+}
+.profile {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.profile b {
+  display: block;
+  font-family: var(--font-round);
+  font-size: 17px;
+}
+.profile small {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+}
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.rows > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid var(--line-strong);
+}
+.rows > li:first-child {
+  border-top: 0;
+}
+.rowText {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.rowText b {
+  font-weight: 800;
+}
+.rowText small {
+  color: var(--ink-muted);
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+.rowEnd {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.more {
+  color: var(--ink-muted);
+  font-weight: 700;
+  font-size: 14px;
+}
+.phrase {
+  margin: 0;
+  padding: 14px 14px 14px 36px;
+  columns: 3;
+  column-gap: 20px;
+  border: 2px dashed var(--ink);
+  border-radius: var(--r-md);
+  background: var(--butter);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1.9;
+}
+.pushBox {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--paper);
+}
+.toggles {
+  display: grid;
+  gap: 6px;
+}
+.inline {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.inline > :first-child {
+  flex: 1;
+}
+.links {
+  margin: 0;
+  padding: 0 0 0 18px;
+  display: grid;
+  gap: 6px;
+}
+.links a {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .toc {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .toc a {
+    border: 2px solid var(--ink);
+    border-radius: var(--r-pill);
+    padding: 6px 12px;
+    font-size: 14px;
+    background: var(--white);
+  }
+}
+@media (max-width: 560px) {
+  .rows > li,
+  .pushBox {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rowEnd {
+    justify-content: flex-start;
+  }
+  .phrase {
+    columns: 2;
+  }
+}

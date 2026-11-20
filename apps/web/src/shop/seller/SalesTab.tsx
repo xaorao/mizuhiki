@@ -22,7 +22,7 @@ import {
 } from "@mizuhiki/ui";
 import { formatAmount, parseAmount } from "@mizuhiki/core";
 import { explorerAddress, explorerTx } from "@mizuhiki/chain";
-import { useOwner } from "@/owner/OwnerProvider";
+import { useOwnerSession } from "@/owner/OwnerProvider";
 import { ApiFailure } from "@/lib/api";
 import { useDebounced, useRoomEvents } from "@/rooms/useRoom";
 import { listSales, refund, requestBalance, withToken, type OrderView } from "../engine";
@@ -43,7 +43,7 @@ import s from "./seller.module.css";
 type Filter = "all" | "waiting" | "delivered" | "awaiting" | "refunded";
 
 export function SalesTab({ onWaiting }: { onWaiting?: (n: number) => void }) {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   const toast = useToast();
   const outcomes = useOutcomes();
   const delivering = useDelivering();

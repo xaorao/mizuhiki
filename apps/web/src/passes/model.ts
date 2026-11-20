@@ -1,5 +1,5 @@
 /** Words and states for Passes (spec 5.12). Pure, so they are unit tested. */
-import { quarterPeriod, toHex, type Manifest, type PassScope, type PeriodKind } from "@mizuhiki/core";
+import { isOpenEnded, quarterPeriod, toHex, type Manifest, type PassScope, type PeriodKind } from "@mizuhiki/core";
 import { deriveSealKeys } from "@qorechain/qoreseal";
 import type { Status } from "@mizuhiki/ui";
 import type { PassStatus, PassView } from "./engine";
@@ -38,6 +38,8 @@ export function scopeLine(s: PassScope): string {
 /** "Q3 2026" when the window is exactly a quarter, else "1 Jul 2026 – 30 Sep 2026". */
 export function periodLabel(from: string, until: string): string {
   const f = new Date(from);
+  if (isOpenEnded(until))
+    return `from ${f.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })} on`;
   const y = f.getUTCFullYear();
   for (const q of [1, 2, 3, 4] as const) {
     const p = quarterPeriod(y, q);

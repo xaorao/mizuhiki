@@ -92,10 +92,9 @@ export function SpareKeyHome() {
   const [names, setNames] = useState<Record<string, string | null>>({});
   const [error, setError] = useState<string | null>(null);
 
-  const tokened = useCallback(
-    async (): Promise<Tokened> => ({ ...owner.account, token: await owner.token() }),
-    [owner],
-  );
+  // Stable across owner refreshes, so loaders do not rerun on every draft or stats change.
+  const { account, token } = owner;
+  const tokened = useCallback(async (): Promise<Tokened> => ({ ...account, token: await token() }), [account, token]);
   const load = useCallback(async () => {
     try {
       const t = await tokened();
@@ -722,7 +721,6 @@ function TestPanel({
   tokened: () => Promise<Tokened>;
   reload: () => Promise<void>;
 }) {
-  const owner = useOwner();
   const toast = useToast();
   const [run, setRun] = useState<TestRun | null>(null);
   const [state, setState] = useState<{ answered: string[]; result: "waiting" | "passed" | "failed" } | null>(null);
@@ -735,7 +733,7 @@ function TestPanel({
   const check = useCallback(async () => {
     if (!run || passed.current) return;
     try {
-      const r = await checkTest({ ...owner.account, token: await owner.token() }, run);
+      const r = await checkTest(await tokened(), run);
       setCheckErr(null);
       setState({ answered: r.request.answered, result: r.result });
       if (r.result === "passed") {
@@ -749,7 +747,7 @@ function TestPanel({
         e instanceof ApiFailure || e instanceof Error ? e.message : "The test could not be checked. Trying again.",
       );
     }
-  }, [run, owner, toast, reload]);
+  }, [run, tokened, toast, reload]);
   useRecoveryEvents(() => void check());
   useEffect(() => {
     if (!run || state?.result === "passed" || state?.result === "failed") return;

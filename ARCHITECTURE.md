@@ -265,6 +265,18 @@ Read from the spec (5.14), `contracts/src/CapsuleVault.sol` (deployed, `packages
 - **Owner controls:** cancel (chain), edit guardians or recipients (re-split, new plan, `setGuardians`), check in. Removed guardians' pieces stop fitting because the seeds are re-drawn; this differs from the spare key, where the phrase cannot change.
 - **Honest limits shown to the owner:** t guardians who collude can open a capsule early; this is a threshold-and-wait lock, not a cryptographic time lock (QoreChain has none). Recipients need a Mizuhiki account.
 
+## 8f. Settings and account (spec 5.17)
+
+Read from the spec (5.17), `contracts/src/MizuhikiRegistry.sol` (commit, claimName, releaseName, setPrimaryName), `packages/chain/src/window.ts` (EVM access window), the account vault (`packages/core/src/vault.ts`), the Push API and VAPID (RFC 8030, RFC 8291, RFC 8292; `web-push` 3.6.7, chosen over the two-week-old 4.0.0), and the existing export, passes and spare-key code.
+
+- **One page, `/app/settings`,** with sections: Profile (opens the page editor's profile, avatar and social links; page language is English by product rule), Names, Security, Notifications, Readers, Data, Legal, and the live QoreChain access window.
+- **Names:** add a second name (commit, then `claimName`); make a name the page's address (`setPrimaryName`, then the page is re-signed with that name, so the old address answers "no longer points here"); release a name that is not the page's address (`releaseName`). Every step is an ML-DSA-authorised registry call; the list is read from the indexer and confirmed on chain.
+- **Security:** change the device passphrase (re-wraps the vault), add a passkey, Lock now, forget this device, show the 24 words and re-download the spare-key sheet, both only after the passphrase is typed again.
+- **Notifications:** Web Push with VAPID keys kept in the API's environment. A subscription is stored with per-type toggles (new items, payments, rooms, passes and capsules, recovery alarms, capsule check-in reminders). Messages carry only the kind ("Something new arrived"), never content; payloads are encrypted to the browser (RFC 8291). Dead subscriptions (404/410) are removed. The API sends on the same events the dashboards receive and runs an hourly check for "if I go quiet" capsules inside their warning time (read from CapsuleVault), at most one reminder a day. Email is not offered (Prateek's decision).
+- **Readers:** default readers are passes with no end over every kind, created with the Passes handshake, so senders seal to them through the signed page; period passes are listed beside them.
+- **Data:** export everything, opened on this device, into one zip (the page, inbox items with their files, invoices, form answers, rooms' messages, passes and capsules lists). Delete my page: the page is hidden and every stored envelope and blob of the account is removed after a 10-second Undo; what is on QoreChain stays and the screen says so.
+- **Legal:** privacy, terms and how to report a page, written plainly from the threat model.
+
 ## 9. Sources behind the facts used here
 
 - QoreSign 0.2.0 source: `repos/qoresign/packages/ts/src` (`sign.ts`, `message.ts`, `network.ts`, `siwq.ts`).

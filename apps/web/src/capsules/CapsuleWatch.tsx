@@ -9,13 +9,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Button, Icon, useToast } from "@mizuhiki/ui";
 import { warnLeadSeconds } from "@mizuhiki/core";
-import { useOwner } from "@/owner/OwnerProvider";
+import { useOwnerSession } from "@/owner/OwnerProvider";
 import { chainNow, chainState, checkIn, guardedCapsules, guardianPass, ownedCapsules } from "./engine";
 import { useCapsuleEvents } from "./useCapsuleEvents";
 import s from "./capsules.module.css";
 
 export function CapsuleWatch() {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   const toast = useToast();
   const [quiet, setQuiet] = useState<{ opensAt: bigint } | null>(null);
   const [busy, setBusy] = useState(false);

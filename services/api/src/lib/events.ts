@@ -13,6 +13,12 @@ interface Socket {
 export class EventHub {
   private readonly subs = new Map<string, Set<Socket>>();
   private sql: ReturnType<typeof postgres> | null = null;
+  private readonly hooks: ((kind: string, owner: string) => void)[] = [];
+
+  /** Also tell `fn` about every event (Web Push uses this; it never sees content either). */
+  onEvent(fn: (kind: string, owner: string) => void): void {
+    this.hooks.push(fn);
+  }
 
   async start(url: string): Promise<void> {
     this.sql = postgres(url, { max: 1, onnotice: () => undefined });
@@ -27,6 +33,7 @@ export class EventHub {
     for (const s of this.subs.get(owner) ?? []) {
       if (s.readyState === 1) s.send(JSON.stringify({ type: "new", kind }));
     }
+    for (const fn of this.hooks) fn(kind, owner);
   }
 
   subscribe(owner: string, s: Socket): void {

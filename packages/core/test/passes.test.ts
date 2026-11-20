@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { deriveSealKeys } from "@qorechain/qoreseal";
-import { boundaryText, newPhrase, passKeyIndex, passReaders, quarterPeriod, toHex, type Manifest } from "../src";
+import {
+  OPEN_END,
+  boundaryText,
+  newPhrase,
+  passKeyIndex,
+  passReaders,
+  quarterPeriod,
+  toHex,
+  type Manifest,
+} from "../src";
 
 describe("passes", () => {
   it("a quarter is its first day to the next quarter's first day, in UTC", () => {
@@ -17,6 +26,23 @@ describe("passes", () => {
     );
     expect(boundaryText({ kind: "room", roomId: "room123456", label: "Payroll" }, "2027-01-01T00:00:00.000Z")).toMatch(
       /^Can read: the room “Payroll”, including its past messages\. Cannot send.*New items are covered through 31 December 2026\.$/,
+    );
+  });
+
+  it("a default reader's pass reads from a day on, with no end", () => {
+    expect(
+      boundaryText(
+        {
+          kind: "period",
+          from: "2026-11-20T00:00:00.000Z",
+          until: OPEN_END,
+          kinds: ["messages", "payments", "forms"],
+          keyIndex: passKeyIndex(4),
+        },
+        null,
+      ),
+    ).toBe(
+      "Can read: messages and files, payment notes and form answers, from 20 November 2026 on. Cannot read anything else. Cannot change anything.",
     );
   });
 

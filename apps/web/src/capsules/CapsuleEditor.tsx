@@ -35,7 +35,7 @@ import {
   warnLeadSeconds,
   type CapsuleMode,
 } from "@mizuhiki/core";
-import { useOwner } from "@/owner/OwnerProvider";
+import { useOwnerSession } from "@/owner/OwnerProvider";
 import { ApiFailure } from "@/lib/api";
 import { cardOf } from "@/lib/send";
 import { lookupPerson, nameOf, safetyWords } from "@/rooms/engine";
@@ -78,7 +78,7 @@ const MODES: { value: CapsuleMode; label: string }[] = [
 ];
 
 export function CapsuleEditor({ id: given }: { id: string | null }) {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   // A new capsule gets its id on the first save; from then on this editor loads it like any other.
   const [id, setId] = useState<string | null>(given);
   const [draft, setDraft] = useState<CapsuleDraft | null>(null);
@@ -244,7 +244,7 @@ function StatusPanel({
   tokened: () => Promise<Tokened>;
   reload: () => Promise<void>;
 }) {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   const toast = useToast();
   const [busy, setBusy] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
@@ -548,7 +548,7 @@ function WhatWho({
   change: (fn: (d: CapsuleDraft) => CapsuleDraft) => void;
   setNames: (fn: (n: Record<string, string | null>) => Record<string, string | null>) => void;
 }) {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   const [who, setWho] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -875,7 +875,7 @@ function Guardians({
   reload: () => Promise<void>;
   setNames: (fn: (n: Record<string, string | null>) => Record<string, string | null>) => void;
 }) {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   const toast = useToast();
   const [who, setWho] = useState("");
   const [err, setErr] = useState<string | null>(null);

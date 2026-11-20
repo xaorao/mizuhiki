@@ -291,8 +291,10 @@ function NameStep({ value, onChange, onNext }: { value: string; onChange: (v: st
     error?: string | undefined;
   }>({ loading: false });
   const local = value ? nameProblem(value) : undefined;
+  // A string, so the check below runs when the name changes, not on every render.
+  const localProblem = local?.problem;
   useEffect(() => {
-    if (!value || local) {
+    if (!value || localProblem) {
       setState({ loading: false });
       return;
     }
@@ -314,7 +316,7 @@ function NameStep({ value, onChange, onNext }: { value: string; onChange: (v: st
       clearTimeout(t);
       ctl.abort();
     };
-  }, [value, local]);
+  }, [value, localProblem]);
   const ok = !local && state.result?.available === true && state.result.name === value;
   return (
     <form

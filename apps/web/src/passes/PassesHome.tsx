@@ -9,7 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Avatar, Button, Chip, EmptyState, Icon, Kicker, Oops, Skeleton, StatusChip, Tabs } from "@mizuhiki/ui";
-import { useOwner } from "@/owner/OwnerProvider";
+import { useOwnerSession } from "@/owner/OwnerProvider";
 import { ApiFailure } from "@/lib/api";
 import { nameOf } from "@/rooms/engine";
 import { heldPasses, ownedPasses, type PassView } from "./engine";
@@ -21,7 +21,7 @@ import s from "./passes.module.css";
 type Tab = "given" | "mine";
 
 export function PassesHome() {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   const params = useSearchParams();
   const router = useRouter();
   const path = usePathname();

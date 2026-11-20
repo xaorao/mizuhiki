@@ -678,6 +678,8 @@ export const capsules = pgTable(
     /** draft | armed | cancelled (the chain has the rest). */
     state: text("state").notNull().default("draft"),
     armedTx: text("armed_tx"),
+    /** When the owner was last reminded to check in ("if I go quiet"), so reminders come at most once a day. */
+    remindedAt: ts("reminded_at"),
     createdAt: ts("created_at").notNull().defaultNow(),
     updatedAt: ts("updated_at").notNull().defaultNow(),
   },

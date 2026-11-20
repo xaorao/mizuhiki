@@ -41,6 +41,8 @@ interface OwnerCtx {
   publish: () => Promise<void>;
   /** Re-sign the live page with the live passes' keys (spec 5.12). */
   publishPassKeys: () => Promise<void>;
+  /** Move the live page to another of the account's names (Settings › Names). */
+  renamePage: (name: string) => Promise<void>;
   publishing: boolean;
   stats: Stats | null;
   refreshStats: () => void;
@@ -258,36 +260,47 @@ export function OwnerProvider({ account, children }: { account: Account; childre
   }, [account, token, setPublished, livePeriodKeys]);
 
   /** Re-sign the live page with the current pass keys only; unpublished page edits stay in the draft. */
-  const publishKeysOnce = useCallback(async () => {
-    const live = publishedRef.current;
-    if (!live) return;
-    const t = await token();
-    const d = latest.current;
-    const body: Manifest = parseManifest({
-      ...live,
-      periodKeys: await livePeriodKeys(t),
-      version: Math.max(live.version, d?.manifest.version ?? 0) + 1,
-      updatedAt: new Date().toISOString(),
-    });
-    const record = signRecord({
-      kind: "manifest",
-      body,
-      signer: account.owner.address,
-      classical: account.keys.classical,
-      pq: account.keys.pq,
-    });
-    await api.put("/pages", { record }, { token: t });
-    setPublished(body);
-    if (d) {
-      const next = {
-        ...d,
-        manifest: { ...d.manifest, periodKeys: body.periodKeys, version: body.version, updatedAt: body.updatedAt },
-      };
-      setDraft(next);
-      latest.current = next;
-      await saveDraft(account, t, next);
-    }
-  }, [account, token, setPublished, livePeriodKeys]);
+  /** Re-sign the live page with the current pass keys (and, from Settings › Names, a new name) only. */
+  const publishKeysOnce = useCallback(
+    async (rename?: string) => {
+      const live = publishedRef.current;
+      if (!live) return;
+      const t = await token();
+      const d = latest.current;
+      const body: Manifest = parseManifest({
+        ...live,
+        ...(rename ? { name: rename } : {}),
+        periodKeys: await livePeriodKeys(t),
+        version: Math.max(live.version, d?.manifest.version ?? 0) + 1,
+        updatedAt: new Date().toISOString(),
+      });
+      const record = signRecord({
+        kind: "manifest",
+        body,
+        signer: account.owner.address,
+        classical: account.keys.classical,
+        pq: account.keys.pq,
+      });
+      await api.put("/pages", { record }, { token: t });
+      setPublished(body);
+      if (d) {
+        const next = {
+          ...d,
+          manifest: {
+            ...d.manifest,
+            name: body.name,
+            periodKeys: body.periodKeys,
+            version: body.version,
+            updatedAt: body.updatedAt,
+          },
+        };
+        setDraft(next);
+        latest.current = next;
+        await saveDraft(account, t, next);
+      }
+    },
+    [account, token, setPublished, livePeriodKeys],
+  );
 
   // Page publishes and pass-key publishes run one at a time, in order.
   const serial = useCallback(async (job: () => Promise<void>) => {
@@ -301,7 +314,8 @@ export function OwnerProvider({ account, children }: { account: Account; childre
     }
   }, []);
   const publish = useCallback(() => serial(publishOnce), [serial, publishOnce]);
-  const publishPassKeys = useCallback(() => serial(publishKeysOnce), [serial, publishKeysOnce]);
+  const publishPassKeys = useCallback(() => serial(() => publishKeysOnce()), [serial, publishKeysOnce]);
+  const renamePage = useCallback((name: string) => serial(() => publishKeysOnce(name)), [serial, publishKeysOnce]);
 
   const value = useMemo<OwnerCtx>(
     () => ({
@@ -319,6 +333,7 @@ export function OwnerProvider({ account, children }: { account: Account; childre
       save,
       publish,
       publishPassKeys,
+      renamePage,
       publishing,
       stats,
       refreshStats,
@@ -337,6 +352,7 @@ export function OwnerProvider({ account, children }: { account: Account; childre
       save,
       publish,
       publishPassKeys,
+      renamePage,
       publishing,
       stats,
       refreshStats,
@@ -350,4 +366,17 @@ export function useOwner(): OwnerCtx {
   const c = useContext(Ctx);
   if (!c) throw new Error("useOwner needs <OwnerProvider>");
   return c;
+}
+
+/**
+ * The parts of the owner context that never change while the account is unlocked: the account, a session
+ * token getter and the page re-signers. Screens that only need these use this, so their loaders do not run
+ * again (and overwrite fresh edits) every time the page draft, stats or publishing state change.
+ */
+export function useOwnerSession(): Pick<OwnerCtx, "account" | "token" | "publishPassKeys" | "renamePage"> {
+  const { account, token, publishPassKeys, renamePage } = useOwner();
+  return useMemo(
+    () => ({ account, token, publishPassKeys, renamePage }),
+    [account, token, publishPassKeys, renamePage],
+  );
 }

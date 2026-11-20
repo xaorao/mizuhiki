@@ -99,6 +99,13 @@
       "when": 1795129223394,
       "tag": "0013_capsules",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795143832373,
+      "tag": "0014_capsule_reminder",
+      "breakpoints": true
     }
   ]
 }

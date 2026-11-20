@@ -5,14 +5,14 @@
  * reader) and products (the product key).
  */
 import { useCallback } from "react";
-import { useOwner } from "@/owner/OwnerProvider";
+import { useOwnerSession } from "@/owner/OwnerProvider";
 import { changeMembers, nameOf, setRole, withToken } from "@/rooms/engine";
 import { setFormReader } from "@/forms/model";
 import { listMyProducts, openDraft } from "@/shop/engine";
 import type { ConfirmHooks, Tokened } from "./engine";
 
 export function usePassHooks(): () => Promise<{ t: Tokened; hooks: ConfirmHooks }> {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   return useCallback(async () => {
     const token = await owner.token();
     const t: Tokened = { ...owner.account, token };

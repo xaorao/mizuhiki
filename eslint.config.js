@@ -14,6 +14,7 @@ export default tseslint.config(
       "packages/chain/src/bytecode.ts",
       "**/*.config.*",
       "tools/**",
+      "**/tools/*.mjs",
       "**/playwright-report/**",
       "**/test-results/**",
       "apps/web/next-env.d.ts",

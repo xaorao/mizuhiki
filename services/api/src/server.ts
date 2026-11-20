@@ -9,6 +9,7 @@ import type { Config } from "./config";
 import { makeDb, type Db } from "@mizuhiki/db";
 import { FsBlobStore, type BlobStore } from "./lib/blobstore";
 import { EventHub } from "./lib/events";
+import { makePush, type PushSender } from "./lib/push";
 import { authRoutes } from "./routes/auth";
 import { pageRoutes } from "./routes/pages";
 import { blobRoutes } from "./routes/blobs";
@@ -27,12 +28,14 @@ import { passRoutes } from "./routes/passes";
 import { recoveryRoutes } from "./routes/recovery";
 import { capsuleRoutes } from "./routes/capsules";
 import { insightRoutes } from "./routes/insights";
+import { settingsRoutes } from "./routes/settings";
 
 export interface Ctx {
   cfg: Config;
   db: Db;
   blobs: BlobStore;
   events: EventHub;
+  push: PushSender;
 }
 
 export async function buildServer(
@@ -44,7 +47,12 @@ export async function buildServer(
   if (!db) throw new Error("no database");
   const events = deps.events ?? new EventHub();
   if (!deps.events) await events.start(cfg.DATABASE_URL);
-  const ctx: Ctx = { cfg, db, blobs: deps.blobs ?? new FsBlobStore(cfg.BLOB_DIR), events };
+  const push = deps.push ?? makePush(db, cfg);
+  const ctx: Ctx = { cfg, db, blobs: deps.blobs ?? new FsBlobStore(cfg.BLOB_DIR), events, push };
+  // Every dashboard event may also become a Web Push (only its kind, never content).
+  events.onEvent((kind, owner) => {
+    void push.fromEvent(kind, owner).catch(() => undefined);
+  });
   const app = Fastify({
     logger: cfg.NODE_ENV === "test" ? false : { level: "info", redact: ["req.headers.authorization"] },
     bodyLimit: cfg.MAX_BLOB_BYTES,
@@ -122,6 +130,7 @@ export async function buildServer(
   await app.register(recoveryRoutes(ctx));
   await app.register(capsuleRoutes(ctx));
   await app.register(insightRoutes(ctx));
+  await app.register(settingsRoutes(ctx));
   return {
     app,
     ctx,

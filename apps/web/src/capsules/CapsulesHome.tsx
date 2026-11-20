@@ -24,7 +24,7 @@ import {
 } from "@mizuhiki/ui";
 import { durationText, planSentences, type FileFacts } from "@mizuhiki/core";
 import type { CapsuleOnChain } from "@mizuhiki/chain";
-import { useOwner } from "@/owner/OwnerProvider";
+import { useOwnerSession } from "@/owner/OwnerProvider";
 import { ApiFailure } from "@/lib/api";
 import { nameOf, safetyWords } from "@/rooms/engine";
 import { FileItem } from "@/inbox/Detail";
@@ -86,7 +86,7 @@ export interface Live {
 }
 
 export function CapsulesHome() {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   const params = useSearchParams();
   const router = useRouter();
   const path = usePathname();
@@ -278,7 +278,7 @@ function GuardList({
   tokened: () => Promise<Tokened>;
   reload: () => Promise<void>;
 }) {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   const toast = useToast();
   const [busy, setBusy] = useState<string | null>(null);
   const [myWords, setMyWords] = useState<string | null>(null);
@@ -461,7 +461,7 @@ function ForMeList({
   tokened: () => Promise<Tokened>;
   reload: () => Promise<void>;
 }) {
-  const owner = useOwner();
+  const owner = useOwnerSession();
   const toast = useToast();
   const [opened, setOpened] = useState<{ c: CapsuleForMe; o: Opened } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
