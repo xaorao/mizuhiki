@@ -3,7 +3,9 @@ import type { ReactNode } from "react";
 import { ToastProvider } from "@mizuhiki/ui";
 import { AppLinks } from "@/lib/AppLinks";
 import { AccountProvider } from "@/account/AccountProvider";
-import { round, sans, jp, mono } from "./fonts";
+import { sans, mono } from "./fonts";
+import latinSlices from "./fonts-jp-latin.json";
+import "./fonts-jp.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,7 +24,15 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${round.variable} ${sans.variable} ${jp.variable} ${mono.variable}`}>
+    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
+      <head>
+        {/* Headings and buttons use these weights first: their Latin slices load with the page. */}
+        {latinSlices
+          .filter((f) => f.family === "M PLUS Rounded 1c" && f.weight >= 800)
+          .map((f) => (
+            <link key={f.href} rel="preload" href={f.href} as="font" type="font/woff2" crossOrigin="anonymous" />
+          ))}
+      </head>
       <body>
         <ToastProvider>
           <AppLinks>
