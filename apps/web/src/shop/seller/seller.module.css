@@ -558,7 +558,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--cord);
+  background: var(--cord-fill);
   animation: mz-pulse 1.2s ease-in-out infinite;
 }
 .cards {
@@ -959,7 +959,7 @@
   position: absolute;
   left: 8px;
   top: 8px;
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--on-cord);
   font-family: var(--font-round);
   font-weight: 800;
@@ -1333,7 +1333,7 @@
 .bar span {
   display: block;
   height: 100%;
-  background: var(--cord);
+  background: var(--cord-fill);
   transform-origin: left;
   transition: transform var(--t-toggle) var(--ease-out);
 }
@@ -1458,7 +1458,7 @@
   cursor: pointer;
 }
 .pvDots button[aria-pressed="true"] {
-  background: var(--cord);
+  background: var(--cord-fill);
 }
 .pvBody {
   padding: 16px;
@@ -1479,7 +1479,7 @@
 }
 .ribbon {
   position: relative;
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--on-cord);
   font-family: var(--font-round);
   font-weight: 900;
@@ -1611,7 +1611,7 @@
 .pvCta {
   display: block;
   text-align: center;
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--on-cord);
   font-family: var(--font-round);
   font-weight: 900;
@@ -1702,7 +1702,7 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--on-cord);
   font-family: var(--font-jp);
   font-weight: 700;

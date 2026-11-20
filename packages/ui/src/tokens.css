@@ -14,6 +14,7 @@
   --cord-deep: #a92a22; /* pressed edge under a cord button */
   --cord-text: #c2300f; /* small red text on light */
   --on-cord: #ffffff;
+  --cord-fill: #d63c31; /* cord red behind text: white on it is 4.6:1 (WCAG AA); --cord stays for accents */
   /* pastel washi fields */
   --sakura: #ffd9e1;
   --sakura-soft: #ffe9ee;
@@ -100,6 +101,7 @@
   --cord: #b3160c;
   --cord-deep: #5e0a05;
   --cord-text: #8f1108;
+  --cord-fill: #b3160c;
   --sakura: #ffffff;
   --sakura-soft: #ffffff;
   --sora: #ffffff;

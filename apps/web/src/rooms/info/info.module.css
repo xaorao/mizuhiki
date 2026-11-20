@@ -1047,7 +1047,7 @@
 .countdown span {
   display: block;
   height: 100%;
-  background: var(--cord);
+  background: var(--cord-fill);
   transform-origin: left center;
   animation: drain 5s linear forwards;
 }

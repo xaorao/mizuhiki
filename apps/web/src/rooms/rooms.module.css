@@ -164,7 +164,7 @@
   height: 22px;
   padding: 0 7px;
   border-radius: var(--r-pill);
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--on-cord);
   font-weight: 800;
   font-size: 12px;

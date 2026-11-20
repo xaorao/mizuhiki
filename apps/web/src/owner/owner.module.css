@@ -86,7 +86,7 @@
   padding: 0 7px;
   display: grid;
   place-items: center;
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--white);
   font-size: 12px;
   border: 2px solid var(--ink);
@@ -191,7 +191,7 @@
   min-width: 18px;
   height: 18px;
   border-radius: 9px;
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--white);
   font-family: var(--font-round);
   font-weight: 800;

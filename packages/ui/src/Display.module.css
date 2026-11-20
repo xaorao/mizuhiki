@@ -29,7 +29,7 @@
   box-shadow: var(--row-shadow-active, 0 2px 0 var(--ink));
 }
 .feature {
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--on-cord);
   border-color: var(--ink);
   backdrop-filter: none;
@@ -79,7 +79,7 @@
   color: var(--cord);
 }
 .t_cord {
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--white);
 }
 .rowText {
@@ -159,7 +159,7 @@
   background: var(--white);
 }
 .c_cord {
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--white);
 }
 .status {
@@ -405,7 +405,7 @@
   display: grid;
   place-items: center;
   border-radius: 18px;
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--white);
   font-family: var(--font-jp);
   font-weight: 900;

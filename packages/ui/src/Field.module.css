@@ -155,7 +155,7 @@
   height: 18px;
 }
 .switch[aria-checked="true"] {
-  background: var(--cord);
+  background: var(--cord-fill);
 }
 .switch[aria-checked="true"] .knob {
   transform: translateX(22px);
@@ -324,7 +324,7 @@
     transform var(--t-toggle) var(--ease-pop);
 }
 .chosen .choiceTick {
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--white);
   transform: scale(1.08);
 }

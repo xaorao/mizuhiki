@@ -231,7 +231,7 @@
     0 0 0 5.5px var(--ink);
 }
 .swatchPage {
-  background: var(--cord);
+  background: var(--cord-fill);
 }
 .accentSample {
   display: inline-flex;

@@ -192,7 +192,7 @@
   box-shadow: 0 3px 0 var(--ink);
 }
 .reasons button[aria-checked="true"] {
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--white);
 }
 .textBody {
@@ -382,7 +382,7 @@
   box-shadow: 0 1px 0 var(--ink);
 }
 .presets button[aria-pressed="true"] {
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--white);
 }
 .keypad {

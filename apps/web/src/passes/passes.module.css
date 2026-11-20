@@ -215,7 +215,7 @@
 }
 .pick[aria-checked="true"],
 .pick[aria-pressed="true"] {
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--on-cord);
 }
 .pick:focus-visible {
@@ -321,7 +321,7 @@
   color: var(--ink);
 }
 .stepNow .stepDot {
-  background: var(--cord);
+  background: var(--cord-fill);
   border-color: var(--ink);
   color: var(--on-cord);
   animation: mz-pop-in var(--t-sheet) var(--ease-out) both;

@@ -469,7 +469,7 @@
 .bar span {
   display: block;
   height: 100%;
-  background: var(--cord);
+  background: var(--cord-fill);
   transform-origin: left;
   transition: transform var(--t-sheet) var(--ease-out);
 }
@@ -513,7 +513,7 @@
   position: absolute;
   inset: 22px 0 auto;
   height: 10px;
-  background: var(--cord);
+  background: var(--cord-fill);
   border-block: 2px solid var(--ink);
 }
 .knot {

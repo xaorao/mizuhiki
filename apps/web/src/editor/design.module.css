@@ -115,7 +115,7 @@
   border: 2px solid var(--ink);
 }
 .swatch .cordRow {
-  background: var(--cord);
+  background: var(--cord-fill);
 }
 .theme[aria-checked="true"] .swatch {
   border-color: var(--cord);
@@ -140,7 +140,7 @@
   box-shadow: 0 3px 0 var(--ink);
 }
 .chips button[aria-checked="true"] {
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--white);
 }
 .colors {

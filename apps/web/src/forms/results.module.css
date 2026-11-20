@@ -250,7 +250,7 @@
   transition: width var(--t-seal) var(--ease-out);
 }
 .barTop .barFill {
-  background: var(--cord);
+  background: var(--cord-fill);
 }
 .barTop .barLabel {
   font-weight: 700;

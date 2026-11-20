@@ -252,7 +252,7 @@
   height: 22px;
   padding: 0 5px;
   border-radius: 11px;
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--on-cord);
   border: 2px solid var(--ink);
   font-size: 12px;
@@ -622,7 +622,7 @@
   transition: background var(--t-toggle);
 }
 .dots button[aria-selected="true"]::after {
-  background: var(--cord);
+  background: var(--cord-fill);
 }
 .mainCard {
   display: grid;
@@ -987,7 +987,7 @@
   font-family: var(--font-round);
   font-weight: 900;
   font-size: 11.5px;
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--on-cord);
   border-radius: var(--r-pill);
   padding: 2px 8px;
@@ -1138,7 +1138,7 @@
   animation: mz-pop-in var(--t-toggle) var(--ease-out) both;
 }
 .times button[aria-checked="true"] {
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--on-cord);
   box-shadow: 0 2px 0 var(--cord-deep);
 }
@@ -1767,7 +1767,7 @@
   color: var(--white);
 }
 .pageNav button[aria-current="page"] span {
-  background: var(--cord);
+  background: var(--cord-fill);
 }
 .contentPage {
   display: grid;
@@ -1844,7 +1844,7 @@
   display: block;
   height: 100%;
   width: 100%;
-  background: var(--cord);
+  background: var(--cord-fill);
   transform-origin: left;
   transition: transform var(--t-toggle) linear;
 }

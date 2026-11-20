@@ -142,7 +142,7 @@
 .dropHint {
   height: 6px;
   border-radius: 3px;
-  background: var(--cord);
+  background: var(--cord-fill);
 }
 .cardRow {
   display: flex;

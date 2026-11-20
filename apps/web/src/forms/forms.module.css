@@ -749,7 +749,7 @@ button.startCard {
   justify-self: start;
   border: 2px solid var(--ink);
   border-radius: var(--r-pill);
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--white);
   font-family: var(--font-round);
   font-weight: 900;

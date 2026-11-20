@@ -46,7 +46,7 @@
 .progress i {
   display: block;
   height: 100%;
-  background: var(--cord);
+  background: var(--cord-fill);
   border-radius: var(--r-pill);
   transition: width var(--t-sheet) var(--ease-out);
 }
@@ -164,7 +164,7 @@
   border: 2px solid var(--ink);
 }
 .tplRowCord {
-  background: var(--cord);
+  background: var(--cord-fill);
 }
 .tpl b {
   font-family: var(--font-round);
@@ -257,7 +257,7 @@
   height: 24px;
   border-radius: 50%;
   border: 2px solid var(--ink);
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--white);
   display: grid;
   place-items: center;
@@ -288,7 +288,7 @@
   box-shadow: 0 3px 0 var(--ink);
 }
 .optRow button[aria-pressed="true"] {
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--white);
 }
 .avatarRow {
@@ -326,7 +326,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--white);
   border: 3px solid var(--ink);
   display: grid;
@@ -450,7 +450,7 @@
   align-items: center;
   gap: 8px;
   text-decoration: none;
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--white);
   border: var(--line) solid var(--ink);
   border-radius: var(--r-pill);

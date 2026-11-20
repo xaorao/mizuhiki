@@ -61,7 +61,7 @@
   width: 100%;
 }
 .cord {
-  background: var(--cord);
+  background: var(--cord-fill);
   color: var(--on-cord);
   border-color: var(--ink);
   box-shadow: var(--drop-cord);

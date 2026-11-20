@@ -126,7 +126,7 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: var(--cord);
+  background: var(--cord-fill);
 }
 .read {
   background: transparent;
