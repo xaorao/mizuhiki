@@ -52,6 +52,9 @@ Can: send anything to any page, read public pages and the chain, probe the API.
 - Impersonating a sender: a "signed" badge appears only for a QoreSign hybrid signature over the envelope hash, verified against the signer's on-chain key; unsigned items say "anonymous". QoreX payers show "verified by payment" because the transfer proves the address. **Stopped.**
 - Malicious files: files open in the owner's browser as downloads or sandboxed previews (images and PDF only, rendered from blob URLs in a sandboxed frame); no HTML or script previews. **Reduced.**
 - Replaying a captured envelope or drop: envelopes are content-addressed, duplicates are ignored; contract actions carry nonces. **Stopped.**
+- A fake file request, or a real request reworded: the request is a record signed with the owner's ML-DSA key; the API keeps it only if it matches the key on chain, and the uploader's browser checks the record, the page and the name's owner again before showing anything to upload to. A request id under another page's name is refused. **Stopped.**
+- Uploading to a closed request or after its deadline: the drop service refuses it ("Nothing was stored") unless the owner allows late uploads, which are stored and marked late. A per-request limit of 60 uploads a minute adds to the per-network limits. **Stopped / Reduced.**
+- Learning who else uploaded, or what: nothing about other uploads is served to uploaders; names, notes and file names are sealed (the naming rule runs on the uploader's device). The owner's list shows only counts, sizes and times. **Stopped.**
 
 ### A3. A removed room member, pass holder or guardian
 

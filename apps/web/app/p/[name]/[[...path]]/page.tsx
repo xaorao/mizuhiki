@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { normalizeNameInput } from "@mizuhiki/core";
-import { lookupForm, lookupPage, lookupProduct } from "@/lib/server-api";
+import { lookupFileRequest, lookupForm, lookupPage, lookupProduct } from "@/lib/server-api";
+import { RequestPage } from "@/requests/RequestPage";
 import { FormPage } from "@/forms/FormPage";
 import { SITE_URL, pageUrl } from "@/lib/site";
 import { ProductPage } from "@/shop/buyer/ProductPage";
@@ -63,6 +64,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
   if (link.kind === "checkout") return { title: `Checkout · @${name}`, robots: { index: false } };
+  if (link.kind === "request") {
+    const r = await lookupFileRequest(link.id);
+    if (r.state !== "ok") return { title: "Request not available", robots: { index: false } };
+    const title = `${r.record.body.title} · @${name}`;
+    const description = `@${name} is asking for files. Uploads are sealed on your device; only @${name} can open them.`;
+    return { title, description, robots: { index: false }, openGraph: { title, description, siteName: "Mizuhiki" } };
+  }
   const m = page.record.body;
   const title = `${m.displayName} (@${m.name})`;
   const description = m.bio || `Pay ${m.displayName}, or send them a message or a file, sealed on your device.`;
@@ -103,6 +111,16 @@ export default async function Page({ params, searchParams }: Props) {
         form={f.record}
         closedReason={f.open ? null : f.closedReason}
       />
+    );
+  }
+  if (link.kind === "request") {
+    const r = await lookupFileRequest(link.id);
+    if (r.state !== "ok")
+      return <PageUnavailable state={r.state === "missing" ? "missing" : "error"} message={r.message} name={name} />;
+    if (r.record.signer !== page.registry.owner)
+      return <PageUnavailable state="missing" message={`This request does not belong to @${name}.`} name={name} />;
+    return (
+      <RequestPage name={name} page={page.record} card={page.card} owner={page.registry.owner} request={r.record} />
     );
   }
   const m = page.record.body;

@@ -14,6 +14,7 @@ import type { Ctx } from "../server";
 import { pqKeyOf } from "../lib/chainreads";
 import { sha256Hex } from "../lib/blobstore";
 import { formNotifies, formRefusal } from "./forms";
+import { fileDropCheck } from "./filerequests";
 import { fail, isAddress } from "../lib/http";
 
 export const DROP_KINDS = [
@@ -27,6 +28,7 @@ export const DROP_KINDS = [
   "proof",
   "formtags",
   "formsnaps",
+  "filedrop",
 ] as const;
 /** Kinds an owner files for themselves (private labels): kept until deleted, never "unread". */
 export const SELF_KINDS: readonly string[] = ["proof", "formtags", "formsnaps"];
@@ -203,6 +205,13 @@ export const dropRoutes =
           if (why) return fail(reply, 409, "FORM_CLOSED", why, "nothing-stored");
           quiet = !(await formNotifies(ctx.db, address, b.data.ref));
         }
+        // File request uploads: the request must take them now; late ones are marked late.
+        let late = false;
+        if (b.data.kind === "filedrop") {
+          const check = await fileDropCheck(ctx.db, address, b.data.ref);
+          if ("refusal" in check) return fail(reply, 409, "REQUEST_CLOSED", check.refusal, "nothing-stored");
+          late = check.late;
+        }
         const self = SELF_KINDS.includes(b.data.kind);
         if (self && senderSig?.signer !== address)
           return fail(
@@ -234,11 +243,12 @@ export const dropRoutes =
               senderSig,
               expiresAt,
               readAt: self || quiet ? new Date() : null,
+              late,
             })
             .onConflictDoNothing();
           if (!quiet) await tx.execute(sql`select pg_notify('mzk_events', ${`drop:${address}`})`);
         });
-        return { hash, expiresAt: expiresAt?.toISOString() ?? null, readers: facts.readers };
+        return { hash, expiresAt: expiresAt?.toISOString() ?? null, readers: facts.readers, ...(late ? { late } : {}) };
       },
     );
 

@@ -143,6 +143,8 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
     else if (b.type === "room") openSheet({ kind: "room", block: b }, deepLinkPath(name, { kind: "block", id: b.id }));
     // A form is a one-question-per-screen flow, so it opens as its own page (Back returns here).
     else if (b.type === "form") router.push(deepLinkPath(name, { kind: "form", slug: b.slug }));
+    // A file request is its own page too (Dropbox's request page), with one drop zone.
+    else if (b.type === "fileRequest") router.push(deepLinkPath(name, { kind: "request", id: b.requestId }));
   };
 
   // Links | Shop (spec 5.4) when the page has shop blocks; "?tab=shop" (Continue shopping) opens the Shop side.

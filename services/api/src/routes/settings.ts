@@ -11,6 +11,7 @@ import {
   capsules,
   drafts,
   envelopes,
+  fileRequests,
   forms,
   invoices,
   names,
@@ -126,7 +127,7 @@ export const settingsRoutes =
 
     /**
      * Hide the page and remove everything stored for this account: sealed items, invoices, forms, products,
-     * drafts, passes, recovery pieces and capsule working copies. Their blobs are swept. Rooms are shared with
+     * drafts, file requests, passes, recovery pieces and capsule working copies. Their blobs are swept. Rooms are shared with
      * other people and stay; QoreChain records (names, keys, anchors, payments) stay.
      */
     app.delete("/owner/page", async (req, reply) => {
@@ -190,6 +191,7 @@ export const settingsRoutes =
         await tx.delete(envelopes).where(eq(envelopes.owner, me));
         await tx.delete(invoices).where(eq(invoices.owner, me));
         await tx.delete(forms).where(eq(forms.owner, me));
+        await tx.delete(fileRequests).where(eq(fileRequests.owner, me));
         await tx.delete(products).where(eq(products.owner, me));
         await tx.delete(drafts).where(eq(drafts.address, me));
         await tx.delete(capsules).where(and(eq(capsules.owner, me), eq(capsules.state, "draft")));

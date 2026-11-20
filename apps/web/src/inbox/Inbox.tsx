@@ -4,7 +4,8 @@
  * conversation) with Gmail-style filters; every row says "Sealed" until it is
  * opened on this device, and opening happens here, never on a server.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Chip, EmptyState, Icon, Oops, Skeleton, Tabs, TextField, TypeChip, type Tone } from "@mizuhiki/ui";
 import { denomByBase, fromBaseUnits } from "@mizuhiki/chain";
 import { useAccount } from "@/account/AccountProvider";
@@ -24,6 +25,7 @@ export const TYPE_TONE: Record<string, Tone> = {
   order: "matcha",
   form: "fuji",
   request: "butter",
+  filedrop: "sora",
 };
 
 export function shortAddr(a: string): string {
@@ -93,7 +95,9 @@ export function Inbox() {
   const ib = useInbox(account, owner.token, owner.refreshStats);
   const [filter, setFilter] = useState<Filter>("all");
   const [q, setQ] = useState("");
-  const [sel, setSel] = useState<string | null>(null);
+  // "?item=<id>" opens that item (links from a file request's uploads).
+  const params = useSearchParams();
+  const [sel, setSel] = useState<string | null>(() => params.get("item"));
 
   const rows = useMemo(() => ib.rows ?? [], [ib.rows]);
   const unread = rows.filter((r) => !r.read).length;
@@ -118,6 +122,16 @@ export function Inbox() {
     setSel(r.id);
     void ib.open(r);
   };
+  // An item named in the address is opened once its row has loaded, as a tap would.
+  const linked = useRef(params.get("item"));
+  useEffect(() => {
+    const id = linked.current;
+    if (!id) return;
+    const r = rows.find((x) => x.id === id);
+    if (!r) return;
+    linked.current = null;
+    void ib.open(r);
+  }, [rows, ib]);
 
   return (
     <div className={[s.page, selected ? s.hasSel : ""].join(" ")}>

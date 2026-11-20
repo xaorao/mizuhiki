@@ -27,7 +27,8 @@ export type SignedKind =
   | "invoice"
   | "snapshot"
   | "recovery"
-  | "capsule";
+  | "capsule"
+  | "filerequest";
 
 export interface Signed<T> {
   kind: SignedKind;

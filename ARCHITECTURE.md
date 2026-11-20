@@ -277,6 +277,17 @@ Read from the spec (5.17), `contracts/src/MizuhikiRegistry.sol` (commit, claimNa
 - **Data:** export everything, opened on this device, into one zip (the page, inbox items with their files, invoices, form answers, rooms' messages, passes and capsules lists). Delete my page: the page is hidden and every stored envelope and blob of the account is removed after a 10-second Undo; what is on QoreChain stays and the screen says so.
 - **Legal:** privacy, terms and how to report a page, written plainly from the threat model.
 
+## 8g. File requests (spec 5.7, Dropbox's file requests)
+
+Read from the spec (5.7), Dropbox's help pages (help.dropbox.com/share/create-file-request, /received-file-request, /manage-file-requests), the drop service (`services/api/src/routes/drop.ts`), the forms protocol (signed definitions, `formRefusal`) and the send path (`apps/web/src/lib/send.ts`).
+
+- **A request is a signed public record** (kind `filerequest`): id, title, description, optional deadline (an instant, shown in the owner's time zone and the visitor's), whether late uploads are taken, a file naming rule, open or closed, version. The owner's device signs it with their ML-DSA key; the API keeps it only if the signature matches the key on chain, and every visitor's browser checks it again before showing the title. Close, reopen and edit are re-signed versions; delete is allowed only once closed (Dropbox's order).
+- **Uploads use the existing drop path.** The visitor's browser seals one envelope (kind `filedrop`, ref `freq:<id>`) holding their optional name, a note and each file's key, with the pieces sealed in 4 MiB chunks, all to the owner's key read from QoreChain (and to the owner's period and offline readers, like any message). No account is needed. The drop service refuses drops for a closed request, or after the deadline unless late uploads are on; late ones are stored with a `late` mark the owner sees. Visitors never see each other's uploads: nothing about other uploads is served.
+- **Naming rule** (Dropbox's "naming conventions"): applied on the sender's device before sealing, so the server never sees names: original name, "Uploader – file name", or "Date – file name".
+- **Owner screens:** `/app/requests` (Make menu) with All, Open, Closed pills and columns Name, Created, Deadline, Uploads, Size (counts and sizes are what the server can see; names and contents are sealed). New request sheet, then the share step at once (copy link with a "Link copied" toast, QR, add to my page). A request's page lists its uploads opened on this device, with Save, Prove it existed, close, reopen, edit and delete. Uploads also arrive in the inbox as "File request" items.
+- **Visitor page:** `/@name/request/<id>`: who is asking (name verified on chain), title, description, deadline, one drop zone, optional name, the same seal moment and receipt as every send; closed, past-deadline, unknown and damaged states each say what happened and that nothing was sent.
+- **Page block:** a `fileRequest` block on the public page opens the request in place.
+
 ## 9. Sources behind the facts used here
 
 - QoreSign 0.2.0 source: `repos/qoresign/packages/ts/src` (`sign.ts`, `message.ts`, `network.ts`, `siwq.ts`).

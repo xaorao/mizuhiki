@@ -5,9 +5,11 @@
  * and the actions (reply, forward, archive, export, mark unread).
  */
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Button,
   ButtonLink,
+  Chip,
   Icon,
   IconButton,
   Oops,
@@ -532,6 +534,17 @@ function ItemDetail({
               token={token}
               onProve={(f) => setProving({ hash: f.sha256, file: { name: f.name, size: f.size, type: f.type } })}
             />
+          ) : null}
+          {msg?.request ? (
+            <p className={s.forRequest}>
+              <Icon name="upload" size={14} /> For your request{" "}
+              <Link href={`/app/requests/${msg.request.id}`}>&ldquo;{msg.request.title}&rdquo;</Link>
+              {row.late ? (
+                <Chip tone="butter" icon="clock">
+                  Late
+                </Chip>
+              ) : null}
+            </p>
           ) : null}
           {msg ? <p className={s.text}>{msg.text || <em>No message, files only.</em>}</p> : null}
           {msg?.link && safeInvoiceLink(msg.link) ? (

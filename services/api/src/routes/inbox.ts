@@ -32,6 +32,8 @@ export interface InboxRow {
   /** For sent items: who it was sent to. */
   to: { address: string; name: string | null } | null;
   payment: { txHash: string; denom: string; amount: string; memo: string } | null;
+  /** A file request upload that arrived after the deadline (late uploads allowed). */
+  late?: boolean;
   /** A payment whose memo names a sealed note that has not arrived (or a note whose payment is not on chain yet). */
   noteMissing?: boolean;
   paymentMissing?: boolean;
@@ -166,6 +168,7 @@ export const inboxRoutes =
               to: box === "sent" ? { address: e.owner, name: nameOf(e.owner) } : null,
               payment: null,
               ...(e.kind === "paynote" ? { paymentMissing: true } : {}),
+              ...(e.late ? { late: true } : {}),
               expiresAt: e.expiresAt?.toISOString() ?? null,
             };
           }),

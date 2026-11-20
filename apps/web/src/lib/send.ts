@@ -48,6 +48,8 @@ export interface MessagePayload {
   forwardNote?: string;
   /** A link the item points to (an invoice, with its key in the fragment). */
   link?: string;
+  /** An upload to a file request (spec 5.7): which request, and its title as the uploader saw it. */
+  request?: { id: string; title: string };
 }
 
 export type SendStep = "keys" | "files" | "seal" | "sign" | "stamp" | "send";
@@ -67,6 +69,8 @@ export interface SendResult {
   bytes: number;
   files: number;
   signedBy?: string;
+  /** A file request upload that arrived after the deadline (late uploads allowed). */
+  late?: boolean;
 }
 
 export class SendFailure extends Error {
@@ -94,7 +98,7 @@ export async function cardOf(address: string): Promise<RecipientCard> {
 
 export async function sendSealed(args: {
   to: { address: string; card: RecipientCard | null };
-  kind?: "message" | "reply" | "invoice";
+  kind?: "message" | "reply" | "invoice" | "filedrop";
   ref?: string | undefined;
   text: string;
   contact: string;
@@ -103,7 +107,8 @@ export async function sendSealed(args: {
   /** Files already sealed elsewhere (a forward): their keys are re-sealed, their pieces reused. */
   sealedFiles?: FileFacts[] | undefined;
   extra?:
-    Pick<MessagePayload, "inReplyTo" | "quote" | "forwardedBy" | "originalFrom" | "forwardNote" | "link"> | undefined;
+    | Pick<MessagePayload, "inReplyTo" | "quote" | "forwardedBy" | "originalFrom" | "forwardNote" | "link" | "request">
+    | undefined;
   maxFileBytes: number;
   signer?: Account | undefined;
   onStep: (s: SendStep, progress: number) => void;
@@ -202,7 +207,7 @@ export async function sendSealed(args: {
     args.onStep("stamp", 0.84);
     const pow = await solvePowAsync(to.address, sealed.hash, cfg.powBits, signal);
     args.onStep("send", 0.92);
-    const r = await api.post<{ hash: string; expiresAt: string; readers: number }>(
+    const r = await api.post<{ hash: string; expiresAt: string; readers: number; late?: boolean }>(
       `/drop/${to.address}`,
       {
         envelope: toBase64Url(sealed.envelope),
@@ -226,6 +231,7 @@ export async function sendSealed(args: {
       bytes: sealed.envelope.length + total,
       files: facts.length,
       ...(sender ? { signedBy: sender.signer } : {}),
+      ...(r.late ? { late: true } : {}),
     };
   } catch (e) {
     return fail(e, "Not sent. Something went wrong while sealing.");

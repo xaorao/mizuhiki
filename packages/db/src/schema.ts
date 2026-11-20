@@ -107,6 +107,8 @@ export const envelopes = pgTable(
     expiresAt: ts("expires_at"),
     archived: boolean("archived").notNull().default(false),
     readAt: ts("read_at"),
+    /** A file request upload that arrived after its deadline (late uploads allowed). */
+    late: boolean("late").notNull().default(false),
   },
   (t) => [index("envelopes_owner").on(t.owner, t.createdAt), index("envelopes_ref").on(t.ref)],
 );
@@ -716,4 +718,24 @@ export const capsuleReleases = pgTable(
     primaryKey({ columns: [t.capsuleId, t.guardian, t.recipient] }),
     index("capsule_releases_recipient").on(t.recipient),
   ],
+);
+
+/**
+ * File requests (spec 5.7, ARCHITECTURE 8g): the owner's signed public record.
+ * Uploads are envelopes with ref `freq:<id>`; nothing here can be opened by us.
+ */
+export const fileRequests = pgTable(
+  "file_requests",
+  {
+    id: text("id").primaryKey(),
+    owner: text("owner").notNull(),
+    /** Signed FileRequest (kind "filerequest"), checked against the owner's key on chain. */
+    record: jsonb("record").notNull(),
+    /** open | closed (mirrors the signed record, for listing). */
+    status: text("status").notNull(),
+    version: integer("version").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("file_requests_owner").on(t.owner, t.createdAt)],
 );

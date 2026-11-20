@@ -72,3 +72,26 @@ export async function lookupProduct(name: string, slug: string): Promise<Product
     return { state: "error", message: "Mizuhiki could not be reached. Try again in a moment." };
   }
 }
+
+export type FileRequestLookup =
+  | { state: "ok"; record: Signed<import("@mizuhiki/core").FileRequest> }
+  | { state: "missing" | "error"; message: string };
+
+/** A file request's public record (spec 5.7). The browser verifies the signature against the chain. */
+export async function lookupFileRequest(id: string): Promise<FileRequestLookup> {
+  try {
+    const res = await fetch(`${BASE}/file-requests/${encodeURIComponent(id)}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
+    });
+    const j = (await res.json().catch(() => ({}))) as { error?: { message?: string } } & Partial<
+      Extract<FileRequestLookup, { state: "ok" }>
+    >;
+    if (res.status === 404) return { state: "missing", message: j.error?.message ?? "This request isn't available." };
+    if (!res.ok || !j.record)
+      return { state: "error", message: j.error?.message ?? "This request could not be loaded." };
+    return { state: "ok", record: j.record };
+  } catch {
+    return { state: "error", message: "Mizuhiki could not be reached. Try again in a moment." };
+  }
+}

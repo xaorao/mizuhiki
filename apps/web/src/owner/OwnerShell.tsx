@@ -79,6 +79,7 @@ function Frame({ children }: { children: ReactNode }) {
       title: "Make",
       items: [
         { href: "/app/forms", label: "Forms", icon: "form" },
+        { href: "/app/requests", label: "File requests", icon: "upload" },
         { href: "/app/shop", label: "Shop", icon: "bag" },
         { href: "/app/rooms", label: "Rooms", icon: "users" },
         { href: "/app/invoices", label: "Invoices", icon: "invoice" },

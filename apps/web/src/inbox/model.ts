@@ -21,6 +21,8 @@ export interface InboxRow {
   read: boolean;
   archived: boolean;
   ref: string | null;
+  /** A file request upload that arrived after its deadline (late uploads allowed). */
+  late?: boolean;
   sender: { address: string; name: string | null; how: "signed" | "payment" | "request" } | null;
   /** The sender's signature record; checked again on this device against QoreChain. */
   senderSig: unknown;
@@ -43,6 +45,8 @@ export interface OpenedMessage {
   originalFrom?: string;
   forwardNote?: string;
   link?: string;
+  /** An upload to one of your file requests: which one, and its title as the uploader saw it. */
+  request?: { id: string; title: string };
 }
 
 export interface OpenedNote {
@@ -67,6 +71,7 @@ const PURPOSE_BY_KIND: Record<string, string> = {
   message: Purpose.message,
   reply: Purpose.message,
   invoice: Purpose.message,
+  filedrop: Purpose.message,
   paynote: Purpose.payNote,
   payment: Purpose.payNote,
 };
@@ -80,6 +85,11 @@ export function purposeFor(row: Pick<InboxRow, "kind" | "ref">): string | undefi
 }
 
 const str = (v: unknown): string => (typeof v === "string" ? v : "");
+const isRequestRef = (v: unknown): v is { id: string; title: string } =>
+  typeof v === "object" &&
+  v !== null &&
+  typeof (v as { id?: unknown }).id === "string" &&
+  typeof (v as { title?: unknown }).title === "string";
 
 /** Fetch an envelope and open it here. Throws MizuhikiError with a plain message on failure. */
 export async function openRow(account: Account, row: InboxRow): Promise<Opened> {
@@ -132,6 +142,7 @@ export function parseOpened(row: Pick<InboxRow, "kind" | "ref" | "at">, purpose:
     ...(typeof json.originalFrom === "string" ? { originalFrom: json.originalFrom } : {}),
     ...(typeof json.forwardNote === "string" ? { forwardNote: json.forwardNote } : {}),
     ...(typeof json.link === "string" ? { link: json.link } : {}),
+    ...(isRequestRef(json.request) ? { request: { id: json.request.id, title: json.request.title } } : {}),
   };
 }
 
@@ -186,5 +197,6 @@ export const TYPE_LABEL: Record<string, string> = {
   form: "Form answer",
   order: "Order",
   request: "Room request",
+  filedrop: "File request",
   paynote: "Payment",
 };

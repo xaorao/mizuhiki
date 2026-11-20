@@ -4,6 +4,11 @@
  * owner's greeting as a first chat bubble, the visitor writes, and only then
  * chooses how to appear: anonymous (default) or signed with their own Mizuhiki
  * keys. No email, no account. Files are sealed in pieces on this device.
+ *
+ * The same sheet uploads to a file request (Dropbox's file requests): the
+ * request's title replaces the greeting, at least one file is needed, the
+ * request's naming rule renames files on this device before sealing, and the
+ * drop is filed under the request.
  */
 import { useEffect, useRef, useState } from "react";
 import {
@@ -24,7 +29,14 @@ import {
   useToast,
   type SealStep,
 } from "@mizuhiki/ui";
-import type { Block, RecipientCard } from "@mizuhiki/core";
+import {
+  fileRequestRef,
+  namedFile,
+  type Block,
+  type NamingRule,
+  type RecipientCard,
+  type RequestState,
+} from "@mizuhiki/core";
 import { useAccount } from "@/account/AccountProvider";
 import { api, mediaUrl } from "@/lib/api";
 import { SEND_STEP_LABEL, SendFailure, sendSealed, type SendResult, type SendStep } from "@/lib/send";
@@ -36,6 +48,17 @@ export interface OwnerRef {
   address: string;
   card: RecipientCard | null;
   avatar?: { hash: string; type: string } | undefined;
+}
+
+/** A file request this sheet uploads to (the request page has verified its signature). */
+export interface UploadRequest {
+  id: string;
+  title: string;
+  description: string;
+  naming: NamingRule;
+  state: RequestState;
+  /** "Due 20 November, 17:00 in Tokyo (your time 09:00)", or null without a deadline. */
+  deadlineText: string | null;
 }
 
 type Phase = "compose" | "who" | "sealing" | "done" | "failed";
@@ -53,11 +76,19 @@ export function MessageSheet({
   onClose,
   block,
   owner,
+  request,
+  initialFiles,
+  onSent,
 }: {
   open: boolean;
   onClose: () => void;
-  block: Extract<Block, { type: "message" }>;
+  block?: Extract<Block, { type: "message" }> | undefined;
   owner: OwnerRef;
+  request?: UploadRequest | undefined;
+  /** Files dropped on the request page before the sheet opened. */
+  initialFiles?: File[] | undefined;
+  /** Told after each successful send (the request page counts uploads). */
+  onSent?: (() => void) | undefined;
 }) {
   const acct = useAccount();
   const toast = useToast();
@@ -76,7 +107,10 @@ export function MessageSheet({
   const [drag, setDrag] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const ctl = useRef<AbortController | null>(null);
-  const maxBytes = block.maxFileMB * MB;
+  const allowFiles = request ? true : (block?.allowFiles ?? true);
+  // Requests take files up to 2 GB each (Dropbox's limit on its free plans); messages follow the block.
+  const maxMB = request ? 2048 : (block?.maxFileMB ?? 500);
+  const maxBytes = maxMB * MB;
   const isSelf = acct.account?.owner.address === owner.address;
   const canSign = acct.status === "unlocked" && !!acct.account && !isSelf;
   // A visitor with Mizuhiki on this device but locked (any page load locks it) can unlock right here.
@@ -108,6 +142,10 @@ export function MessageSheet({
   };
 
   useEffect(() => {
+    if (open && initialFiles?.length) setFiles(initialFiles);
+  }, [open, initialFiles]);
+
+  useEffect(() => {
     if (!open) return;
     void api
       .get<{ retentionDays: number }>("/drop/config")
@@ -119,7 +157,7 @@ export function MessageSheet({
     const next = [...files];
     const problems: string[] = [];
     for (const f of Array.from(list)) {
-      if (f.size > maxBytes) problems.push(`“${f.name}” is larger than ${block.maxFileMB} MB.`);
+      if (f.size > maxBytes) problems.push(`“${f.name}” is larger than ${fmtBytes(maxBytes)}.`);
       else if (next.some((x) => x.name === f.name && x.size === f.size)) problems.push(`“${f.name}” is already added.`);
       else next.push(f);
     }
@@ -151,12 +189,24 @@ export function MessageSheet({
     setProgress(0.02);
     setPhase("sealing");
     ctl.current = new AbortController();
+    // The request's naming rule, applied here so the server never sees a name.
+    const at = new Date();
+    const outgoing = request
+      ? files.map((f) => new File([f], namedFile(request.naming, f.name, { uploader: contact, at }), { type: f.type }))
+      : files;
     try {
       const r = await sendSealed({
         to: { address: owner.address, card: owner.card },
         text,
         contact,
-        files,
+        files: outgoing,
+        ...(request
+          ? {
+              kind: "filedrop" as const,
+              ref: fileRequestRef(request.id),
+              extra: { request: { id: request.id, title: request.title } },
+            }
+          : {}),
         maxFileBytes: maxBytes,
         signer: signed && canSign ? acct.account : undefined,
         signal: ctl.current.signal,
@@ -175,17 +225,20 @@ export function MessageSheet({
       setProgress(1);
       setResult(r);
       setPhase("done");
+      onSent?.();
     } catch (e) {
       setFailure(e instanceof SendFailure ? e : new SendFailure("Not sent. Nothing left your device.", "nothing"));
       setPhase("failed");
     }
   };
 
-  const what = files.length
-    ? text.trim()
-      ? `Private message, ${files.length} ${files.length === 1 ? "file" : "files"}`
-      : `${files.length} ${files.length === 1 ? "file" : "files"}`
-    : "Private message";
+  const what = request
+    ? `${files.length} ${files.length === 1 ? "file" : "files"} for “${request.title}”`
+    : files.length
+      ? text.trim()
+        ? `Private message, ${files.length} ${files.length === 1 ? "file" : "files"}`
+        : `${files.length} ${files.length === 1 ? "file" : "files"}`
+      : "Private message";
   const sending = phase === "sealing";
   return (
     <Sheet
@@ -195,7 +248,13 @@ export function MessageSheet({
         if (phase === "done" || phase === "failed") reset();
         onClose();
       }}
-      title={phase === "done" ? `Sealed for ${first}` : `Send ${first} something private`}
+      title={
+        phase === "done"
+          ? `Sealed for ${first}`
+          : request
+            ? `Upload files for ${first}`
+            : `Send ${first} something private`
+      }
       dismissable={!sending}
     >
       {phase === "compose" ? (
@@ -203,6 +262,10 @@ export function MessageSheet({
           className={s.msg}
           onSubmit={(e) => {
             e.preventDefault();
+            if (request && files.length === 0) {
+              setError("Add at least one file. Nothing has left your device.");
+              return;
+            }
             if (!text.trim() && files.length === 0) {
               setError("Write a note or add a file. Nothing has left your device.");
               return;
@@ -210,13 +273,13 @@ export function MessageSheet({
             setPhase("who");
           }}
           onDragOver={(e) => {
-            if (!block.allowFiles) return;
+            if (!allowFiles) return;
             e.preventDefault();
             setDrag(true);
           }}
           onDragLeave={() => setDrag(false)}
           onDrop={(e) => {
-            if (!block.allowFiles) return;
+            if (!allowFiles) return;
             e.preventDefault();
             setDrag(false);
             addFiles(e.dataTransfer.files);
@@ -229,18 +292,29 @@ export function MessageSheet({
               {...(owner.avatar ? { src: mediaUrl(owner.avatar.hash) } : {})}
               size={36}
             />
-            <p className={s.bubble}>{block.greeting || `Hi, I'm ${first}. Anything you send here is sealed to me.`}</p>
+            {request ? (
+              <div className={s.bubble}>
+                <b>{request.title}</b>
+                {request.description ? <span className={s.bubbleDetail}>{request.description}</span> : null}
+              </div>
+            ) : (
+              <p className={s.bubble}>
+                {block?.greeting || `Hi, I'm ${first}. Anything you send here is sealed to me.`}
+              </p>
+            )}
           </div>
-          <TextArea
-            label="Message"
-            hideLabel
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            maxLength={20000}
-            placeholder={`Write something only ${first} can read`}
-            autoFocus
-          />
-          {block.allowFiles ? (
+          {request ? null : (
+            <TextArea
+              label="Message"
+              hideLabel
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              maxLength={20000}
+              placeholder={`Write something only ${first} can read`}
+              autoFocus
+            />
+          )}
+          {allowFiles ? (
             <>
               {files.length ? (
                 <ul className={s.files}>
@@ -267,7 +341,7 @@ export function MessageSheet({
                 onClick={() => input.current?.click()}
               >
                 <Icon name="upload" size={18} />
-                Drop files here or tap to add · up to {block.maxFileMB} MB each, sealed as they upload
+                Drop files here or tap to add · up to {fmtBytes(maxBytes)} each, sealed as they upload
               </button>
               <input
                 ref={input}
@@ -280,6 +354,21 @@ export function MessageSheet({
                 }}
               />
             </>
+          ) : null}
+          {request ? (
+            <TextArea
+              label={`A note for ${first} (optional)`}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              maxLength={4000}
+              rows={2}
+            />
+          ) : null}
+          {request?.deadlineText ? (
+            <p className={s.expiry}>
+              <Icon name="calendar" size={14} /> {request.deadlineText}
+              {request.state === "late" ? " · the deadline has passed; uploads are still taken and marked late" : ""}
+            </p>
           ) : null}
           {error ? <Oops title="Nothing to seal yet">{error}</Oops> : null}
           <LockLine>Encrypted on this device. Only {first} can open it.</LockLine>
@@ -338,11 +427,21 @@ export function MessageSheet({
             </form>
           ) : null}
           <TextField
-            label="Your name or how to reach you (optional)"
+            label={
+              request?.naming === "uploader"
+                ? "Your name"
+                : request
+                  ? "Your name (optional)"
+                  : "Your name or how to reach you (optional)"
+            }
             value={contact}
             maxLength={200}
             onChange={(e) => setContact(e.target.value)}
-            hint={`Sealed with your message. Only ${first} sees it.`}
+            hint={
+              request?.naming === "uploader"
+                ? `${first} names the files after you. Sealed with your files; only ${first} sees it.`
+                : `Sealed with your ${request ? "files" : "message"}. Only ${first} sees it.`
+            }
           />
           <div className={s.row}>
             <Button variant="line" icon="back" onClick={() => setPhase("compose")}>
@@ -354,7 +453,7 @@ export function MessageSheet({
               icon="lock"
               onClick={() => void send()}
               className={s.grow}
-              disabled={signed && !canSign}
+              disabled={(signed && !canSign) || (request?.naming === "uploader" && !contact.trim())}
             >
               Seal and send
             </Button>
@@ -399,6 +498,7 @@ export function MessageSheet({
                 { term: "What", value: what },
                 { term: "Readers", value: `${owner.displayName} @${owner.name}` },
                 { term: "Sender", value: result.signedBy ? "Signed with your key" : "Anonymous" },
+                ...(result.late ? [{ term: "Arrived", value: "After the deadline, marked late" }] : []),
                 { term: "On chain", value: "Nothing" },
                 {
                   term: "Kept until",
@@ -413,8 +513,8 @@ export function MessageSheet({
             />
           }
           extra={
-            <Button variant="ghost" full icon="send" onClick={reset}>
-              Send another
+            <Button variant="ghost" full icon={request ? "upload" : "send"} onClick={reset}>
+              {request ? "Upload more files" : "Send another"}
             </Button>
           }
         />

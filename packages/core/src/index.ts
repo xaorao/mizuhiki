@@ -20,3 +20,4 @@ export * from "./shop";
 export * from "./passes";
 export * from "./recovery";
 export * from "./capsules";
+export * from "./filerequests";

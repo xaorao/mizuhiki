@@ -511,3 +511,19 @@
   margin: 0;
   line-height: 1.5;
 }
+
+.forRequest {
+  margin: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.forRequest a {
+  color: var(--ink);
+  font-family: var(--font-round);
+  font-weight: 800;
+}

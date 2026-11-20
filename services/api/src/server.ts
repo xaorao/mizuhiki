@@ -29,6 +29,7 @@ import { recoveryRoutes } from "./routes/recovery";
 import { capsuleRoutes } from "./routes/capsules";
 import { insightRoutes } from "./routes/insights";
 import { settingsRoutes } from "./routes/settings";
+import { fileRequestRoutes } from "./routes/filerequests";
 
 export interface Ctx {
   cfg: Config;
@@ -130,6 +131,7 @@ export async function buildServer(
   await app.register(recoveryRoutes(ctx));
   await app.register(capsuleRoutes(ctx));
   await app.register(insightRoutes(ctx));
+  await app.register(fileRequestRoutes(ctx));
   await app.register(settingsRoutes(ctx));
   return {
     app,
