@@ -25,6 +25,7 @@ import { roomRoutes } from "./routes/rooms";
 import { shopRoutes } from "./routes/shop";
 import { passRoutes } from "./routes/passes";
 import { recoveryRoutes } from "./routes/recovery";
+import { capsuleRoutes } from "./routes/capsules";
 
 export interface Ctx {
   cfg: Config;
@@ -59,7 +60,9 @@ export async function buildServer(
   const accountOf = new Map<string, { address: string | undefined; at: number }>();
   await app.register(rateLimit, {
     global: true,
-    max: 300,
+    // A signed-in account's open dashboards (live rooms, capsule and recovery watchers, several tabs) share one
+    // budget, so it is larger than an anonymous network's.
+    max: (_req, key) => (key.startsWith("a:") ? 900 : 300),
     timeWindow: "1 minute",
     keyGenerator: async (req) => {
       const auth = req.headers.authorization;
@@ -116,6 +119,7 @@ export async function buildServer(
   await app.register(shopRoutes(ctx));
   await app.register(passRoutes(ctx));
   await app.register(recoveryRoutes(ctx));
+  await app.register(capsuleRoutes(ctx));
   return {
     app,
     ctx,

@@ -1,0 +1,236 @@
+/* Capsules (spec 5.14). Shares the Passes layout (passes.module.css); these are its own parts. */
+
+.newLink {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 20px;
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--cord);
+  color: var(--on-cord);
+  font-family: var(--font-round);
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: var(--drop-cord);
+  transition: transform var(--t-press) var(--ease-out);
+}
+.newLink:hover {
+  transform: translateY(-1px);
+}
+.newLink:active {
+  transform: translateY(2px);
+}
+.newLink:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.capIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  display: grid;
+  place-items: center;
+  background: var(--butter);
+  color: var(--butter-ink);
+}
+.row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--white);
+  box-shadow: var(--drop);
+  animation: mz-pop-in var(--t-sheet) var(--ease-out) both;
+}
+.opened {
+  display: grid;
+  gap: 14px;
+}
+.from {
+  margin: 0;
+  color: var(--ink-muted);
+}
+.message {
+  margin: 0;
+  padding: 16px 18px;
+  border-left: 4px solid var(--cord);
+  background: var(--paper);
+  border-radius: var(--r-sm);
+  font-size: 17px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sentences {
+  margin: 0;
+  padding: 0 0 0 20px;
+  display: grid;
+  gap: 6px;
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+
+/* ---- the stepper (Google's collapsing steps) ---- */
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.step {
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--white);
+  box-shadow: var(--drop);
+  overflow: hidden;
+}
+.stepHead {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 16px 18px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.stepHead:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+.stepHead b {
+  display: block;
+  font-family: var(--font-round);
+  font-size: 17px;
+}
+.stepHead small {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+  margin-top: 2px;
+}
+.num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  background: var(--white);
+}
+.numDone {
+  background: var(--matcha);
+}
+.numNow {
+  background: var(--cord);
+  color: var(--on-cord);
+}
+.stepBody {
+  padding: 4px 18px 20px;
+  display: grid;
+  gap: 16px;
+  animation: mz-pop-in var(--t-sheet) var(--ease-out) both;
+}
+.recipient {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--paper);
+}
+.recipientHead {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.recipientHead b {
+  flex: 1;
+}
+.fileChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.plan {
+  margin: 0;
+  padding: 16px 18px 16px 38px;
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--matcha);
+  display: grid;
+  gap: 8px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.danger {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+}
+.statusPanel {
+  display: grid;
+  gap: 12px;
+}
+.big {
+  margin: 0;
+  font-family: var(--font-round);
+  font-weight: 800;
+  font-size: 24px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: var(--butter);
+  color: var(--butter-ink);
+  border-bottom: 2px solid var(--ink);
+  font-size: 14.5px;
+}
+.bar button {
+  margin-left: auto;
+}
+
+@media (max-width: 640px) {
+  /* On a phone the title carries the page; the icon would sit alone on its own line. */
+  .headIcon {
+    display: none;
+  }
+  .row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .row > :last-child {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .newLink {
+    margin-left: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  .stepBody {
+    animation: none;
+  }
+  .newLink {
+    transition: none;
+  }
+}

@@ -14,6 +14,7 @@ import { checklistState } from "@/editor/checklist";
 import { useOnline } from "@/lib/useOnline";
 import { AutoDeliver } from "@/shop/seller/AutoDeliver";
 import { RecoveryAlarm } from "@/recovery/RecoveryAlarm";
+import { CapsuleWatch } from "@/capsules/CapsuleWatch";
 import s from "./owner.module.css";
 
 const PHONE_TABS = ["/app", "/app/inbox", "/app/rooms", "/app/forms"];
@@ -35,7 +36,8 @@ export function OwnerShell({ children }: { children: ReactNode }) {
   const path = usePathname();
   useEffect(() => {
     if (acct.status === "locked" || acct.status === "none" || acct.status === "elsewhere") {
-      router.replace(`/login?next=${encodeURIComponent(path)}`);
+      // Keep the whole address (a tab in ?tab=, a deep link) so unlocking returns exactly here.
+      router.replace(`/login?next=${encodeURIComponent(`${path}${window.location.search}${window.location.hash}`)}`);
     }
   }, [acct.status, path, router]);
   if (acct.status !== "unlocked" || !acct.account) {
@@ -86,6 +88,7 @@ function Frame({ children }: { children: ReactNode }) {
       title: "Access",
       items: [
         { href: "/app/passes", label: "Passes", icon: "pass" },
+        { href: "/app/capsules", label: "Capsules", icon: "hour" },
         { href: "/app/spare-key", label: "Spare key", icon: "key" },
       ],
     },
@@ -135,6 +138,7 @@ function Frame({ children }: { children: ReactNode }) {
       </nav>
       <div className={s.content}>
         <RecoveryAlarm />
+        <CapsuleWatch />
         {!online ? (
           <div className={s.offline}>
             <OfflineBanner />

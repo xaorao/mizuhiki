@@ -45,7 +45,8 @@ let cachedPublic: PublicClient | undefined;
 export function publicClient(): PublicClient {
   cachedPublic ??= createPublicClient({
     chain: qorechainTestnet,
-    transport: http(NETWORK.evmRpc, { retryCount: 3 }),
+    // JSON-RPC batching (the endpoint accepts batches, checked): one request carries the calls made together.
+    transport: http(NETWORK.evmRpc, { retryCount: 3, retryDelay: 400, batch: { batchSize: 25, wait: 16 } }),
   }) as PublicClient;
   return cachedPublic;
 }

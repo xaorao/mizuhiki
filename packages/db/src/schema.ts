@@ -658,3 +658,60 @@ export const recoveryOfflineItems = pgTable(
   },
   (t) => [primaryKey({ columns: [t.owner, t.source] })],
 );
+
+/**
+ * Capsules (spec 5.14, ARCHITECTURE 8e). The chain decides release; this is the
+ * plan (signed by the owner), guardians' consent, and the envelopes guardians
+ * re-seal to recipients after release. Nothing here can be opened by us.
+ */
+export const capsules = pgTable(
+  "capsules",
+  {
+    /** bytes32 hex, the CapsuleVault id. */
+    id: text("id").primaryKey(),
+    owner: text("owner").notNull(),
+    label: text("label").notNull(),
+    /** Blob hash of the owner's working copy (sealed to the owner only): chosen files, recipients, settings. */
+    draftEnvelope: text("draft_envelope").notNull(),
+    /** The signed plan, once armed. */
+    plan: jsonb("plan"),
+    /** draft | armed | cancelled (the chain has the rest). */
+    state: text("state").notNull().default("draft"),
+    armedTx: text("armed_tx"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("capsules_owner").on(t.owner)],
+);
+
+export const capsuleGuardians = pgTable(
+  "capsule_guardians",
+  {
+    capsuleId: text("capsule_id").notNull(),
+    guardian: text("guardian").notNull(),
+    /** invited | accepted | confirmed | declined | removed */
+    status: text("status").notNull().default("invited"),
+    invite: jsonb("invite").notNull(),
+    accept: jsonb("accept"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.capsuleId, t.guardian] }), index("capsule_guardians_guardian").on(t.guardian)],
+);
+
+/** A guardian's piece for one recipient, re-sealed to that recipient after release. */
+export const capsuleReleases = pgTable(
+  "capsule_releases",
+  {
+    capsuleId: text("capsule_id").notNull(),
+    guardian: text("guardian").notNull(),
+    recipient: text("recipient").notNull(),
+    planVersion: integer("plan_version").notNull(),
+    envelope: text("envelope").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.capsuleId, t.guardian, t.recipient] }),
+    index("capsule_releases_recipient").on(t.recipient),
+  ],
+);

@@ -17,7 +17,7 @@ import {
 } from "@mizuhiki/chain";
 import { parseMemo } from "@mizuhiki/core";
 import { addressFromBytes } from "@qorechain/qoresign";
-import { chainEvents, indexCheckpoints, names, pages, payments, type Db } from "@mizuhiki/db";
+import { capsules, chainEvents, indexCheckpoints, names, pages, payments, type Db } from "@mizuhiki/db";
 
 export const LOG_CHUNK = 5_000n;
 const CONFIRMATIONS = 1n;
@@ -38,6 +38,42 @@ const jsonSafe = (v: unknown): unknown =>
   JSON.parse(JSON.stringify(v, (_k, x: unknown) => (typeof x === "bigint" ? x.toString() : x)));
 
 /** Apply one decoded event to the materialised tables. */
+/** CapsuleVault events that change what owners, guardians and recipients see (spec 5.14). */
+const CAPSULE_EVENTS = [
+  "CapsuleCreated",
+  "GuardiansSet",
+  "ReleaseRequested",
+  "RequestRejected",
+  "Released",
+  "Cancelled",
+  "CheckedIn",
+];
+
+/**
+ * Tell the open dashboards of everyone a capsule names that its state changed on chain (a guardian's
+ * request, the owner's reject or approve, a release, a cancel, a check-in). Only "capsule" is sent; each
+ * dashboard reads the new state from QoreChain itself.
+ */
+async function notifyCapsule(db: Db, idHex: string | null, owner: string | null): Promise<void> {
+  const rows = idHex
+    ? await db
+        .select()
+        .from(capsules)
+        .where(eq(capsules.id, idHex.replace(/^0x/, "").toLowerCase()))
+    : owner
+      ? await db.select().from(capsules).where(eq(capsules.owner, owner))
+      : [];
+  const who = new Set<string>();
+  for (const c of rows) {
+    who.add(c.owner);
+    const plan = c.plan as { body?: { guardians?: string[]; recipients?: { address: string }[] } } | null;
+    for (const g of plan?.body?.guardians ?? []) who.add(g);
+    for (const r of plan?.body?.recipients ?? []) who.add(r.address);
+  }
+  if (owner) who.add(owner);
+  for (const a of who) await db.execute(sql`select pg_notify('mzk_events', ${`capsule:${a}`})`);
+}
+
 async function materialise(
   db: Db,
   ev: { event: string; args: Record<string, unknown>; txHash: string; block: bigint },
@@ -66,6 +102,12 @@ async function materialise(
           claimedBlock: ev.block,
         },
       });
+  } else if (CAPSULE_EVENTS.includes(ev.event)) {
+    await notifyCapsule(
+      db,
+      ev.event === "CheckedIn" ? null : String(a.id),
+      ev.event === "CheckedIn" ? toQor(String(a.owner)) : null,
+    );
   } else if (ev.event === "NameReleased") {
     await db.delete(names).where(eq(names.name, String(a.name)));
   } else if (ev.event === "PrimaryNameSet") {

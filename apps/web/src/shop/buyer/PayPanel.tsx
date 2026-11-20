@@ -327,7 +327,7 @@ export function PayPanel({
         <p className={s.fine}>
           No Mizuhiki account on this device. Pay with QoreX or send it yourself, or{" "}
           <Link
-            href={`/login?next=${encodeURIComponent(typeof window === "undefined" ? "/" : window.location.pathname)}`}
+            href={`/login?next=${encodeURIComponent(typeof window === "undefined" ? "/" : `${window.location.pathname}${window.location.search}`)}`}
           >
             log in
           </Link>

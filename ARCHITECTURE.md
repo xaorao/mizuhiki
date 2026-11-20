@@ -253,6 +253,18 @@ Read from the spec (5.13), `research/access/UX_SPEC.md` (1Password Emergency Kit
 - **Offline recovery reader:** a random key printed as 24 words on its own sheet; its public half is listed in the signed page (with every kind and no end) so senders seal to it, and the owner's device re-seals older items to it on request. `/recover/offline` reads with it: the server seals a random challenge to the registered public key; opening it proves possession, which unlocks the list of the owner's items (metadata), opened on that device with the offline key.
 - **Server sees:** who are contacts, request times and counts, opaque envelopes. A dishonest server could release pieces early, but still needs t contacts to have answered; it cannot read pieces or the phrase.
 
+## 8e. Capsules protocol (spec 5.14)
+
+Read from the spec (5.14), `contracts/src/CapsuleVault.sol` (deployed, `packages/chain` encoders), `research/access/UX_SPEC.md` (Google's stepper, waiting periods and warnings; Bitwarden's invite, accept, confirm, request, approve or reject; Apple's bounded access window) and the recovery protocol (8d) whose handshake and pieces this reuses.
+
+- **Per-recipient scope, enforced by keys:** each recipient r gets a fresh seed S_r; their content (an optional message and files) is sealed to `sealKeysFromSeed(S_r)` under `mzk:capsule:<id>`. S_r is split into Shamir pieces (t of the n guardians) and piece (g, r) is sealed to guardian g. A recipient who gathers t pieces opens only their own content.
+- **The plan** (signed record, kind `capsule`): id, owner, public label, mode and times, access window, guardians and threshold, recipients with their content envelope, every piece envelope, and whether sealed copies are deleted after the window. `planHash` = SHA-256 of the canonical plan body, written to `CapsuleVault` on create; any change re-signs the plan and calls `setGuardians` with the new hash.
+- **Guardians** consent per capsule (Bitwarden): signed invite, signed acceptance, the owner compares six safety words; the capsule is armed on chain only when every guardian is confirmed.
+- **Release** is the contract's stored status `Released` (never the `effectiveStatus` view: until it is finalised a check-in or cancel still wins). Anyone may call `finalize` once the time has come; guardians' and recipients' devices do so when they open the page. A guardian's device then checks: the plan's signature against the owner's key on chain, its hash against the chain's `planHash`, the stored status, and that the access window (`releasedAt + accessSeconds`) has not ended; only then does it open its pieces and re-seal each to its recipient's key from the chain. This runs on its own whenever a guardian has the dashboard open, and from a button.
+- **Modes:** at a time (`releaseAt`); for family after a wait (a guardian signs `request` on chain; the owner sees Request pending with a countdown, Approve now = `releaseNow`, Reject keeps the guardian); if I go quiet (opens `quietSeconds` after the owner's last signed `checkIn`; the dashboard warns from the lead time before and offers Check in).
+- **Owner controls:** cancel (chain), edit guardians or recipients (re-split, new plan, `setGuardians`), check in. Removed guardians' pieces stop fitting because the seeds are re-drawn; this differs from the spare key, where the phrase cannot change.
+- **Honest limits shown to the owner:** t guardians who collude can open a capsule early; this is a threshold-and-wait lock, not a cryptographic time lock (QoreChain has none). Recipients need a Mizuhiki account.
+
 ## 9. Sources behind the facts used here
 
 - QoreSign 0.2.0 source: `repos/qoresign/packages/ts/src` (`sign.ts`, `message.ts`, `network.ts`, `siwq.ts`).

@@ -92,6 +92,13 @@
       "when": 1795125423345,
       "tag": "0012_recovery",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795129223394,
+      "tag": "0013_capsules",
+      "breakpoints": true
     }
   ]
 }
