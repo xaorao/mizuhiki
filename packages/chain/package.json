@@ -18,5 +18,6 @@
     "@qorechain/sdk": "0.14.0",
     "cosmjs-types": "0.11.0",
     "viem": "2.58.0"
-  }
+  },
+  "sideEffects": false
 }

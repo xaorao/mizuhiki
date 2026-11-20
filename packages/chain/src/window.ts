@@ -4,24 +4,34 @@
  * transaction cap and a fee budget. Opening advances the EVM nonce, so every
  * EVM transaction is signed after the open (sdk pqc/evm-window.ts).
  */
-import {
-  openEvmWindowMsg,
-  closeEvmWindowMsg,
-  fetchEvmWindow,
-  qorechainRegistry,
-  MAX_EVM_WINDOW_BLOCKS,
-  type EvmWindow,
-} from "@qorechain/sdk";
+import type { EvmWindow } from "@qorechain/sdk";
 import { chainRest } from "./config";
 import { recentBlockSeconds, timedFetch, type RestOpts } from "./rest";
 import { sendTx, type EncodedMsg, type SendOpts, type SendResult, type Signer } from "./native";
 
 export type { EvmWindow };
 
-const reg = qorechainRegistry();
-const encode = (m: { typeUrl: string; value: unknown }): EncodedMsg => ({
+/**
+ * The SDK is loaded when a window is first read, opened or closed, never at start: its message registry pulls in
+ * CosmJS and every hash algorithm it ships (about 2.7 MB), which every page would otherwise download.
+ */
+let sdk:
+  | Promise<{
+      mod: typeof import("@qorechain/sdk");
+      reg: ReturnType<typeof import("@qorechain/sdk").qorechainRegistry>;
+    }>
+  | undefined;
+const loadSdk = () =>
+  (sdk ??= import("@qorechain/sdk").then(
+    (mod) => ({ mod, reg: mod.qorechainRegistry() }),
+    (e: unknown) => {
+      sdk = undefined;
+      throw e;
+    },
+  ));
+const encode = async (m: { typeUrl: string; value: unknown }): Promise<EncodedMsg> => ({
   typeUrl: m.typeUrl,
-  value: reg.encode(m),
+  value: (await loadSdk()).reg.encode(m),
 });
 
 export interface WindowPlan {
@@ -39,13 +49,14 @@ export function sessionPlan(targets: string[], perTxFeeUqor: bigint): WindowPlan
 }
 
 export async function blocksFor(minutes: number, o: RestOpts = {}): Promise<number> {
-  const secs = await recentBlockSeconds(o).catch(() => 1.3);
+  const [secs, { mod }] = await Promise.all([recentBlockSeconds(o).catch(() => 1.3), loadSdk()]);
   const blocks = Math.ceil((minutes * 60) / Math.max(0.5, secs));
-  return Math.min(Number(MAX_EVM_WINDOW_BLOCKS), Math.max(1, blocks));
+  return Math.min(Number(mod.MAX_EVM_WINDOW_BLOCKS), Math.max(1, blocks));
 }
 
 export async function readWindow(address: string, o: RestOpts = {}): Promise<EvmWindow> {
-  return fetchEvmWindow({ rest: o.rest ?? chainRest(), fetch: o.fetch ?? timedFetch, address });
+  const { mod } = await loadSdk();
+  return mod.fetchEvmWindow({ rest: o.rest ?? chainRest(), fetch: o.fetch ?? timedFetch, address });
 }
 
 export async function openWindow(
@@ -54,19 +65,21 @@ export async function openWindow(
   o: SendOpts = {},
 ): Promise<{ result: SendResult; window: EvmWindow }> {
   const blocks = await blocksFor(plan.minutes, o);
-  const msg = openEvmWindowMsg({
+  const { mod } = await loadSdk();
+  const msg = mod.openEvmWindowMsg({
     sender: signer.address,
     blocks,
     maxTxs: plan.maxTxs,
     maxValue: plan.maxValueUqor,
     ...(plan.targets.length > 0 ? { allowedTargets: plan.targets } : {}),
   });
-  const result = await sendTx(signer, [encode(msg)], "mzk:window", o);
+  const result = await sendTx(signer, [await encode(msg)], "mzk:window", o);
   return { result, window: await readWindow(signer.address, o) };
 }
 
 export async function closeWindow(signer: Signer, o: SendOpts = {}): Promise<SendResult> {
-  return sendTx(signer, [encode(closeEvmWindowMsg(signer.address))], "mzk:window-close", o);
+  const { mod } = await loadSdk();
+  return sendTx(signer, [await encode(mod.closeEvmWindowMsg(signer.address))], "mzk:window-close", o);
 }
 
 /** Is the stored window usable for `txs` more transactions to these targets? */

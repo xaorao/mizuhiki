@@ -21,7 +21,6 @@ import {
   Oops,
   Sakura,
   Sheet,
-  TextArea,
   useToast,
 } from "@mizuhiki/ui";
 import { verifyRecord, type Block, type Manifest, type RecipientCard, type Signed } from "@mizuhiki/core";
@@ -39,6 +38,7 @@ import { pendingNotesFor, retryPending } from "@/lib/pay";
 import { ShopBlockView } from "@/shop/buyer/ShopBlocks";
 import { useShop } from "@/shop/buyer/parts";
 import s from "./public.module.css";
+import { ReportBody } from "./ReportBody";
 import { useCanShare } from "@/lib/useClient";
 
 type Verify = { state: "checking" } | { state: "ok" } | { state: "failed"; reason: string } | { state: "unreachable" };
@@ -424,61 +424,6 @@ function ShareBody({ name }: { name: string }) {
         </Button>
       ) : null}
     </div>
-  );
-}
-
-const REASONS = [
-  { id: "impersonation", label: "Pretending to be someone else" },
-  { id: "scam", label: "A scam or fraud" },
-  { id: "abuse", label: "Harassment or hate" },
-  { id: "illegal", label: "Something illegal" },
-  { id: "other", label: "Something else" },
-] as const;
-
-export function ReportBody({ name, onDone }: { name: string; onDone: () => void }) {
-  const toast = useToast();
-  const [reason, setReason] = useState<(typeof REASONS)[number]["id"] | null>(null);
-  const [detail, setDetail] = useState("");
-  const [busy, setBusy] = useState(false);
-  return (
-    <form
-      className={s.report}
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (!reason) return;
-        setBusy(true);
-        api
-          .post("/reports", { name, reason, detail })
-          .then(() => {
-            toast.show("Thank you. We will look at this page.");
-            onDone();
-          })
-          .catch(() => toast.show("The report was not sent. Try again.", { tone: "error" }))
-          .finally(() => setBusy(false));
-      }}
-    >
-      <p>
-        Tell us what is wrong with @{name}. Sealed items cannot be read by anyone at Mizuhiki; we can only take down the
-        public page.
-      </p>
-      <div role="radiogroup" aria-label="Reason" className={s.reasons}>
-        {REASONS.map((r) => (
-          <button key={r.id} type="button" role="radio" aria-checked={reason === r.id} onClick={() => setReason(r.id)}>
-            {r.label}
-          </button>
-        ))}
-      </div>
-      <TextArea
-        label="Anything else (optional)"
-        value={detail}
-        maxLength={1000}
-        counter
-        onChange={(e) => setDetail(e.target.value)}
-      />
-      <Button type="submit" variant="cord" full busy={busy} disabled={!reason}>
-        Send report
-      </Button>
-    </form>
   );
 }
 

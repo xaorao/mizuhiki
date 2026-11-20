@@ -42,7 +42,7 @@ import {
 import { useInvoices, saveDraft, type Loaded } from "./useInvoices";
 import { InvoiceView, STATUS_CHIP } from "./InvoiceView";
 import { ShareSheet } from "./ShareSheet";
-import { invoicePdf } from "./pdf";
+import { invoicePdf } from "@/lib/pdfs";
 import s from "./invoices.module.css";
 
 type Filter = "all" | "draft" | "due" | "overdue" | "paid" | "cancelled" | "archived";

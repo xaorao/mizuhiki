@@ -16,5 +16,6 @@
     "@scure/bip39": "2.4.0",
     "shamir-secret-sharing": "0.0.4",
     "zod": "4.6.7"
-  }
+  },
+  "sideEffects": false
 }

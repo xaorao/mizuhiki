@@ -7,23 +7,19 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Address } from "viem";
-import { signSiwq } from "@qorechain/qoresign";
-import {
-  addPasskeyWrap,
-  createVault,
-  deriveAccount,
-  parseVault,
-  unlockWithPassphrase,
-  unlockWithPasskeySecret,
-  changePassphrase as rewrap,
-  fromBase64Url,
-  type AccountKeys,
-  type Vault,
-} from "@mizuhiki/core";
+import { parseVault, fromBase64Url, type AccountKeys, type Vault } from "@mizuhiki/core";
 import type { Owner } from "@mizuhiki/chain";
 import { idb } from "@/lib/idb";
 import { api, ApiFailure } from "@/lib/api";
 import { createPasskey, passkeySecret, passkeyIdFromWrap } from "@/lib/passkey";
+
+/** Key work, loaded on first use (see keyops.ts). */
+let keyOps: Promise<typeof import("./keyops")> | undefined;
+const ops = () =>
+  (keyOps ??= import("./keyops").catch((e: unknown) => {
+    keyOps = undefined;
+    throw e;
+  }));
 
 export type AccountStatus = "loading" | "none" | "locked" | "unlocked" | "elsewhere";
 
@@ -180,8 +176,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     };
   }, [status, lock]);
 
-  const finishUnlock = useCallback((phrase: string, v: Vault): Account => {
-    const keys = deriveAccount(phrase);
+  const finishUnlock = useCallback(async (phrase: string, v: Vault): Promise<Account> => {
+    const keys = (await ops()).deriveAccount(phrase);
     if (keys.address.bech32 !== v.address)
       throw new Error("This phrase belongs to a different account than this device's.");
     const a = toAccount(keys);
@@ -197,8 +193,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   const create = useCallback(
     async (phrase: string, passphrase: string) => {
-      const keys = deriveAccount(phrase);
-      const v = await createVault({ address: keys.address.bech32, phrase: keys.phrase, passphrase });
+      const k = await ops();
+      const keys = k.deriveAccount(phrase);
+      const v = await k.createVault({ address: keys.address.bech32, phrase: keys.phrase, passphrase });
       await store(v);
       const a = toAccount(keys);
       setAccount(a);
@@ -211,7 +208,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const unlock = useCallback(
     async (passphrase: string) => {
       if (!vault) throw new Error("There is no saved key on this device.");
-      const phrase = await unlockWithPassphrase(vault, passphrase);
+      const phrase = await (await ops()).unlockWithPassphrase(vault, passphrase);
       return finishUnlock(phrase, vault);
     },
     [vault, finishUnlock],
@@ -225,7 +222,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       credentialId: passkeyIdFromWrap(w.credentialId),
       prfSalt: fromBase64Url(w.prfSalt),
     });
-    const phrase = await unlockWithPasskeySecret(vault, secret);
+    const phrase = await (await ops()).unlockWithPasskeySecret(vault, secret);
     return finishUnlock(phrase, vault);
   }, [vault, finishUnlock]);
 
@@ -234,7 +231,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       if (!vault || !account) throw new Error("Unlock first.");
       const { credentialId, secret } = await createPasskey({ address: vault.address, name, prfSalt: PRF_SALT });
       await store(
-        await addPasskeyWrap({
+        await (
+          await ops()
+        ).addPasskeyWrap({
           vault,
           phrase: account.keys.phrase,
           credentialId,
@@ -249,7 +248,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const changePassphrase = useCallback(
     async (passphrase: string) => {
       if (!vault || !account) throw new Error("Unlock first.");
-      await store(await rewrap(vault, account.keys.phrase, passphrase));
+      await store(await (await ops()).changePassphrase(vault, account.keys.phrase, passphrase));
     },
     [vault, account, store],
   );
@@ -286,7 +285,11 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     if (pending?.address === a.owner.address) return pending.promise;
     const promise = (async () => {
       const ch = await api.post<{ message: string; nonce: string }>("/auth/challenge", { address: a.owner.address });
-      const signature = signSiwq({ message: ch.message, classicalKey: a.keys.classical, pqKey: a.keys.pq });
+      const signature = (await ops()).signSiwq({
+        message: ch.message,
+        classicalKey: a.keys.classical,
+        pqKey: a.keys.pq,
+      });
       const r = await api.post<{ token: string }>("/auth/verify", { nonce: ch.nonce, signature });
       tokenRef.current = { token: r.token, address: a.owner.address, at: Date.now() };
       return r.token;

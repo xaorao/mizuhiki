@@ -9,7 +9,7 @@ import { Button, ButtonLink, ChoiceCard, CopyValue, Icon, Sheet, ToggleRow, useT
 import { ApiFailure } from "@/lib/api";
 import { toCsv } from "./csv";
 import { xlsx } from "./xlsx";
-import { resultsPdf } from "./pdf";
+import { resultsPdf } from "@/lib/pdfs";
 import type { Snapshot } from "./schema";
 import type { TableModel } from "./aggregate";
 import s from "../results.module.css";

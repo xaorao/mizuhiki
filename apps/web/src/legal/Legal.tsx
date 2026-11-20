@@ -7,7 +7,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Kicker, LockLine, TextField, Wordmark } from "@mizuhiki/ui";
 import { normalizeNameInput } from "@mizuhiki/core";
-import { ReportBody } from "@/public/PublicPage";
+import { ReportBody } from "@/public/ReportBody";
 import s from "./legal.module.css";
 
 export type LegalDoc = "privacy" | "terms" | "report";

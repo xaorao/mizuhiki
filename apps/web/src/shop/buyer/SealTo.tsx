@@ -20,7 +20,7 @@ import type { SealKeyPair } from "@qorechain/qoreseal";
 import { useAccount } from "@/account/AccountProvider";
 import { api } from "@/lib/api";
 import { SITE_HOST } from "@/lib/site";
-import { downloadBytes } from "@/lib/sparekey";
+import { downloadBytes } from "@/lib/download";
 import {
   buyerKeyFrom,
   buyerKeys,
@@ -30,7 +30,7 @@ import {
   rememberBuyerKey,
   type BuyerKey,
 } from "../engine";
-import { buildBuyerKeySheet } from "./buyerKeySheet";
+import { buildBuyerKeySheet } from "@/lib/pdfs";
 import { fingerprint } from "./model";
 import s from "./buyer.module.css";
 import { ownerOfName } from "@mizuhiki/chain";
