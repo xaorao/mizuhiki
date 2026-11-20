@@ -163,11 +163,9 @@ test("inbox: signed message with a picture, verified sender, preview, save, seal
   const prove = o.getByRole("dialog", { name: "Prove it existed" });
   await expect(prove.getByText(createHash("sha256").update(png).digest("hex"))).toBeVisible();
   await prove.getByRole("button", { name: "Anchor on QoreChain" }).click();
-  await expect(
-    prove.getByText(
-      /Anchored\. It is on QoreChain now\.|You anchored this already\.|Someone else anchored this file earlier\./,
-    ),
-  ).toBeVisible({ timeout: 240_000 });
+  await expect(prove.getByText(/Anchored\. It is on QoreChain now\.|You anchored this already\./)).toBeVisible({
+    timeout: 240_000,
+  });
   expect(await readAnchor(createHash("sha256").update(png).digest("hex"))).not.toBeNull();
   await prove.getByRole("button", { name: "Done" }).click();
   // read state reached the index

@@ -41,6 +41,7 @@ import { Confirm } from "@/shop/seller/bits";
 import {
   acceptHelp,
   answerRequest,
+  dismissRequest,
   cancelRequest,
   checkTest,
   confirmContact,
@@ -1132,6 +1133,16 @@ function HelpingView({
             setAnswering(null);
             await reload();
           }}
+          onDismiss={async () => {
+            const r = await dismissRequest(await tokened(), answering);
+            toast.show(
+              r.status === "cancelled"
+                ? "Request turned down. Too few contacts are left for it, so it is cancelled."
+                : "Request turned down. You won't be asked about it again.",
+            );
+            setAnswering(null);
+            await reload();
+          }}
         />
       ) : null}
     </>
@@ -1143,11 +1154,14 @@ function AnswerSheet({
   who,
   onClose,
   onAnswer,
+  onDismiss,
 }: {
   r: RequestRow;
   who: string;
   onClose: () => void;
   onAnswer: () => Promise<void>;
+  /** The words differ, or nobody asked: turn the request down. */
+  onDismiss: () => Promise<void>;
 }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -1178,8 +1192,20 @@ function AnswerSheet({
           </p>
         ) : null}
         <div className={p.actions}>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
-            The words differ
+          <Button
+            variant="ghost"
+            disabled={busy}
+            onClick={() => {
+              setBusy(true);
+              setErr(null);
+              void onDismiss()
+                .catch((e: unknown) =>
+                  setErr(e instanceof ApiFailure || e instanceof Error ? e.message : "Nothing changed. Try again."),
+                )
+                .finally(() => setBusy(false));
+            }}
+          >
+            The words differ, turn it down
           </Button>
           <Button
             variant="cord"

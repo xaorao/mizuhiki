@@ -9,6 +9,7 @@ import { decodeEventLog, type Log } from "viem";
 import { and, eq, sql } from "drizzle-orm";
 import {
   CONTRACTS,
+  anchorBookAbi,
   capsuleVaultAbi,
   mizuhikiRegistryAbi,
   publicClient,
@@ -123,14 +124,19 @@ async function materialise(
 /** Follow our contracts' logs up to the latest confirmed block. Returns the new position. */
 export async function indexLogs(db: Db, opts: { maxChunks?: number } = {}): Promise<bigint> {
   const pub = publicClient();
-  const stream = `logs:${CONTRACTS.registry}:${CONTRACTS.vault}`;
-  const from = BigInt((await getCheckpoint(db, stream)) ?? (CONTRACTS.deployBlock - 1n).toString()) + 1n;
+  const contracts = [CONTRACTS.registry, CONTRACTS.vault, CONTRACTS.anchorBook];
+  const stream = `logs:${contracts.join(":")}`;
+  // AnchorBook came later: carry on from where the registry-and-vault stream had reached (it covers every
+  // block AnchorBook can have logs in), and from the first deploy on a fresh database.
+  const earlier = `logs:${CONTRACTS.registry}:${CONTRACTS.vault}`;
+  const saved = (await getCheckpoint(db, stream)) ?? (await getCheckpoint(db, earlier));
+  const from = BigInt(saved ?? (CONTRACTS.deployBlock - 1n).toString()) + 1n;
   const head = (await pub.getBlockNumber()) - CONFIRMATIONS;
   let cursor = from;
   let chunks = 0;
   while (cursor <= head && chunks < (opts.maxChunks ?? 20)) {
     const to = cursor + LOG_CHUNK - 1n > head ? head : cursor + LOG_CHUNK - 1n;
-    const logs = await pub.getLogs({ address: [CONTRACTS.registry, CONTRACTS.vault], fromBlock: cursor, toBlock: to });
+    const logs = await pub.getLogs({ address: contracts, fromBlock: cursor, toBlock: to });
     await db.transaction(async (tx) => {
       for (const log of logs) await ingest(tx as unknown as Db, log);
       await setCheckpoint(tx as unknown as Db, stream, to.toString());
@@ -141,15 +147,17 @@ export async function indexLogs(db: Db, opts: { maxChunks?: number } = {}): Prom
   return cursor - 1n;
 }
 
+function abiOf(address: string) {
+  const a = address.toLowerCase();
+  if (a === CONTRACTS.registry.toLowerCase()) return mizuhikiRegistryAbi;
+  if (a === CONTRACTS.anchorBook.toLowerCase()) return anchorBookAbi;
+  return capsuleVaultAbi;
+}
+
 async function ingest(db: Db, log: Log): Promise<void> {
-  const isRegistry = log.address.toLowerCase() === CONTRACTS.registry.toLowerCase();
   let decoded: { eventName: string; args: unknown };
   try {
-    decoded = decodeEventLog({
-      abi: isRegistry ? mizuhikiRegistryAbi : capsuleVaultAbi,
-      data: log.data,
-      topics: log.topics,
-    });
+    decoded = decodeEventLog({ abi: abiOf(log.address), data: log.data, topics: log.topics });
   } catch {
     return; // not one of our events
   }

@@ -15,6 +15,7 @@ import type { Db } from "@mizuhiki/db";
 import { sessionAddress } from "../lib/auth";
 import { pqKeyOf, ownerOfName } from "../lib/chainreads";
 import { fail } from "../lib/http";
+import { hold, release } from "../lib/holds";
 
 const ID = /^[A-Za-z0-9_-]{1,40}$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -178,7 +179,9 @@ export const formRoutes =
 
       const now = new Date();
       await db.transaction(async (tx) => {
-        await tx.update(blobs).set({ expiresAt: null }).where(eq(blobs.hash, b.data.draftEnvelope));
+        // The form's current sealed draft is held; the one it replaces is released.
+        await release(tx, owner, `form:${b.data.id}:draft`);
+        await hold(tx, [b.data.draftEnvelope], owner, `form:${b.data.id}:draft`);
         await tx
           .insert(forms)
           .values({

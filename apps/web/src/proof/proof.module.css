@@ -114,13 +114,15 @@
   white-space: nowrap;
 }
 .verify,
-.means {
+.means,
+.others {
   width: 100%;
   display: grid;
   gap: 10px;
 }
 .verify h2,
-.means h2 {
+.means h2,
+.others h2 {
   font-size: 18px;
 }
 .means ul {
@@ -350,5 +352,62 @@
   to {
     transform: none;
     opacity: 1;
+  }
+}
+
+/* every account that anchored the same fingerprint, earliest first */
+.others ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  border: var(--line) solid var(--ink);
+  border-radius: 18px;
+  background: var(--white);
+  overflow: hidden;
+}
+.others li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 16px;
+  border-bottom: 2px dashed #f3e2e8;
+  animation: mz-pop-in 0.3s var(--ease-pop) both;
+}
+.others li:last-child {
+  border-bottom: 0;
+}
+.others li > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.others li small {
+  color: var(--ink-subtle);
+  font-size: 12.5px;
+}
+.others a {
+  color: var(--ink);
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.otherN {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--sakura);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-round);
+  font-weight: 900;
+  font-size: 13px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .others li {
+    animation: none;
   }
 }

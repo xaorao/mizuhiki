@@ -9,6 +9,7 @@ import { api, ApiFailure } from "@/lib/api";
 import { HashDrop, type Hashed } from "./HashDrop";
 import { ProveSheet } from "./ProveSheet";
 import { certificatePath, readLabels, type ProofLabel } from "./proof";
+import type { AnchorRecord } from "@mizuhiki/chain";
 import { fmtBytes } from "@/public/MessageSheet";
 import s from "./proof.module.css";
 
@@ -29,8 +30,11 @@ export function MyProofs() {
   const [labels, setLabels] = useState<Record<string, ProofLabel>>({});
   const [error, setError] = useState<string | null>(null);
   const [target, setTarget] = useState<Hashed | null>(null);
+  // Anchors made here, read back from QoreChain, shown until the indexer's list includes them.
+  const [made, setMade] = useState<ProofRow[]>([]);
 
-  const load = useCallback(async () => {
+  /** Loads the list and labels; returns the anchors the server listed (empty on failure). */
+  const load = useCallback(async (): Promise<ProofRow[]> => {
     try {
       const t = await owner.token();
       const [r, l] = await Promise.all([
@@ -40,8 +44,10 @@ export function MyProofs() {
       setRows(r.proofs);
       setLabels(l);
       setError(null);
+      return r.proofs;
     } catch (e) {
       setError(e instanceof ApiFailure ? e.message : "Your proofs could not be loaded. Nothing changed.");
+      return [];
     }
   }, [account, owner]);
 
@@ -49,15 +55,44 @@ export function MyProofs() {
     void load();
   }, [load]);
 
-  // The indexer picks the new anchor up within seconds; poll briefly after anchoring.
-  const refreshSoon = () => {
-    let n = 0;
-    const tick = () => {
-      n++;
-      void load();
-      if (n < 6) setTimeout(tick, 3000);
+  const shown =
+    rows === null ? null : [...made.filter((m) => !rows.some((r) => r.contentHash === m.contentHash)), ...rows];
+
+  // Show the new anchor at once from the chain record, then keep loading until the indexer has it too.
+  const onAnchored = (r: { record: AnchorRecord; txHash: string | null; note: string }) => {
+    const hash = r.record.contentHash.replace(/^0x/, "");
+    const row: ProofRow = {
+      contentHash: hash,
+      kind: r.record.kind,
+      txHash: r.txHash ?? "",
+      block: r.record.blockNumber.toString(),
+      at: r.record.at.toISOString(),
     };
-    setTimeout(tick, 1500);
+    setMade((m) => [row, ...m.filter((x) => x.contentHash !== hash)]);
+    if (target)
+      setLabels((l) =>
+        hash in l
+          ? l
+          : {
+              ...l,
+              [hash]: {
+                v: 1,
+                hash,
+                name: target.file.name,
+                size: target.file.size,
+                type: target.file.type,
+                note: r.note.trim(),
+                kind: r.record.kind as ProofLabel["kind"],
+              },
+            },
+      );
+    let n = 0;
+    const tick = async () => {
+      n++;
+      const listed = await load();
+      if (n < 40 && !listed.some((p) => p.contentHash === hash)) setTimeout(() => void tick(), 3000);
+    };
+    setTimeout(() => void tick(), 1500);
   };
 
   return (
@@ -76,15 +111,15 @@ export function MyProofs() {
           <Oops title="Not loaded" action={<button onClick={() => void load()}>Try again</button>}>
             {error}
           </Oops>
-        ) : rows === null ? (
+        ) : shown === null ? (
           <Skeleton lines={3} />
-        ) : rows.length === 0 ? (
+        ) : shown.length === 0 ? (
           <EmptyState title="No proofs yet" face="sleepy">
             Anchor a contract, a design or an invoice above. You can also do it from any file in your inbox.
           </EmptyState>
         ) : (
           <ul className={s.list}>
-            {rows.map((r) => {
+            {shown.map((r) => {
               const l = labels[r.contentHash];
               return (
                 <li key={r.contentHash}>
@@ -118,7 +153,7 @@ export function MyProofs() {
         )}
       </Panel>
       {target ? (
-        <ProveSheet account={account} target={target} onClose={() => setTarget(null)} onDone={refreshSoon} />
+        <ProveSheet account={account} target={target} onClose={() => setTarget(null)} onDone={onAnchored} />
       ) : null}
     </div>
   );

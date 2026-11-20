@@ -6,7 +6,10 @@
   "deployedAt": {
     "registryTx": "0x1ec621af026a74f89f2a88ed3ca77af2cde9936ee55ac008696f45371f121c60",
     "vaultTx": "0xa817e85b75ca5b407ec4764ff7ed3bca4c26f10c12f3bbf6420856a05a6729a2",
-    "block": "10346748"
+    "block": "10346748",
+    "anchorBookTx": "0xa2e4eeb86fc9a6c2346e83ceff1221b6d2fc6b1b0cc6d576c0954f55a0cade18",
+    "anchorBookBlock": "10421218"
   },
-  "deployer": "0x80BF57CEAB23CE51A0AeC21EB40efBCE492c91D2"
+  "deployer": "0x80BF57CEAB23CE51A0AeC21EB40efBCE492c91D2",
+  "anchorBook": "0x9d5379a7f28bae86e087abb8e7a72274335f316a"
 }

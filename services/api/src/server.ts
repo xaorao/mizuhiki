@@ -57,7 +57,8 @@ export async function buildServer(
   const app = Fastify({
     logger: cfg.NODE_ENV === "test" ? false : { level: "info", redact: ["req.headers.authorization"] },
     bodyLimit: cfg.MAX_BLOB_BYTES,
-    trustProxy: false,
+    // Trust X-Forwarded-For only through the configured number of proxies (0: none).
+    trustProxy: (_address: string, hop: number) => hop < cfg.TRUST_PROXY_HOPS,
   });
   await app.register(cors, {
     origin: [cfg.WEB_ORIGIN],

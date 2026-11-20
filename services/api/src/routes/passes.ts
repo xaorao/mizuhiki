@@ -20,6 +20,7 @@ import type { Ctx } from "../server";
 import { sessionAddress } from "../lib/auth";
 import { pqKeyOf } from "../lib/chainreads";
 import { fail } from "../lib/http";
+import { hold } from "../lib/holds";
 
 const HASH = /^[0-9a-f]{64}$/;
 const SignedShape = z.object({
@@ -262,7 +263,7 @@ export const passRoutes =
       if (b.data.keyEnvelope) {
         const [blob] = await db.select({ h: blobs.hash }).from(blobs).where(eq(blobs.hash, b.data.keyEnvelope));
         if (!blob) return fail(reply, 409, "MISSING_PARTS", "The sealed key did not arrive.", "nothing-stored");
-        await db.update(blobs).set({ expiresAt: null }).where(eq(blobs.hash, b.data.keyEnvelope));
+        await hold(db, [b.data.keyEnvelope], me, `pass:${id}`);
       }
       await db
         .update(passes)
@@ -325,7 +326,7 @@ export const passRoutes =
           "nothing-stored",
         );
       await db.transaction(async (tx) => {
-        await tx.update(blobs).set({ expiresAt: null }).where(inArray(blobs.hash, hashes));
+        await hold(tx, hashes, me, `pass:${id}`);
         for (const i of b.data.items)
           await tx
             .insert(passItems)

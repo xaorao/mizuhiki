@@ -19,7 +19,7 @@ export const PER_ACTION_UQOR = 150_000n;
 
 /** Make sure a window is open that covers `txs` more actions on our contracts; open one if not. */
 export async function ensureWindow(owner: Owner, txs = 1, onOpen?: (w: EvmWindow) => void): Promise<EvmWindow> {
-  const targets = [CONTRACTS.registry, CONTRACTS.vault];
+  const targets = [CONTRACTS.registry, CONTRACTS.vault, CONTRACTS.anchorBook];
   const w = await readWindow(owner.address);
   if (windowCovers(w, targets, txs, PER_ACTION_UQOR * BigInt(txs))) return w;
   if (w.found && w.live) await closeWindow(owner);

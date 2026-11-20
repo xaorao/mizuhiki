@@ -156,8 +156,20 @@
   gap: 10px;
   align-items: center;
 }
+/* The add form: the field's message line sits below it, so the button lines up with the field's top. */
+form.recipientHead {
+  align-items: flex-start;
+}
 .recipientHead b {
   flex: 1;
+}
+/* The name field takes the room; the Add button keeps its words. */
+.recipientHead > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+.recipientHead > button {
+  flex: none;
 }
 .fileChips {
   display: flex;

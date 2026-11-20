@@ -13,6 +13,7 @@ import type { FastifyPluginCallback } from "fastify";
 import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
+  checkPow,
   Purpose,
   RecoveryAcceptSchema,
   RecoveryInviteSchema,
@@ -31,6 +32,7 @@ import {
   envelopes,
   names,
   recoveryAnswers,
+  recoveryDismissals,
   recoveryChallenges,
   recoveryContacts,
   recoveryOfflineItems,
@@ -41,6 +43,7 @@ import type { Ctx } from "../server";
 import { sessionAddress } from "../lib/auth";
 import { pqKeyOf, ownerOfName } from "../lib/chainreads";
 import { fail } from "../lib/http";
+import { hold, release } from "../lib/holds";
 
 const ADDR = /^qor1[02-9ac-hj-np-z]{38}$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -305,7 +308,9 @@ export const recoveryRoutes =
           "nothing-stored",
         );
       await db.transaction(async (tx) => {
-        await tx.update(blobs).set({ expiresAt: null }).where(inArray(blobs.hash, hashes));
+        // A new split replaces the pieces: only the current version's pieces are kept.
+        await release(tx, me, "recovery:owner:pieces");
+        await hold(tx, hashes, me, "recovery:owner:pieces");
         for (const p of b.data.pieces)
           await tx
             .update(recoveryContacts)
@@ -405,7 +410,7 @@ export const recoveryRoutes =
           "nothing-stored",
         );
       await db.transaction(async (tx) => {
-        await tx.update(blobs).set({ expiresAt: null }).where(inArray(blobs.hash, hashes));
+        await hold(tx, hashes, me, "recovery:owner:offline");
         for (const i of b.data.items)
           await tx
             .insert(recoveryOfflineItems)
@@ -605,6 +610,18 @@ export const recoveryRoutes =
         .where(and(eq(recoveryContacts.owner, r.owner), eq(recoveryContacts.contact, me)));
       if (!c || c.status !== "confirmed" || c.pieceVersion !== r.version)
         return fail(reply, 403, "NOT_A_CONTACT", "You do not hold a current piece for this person.", "nothing-stored");
+      const [dismissed] = await db
+        .select({ c: recoveryDismissals.contact })
+        .from(recoveryDismissals)
+        .where(and(eq(recoveryDismissals.requestId, id), eq(recoveryDismissals.contact, me)));
+      if (dismissed)
+        return fail(
+          reply,
+          409,
+          "DISMISSED",
+          "You said you did not recognise this request. Nothing was sent.",
+          "nothing-stored",
+        );
       const st = statusOf(r);
       if (st !== "open" && st !== "waiting")
         return fail(
@@ -625,7 +642,8 @@ export const recoveryRoutes =
           "The sealed piece did not arrive. Nothing was sent.",
           "nothing-stored",
         );
-      await db.update(blobs).set({ expiresAt: r.expiresAt }).where(eq(blobs.hash, b.data.envelope));
+      // The contact keeps their answer only as long as the request lives.
+      await hold(db, [b.data.envelope], me, `recovery:answer:${id}`, r.expiresAt);
       await db
         .insert(recoveryAnswers)
         .values({ requestId: id, contact: me, envelope: b.data.envelope })
@@ -643,20 +661,70 @@ export const recoveryRoutes =
       return { ok: true, answered: n, threshold: r.threshold };
     });
 
+    /**
+     * A contact does not recognise this request (the words did not match, or nobody asked them): they will
+     * not answer it, and once too few contacts are left to reach the threshold it is cancelled.
+     */
+    app.post("/recovery/requests/:id/dismiss", async (req, reply) => {
+      const me = await sessionAddress(db, req);
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
+      const { id } = req.params as { id: string };
+      const [r] = await db.select().from(recoveryRequests).where(eq(recoveryRequests.id, id));
+      if (!r) return fail(reply, 404, "NOT_FOUND", "This recovery request does not exist.");
+      const contacts = await db
+        .select({ contact: recoveryContacts.contact })
+        .from(recoveryContacts)
+        .where(
+          and(
+            eq(recoveryContacts.owner, r.owner),
+            eq(recoveryContacts.status, "confirmed"),
+            eq(recoveryContacts.pieceVersion, r.version),
+          ),
+        );
+      if (!contacts.some((c) => c.contact === me))
+        return fail(reply, 403, "NOT_A_CONTACT", "You do not hold a current piece for this person.");
+      const st = statusOf(r);
+      if (st !== "open" && st !== "waiting") return { ok: true, status: st };
+      await db.insert(recoveryDismissals).values({ requestId: id, contact: me }).onConflictDoNothing();
+      const [{ n } = { n: 0 }] = await db
+        .select({ n: sql<number>`count(*)::int` })
+        .from(recoveryDismissals)
+        .where(eq(recoveryDismissals.requestId, id));
+      let status = st;
+      if (contacts.length - n < r.threshold) {
+        await db
+          .update(recoveryRequests)
+          .set({ status: "cancelled", cancelledAt: new Date() })
+          .where(eq(recoveryRequests.id, id));
+        status = "cancelled";
+      }
+      await notify("recovery", r.owner);
+      return { ok: true, status };
+    });
+
     // ---- new device --------------------------------------------------------------------------------
 
     // Per network per hour: room for a household on one connection, not for guessing at scale.
     app.post("/recovery/requests", { config: { rateLimit: { max: 10, timeWindow: "1 hour" } } }, async (req, reply) => {
       const b = z
-        .object({ who: z.string().min(3).max(80), recipient: KeySchema, secretHash: z.string().regex(HASH) })
+        .object({
+          who: z.string().min(3).max(80),
+          recipient: KeySchema,
+          secretHash: z.string().regex(HASH),
+          pow: z.object({ minute: z.number().int(), nonce: z.number().int(), bits: z.number().int() }),
+        })
         .safeParse(req.body);
       if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request. Nothing was started.");
       const who = b.data.who.trim().replace(/^@/, "").toLowerCase();
+      // A proof-of-work stamp bound to this name and this request's secret: cheap once, costly in bulk.
+      if (!checkPow(b.data.pow, `recovery:${who}`, b.data.secretHash, ctx.cfg.POW_BITS))
+        return fail(reply, 429, "POW", "This browser's anti-spam check did not pass. Try again. Nothing was started.");
       let owner = ADDR.test(who) ? who : null;
       if (!owner) {
         owner = (await ownerOfName(db, who)) ?? null;
       }
-      // Same answer whether or not the account exists or has contacts, so the endpoint is no directory.
+      // Accounts that do not exist and accounts without contacts get the same answer. Whether an account has
+      // recovery contacts is visible to anyone who tries; who they are is not (THREAT_MODEL A2).
       const s = owner ? await settingsOf(owner) : null;
       if (!owner || !s || s.version === 0)
         return fail(
@@ -665,8 +733,11 @@ export const recoveryRoutes =
           "NO_RECOVERY",
           "That account has no recovery contacts set up, so it cannot be recovered this way. Use the spare-key sheet's 24 words.",
         );
+      // Strangers' requests must never block the owner's (security review H2). At the cap, the oldest request
+      // no contact has answered is retired to make room; answers come only after a contact compares the
+      // request's six words by voice, so a stranger cannot fill the cap with answered requests.
       const open = await db
-        .select({ id: recoveryRequests.id })
+        .select({ id: recoveryRequests.id, createdAt: recoveryRequests.createdAt })
         .from(recoveryRequests)
         .where(
           and(
@@ -675,14 +746,29 @@ export const recoveryRoutes =
             inArray(recoveryRequests.status, ["open", "waiting"]),
             gt(recoveryRequests.expiresAt, new Date()),
           ),
-        );
-      if (open.length >= OPEN_PER_OWNER)
-        return fail(
-          reply,
-          429,
-          "BUSY",
-          "Too many recoveries are open for this account. Ask a contact, or the owner, to cancel one.",
-        );
+        )
+        .orderBy(asc(recoveryRequests.createdAt));
+      if (open.length >= OPEN_PER_OWNER) {
+        const answered = new Set((await answersOf(open.map((o) => o.id))).map((a) => a.requestId));
+        const unanswered = open.filter((o) => !answered.has(o.id));
+        const retire = unanswered.slice(0, open.length - OPEN_PER_OWNER + 1);
+        if (retire.length < open.length - OPEN_PER_OWNER + 1)
+          return fail(
+            reply,
+            429,
+            "BUSY",
+            "Contacts are already answering other recoveries for this account. Ask a contact to dismiss the ones that are not you, then try again. Nothing was started.",
+          );
+        await db
+          .update(recoveryRequests)
+          .set({ status: "cancelled", cancelledAt: new Date() })
+          .where(
+            inArray(
+              recoveryRequests.id,
+              retire.map((r) => r.id),
+            ),
+          );
+      }
       const id = `rq_${toBase64Url(randomBytes(18))}`;
       await db.insert(recoveryRequests).values({
         id,

@@ -1,9 +1,10 @@
 "use client";
 /**
  * The public certificate for one hash (spec 5.15, DocuSign's certificate idea).
- * Every fact is read from QoreChain in this browser: the anchor record, its
+ * Every fact is read from QoreChain in this browser: each anchor record, its
  * transaction, and the anchoring account's name (confirmed with `resolve`).
- * No content is shown. A verifier box hashes a file here and says Match or No match.
+ * Every account keeps its own record of a fingerprint, so all are listed, earliest
+ * first. No content is shown. A verifier box hashes a file here and says Match or No match.
  */
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -21,7 +22,7 @@ import {
 } from "@mizuhiki/ui";
 import { explorerTx, resolveOnChain, type AnchorRecord } from "@mizuhiki/chain";
 import { api } from "@/lib/api";
-import { anchorTx, readAnchor } from "./proof";
+import { anchorTx, readAnchors } from "./proof";
 import { HashDrop, type Hashed } from "./HashDrop";
 import s from "./proof.module.css";
 
@@ -30,7 +31,43 @@ type Load =
   | { state: "bad" }
   | { state: "none" }
   | { state: "error"; reason: string }
-  | { state: "ok"; a: AnchorRecord; tx: string | null; name: string | null };
+  | { state: "ok"; first: Row; rows: Row[] };
+
+interface Row {
+  a: AnchorRecord;
+  tx: string | null;
+  name: string | null;
+}
+
+const CONTRACT_LABEL: Record<AnchorRecord["contract"], string> = {
+  book: "the Mizuhiki AnchorBook contract",
+  registry: "the Mizuhiki registry contract",
+};
+
+const when = (d: Date) =>
+  d.toLocaleString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
+/** The transaction and the on-chain-confirmed name for one anchor. */
+async function detail(a: AnchorRecord): Promise<Row> {
+  const [tx, named] = await Promise.all([
+    anchorTx(a),
+    api.get<{ name: string | null }>(`/names/of/${a.byAddress}`).catch(() => ({ name: null })),
+  ]);
+  // Show a name only if the chain agrees it belongs to the anchoring account.
+  let name: string | null = null;
+  if (named.name) {
+    const r = await resolveOnChain(named.name).catch(() => null);
+    if (r?.owner?.toLowerCase() === a.by.toLowerCase()) name = named.name;
+  }
+  return { a, tx, name };
+}
 
 const KIND_LABEL: Record<string, string> = { file: "A file", invoice: "An invoice", document: "A document" };
 
@@ -47,22 +84,13 @@ export function Certificate({ hash }: { hash: string }) {
     const life = { alive: true };
     void (async () => {
       try {
-        const a = await readAnchor(hash);
-        if (!a) {
+        const all = await readAnchors(hash);
+        if (all.length === 0) {
           if (life.alive) setLoad({ state: "none" });
           return;
         }
-        const [tx, named] = await Promise.all([
-          anchorTx(a),
-          api.get<{ name: string | null }>(`/names/of/${a.byAddress}`).catch(() => ({ name: null })),
-        ]);
-        // Show a name only if the chain agrees it belongs to the anchoring account.
-        let name: string | null = null;
-        if (named.name) {
-          const r = await resolveOnChain(named.name).catch(() => null);
-          if (r?.owner?.toLowerCase() === a.by.toLowerCase()) name = named.name;
-        }
-        if (life.alive) setLoad({ state: "ok", a, tx, name });
+        const [first, ...rest] = await Promise.all(all.slice(0, 50).map(detail));
+        if (life.alive && first) setLoad({ state: "ok", first, rows: [first, ...rest] });
       } catch {
         if (life.alive) setLoad({ state: "error", reason: "QoreChain could not be reached. Nothing was checked yet." });
       }
@@ -113,34 +141,26 @@ export function Certificate({ hash }: { hash: string }) {
             <div className={s.certHead}>
               <div>
                 <p className={s.kicker}>しょうめい · Proof of existence</p>
-                <h1>{KIND_LABEL[load.a.kind] ?? "A document"} existed, unchanged, by this time.</h1>
+                <h1>{KIND_LABEL[load.first.a.kind] ?? "A document"} existed, unchanged, by this time.</h1>
               </div>
               <Hanko size={78}>証</Hanko>
             </div>
             <StatusChip status="ok">Read from QoreChain just now</StatusChip>
             <dl className={s.facts}>
               <div>
-                <dt>Anchored</dt>
+                <dt>{load.rows.length > 1 ? "First anchored" : "Anchored"}</dt>
                 <dd>
-                  {load.a.at.toLocaleString("en-GB", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                  })}
+                  {when(load.first.a.at)}
                   <small>
-                    {Intl.DateTimeFormat().resolvedOptions().timeZone} · block {load.a.blockNumber.toString()} · block
-                    time
+                    {Intl.DateTimeFormat().resolvedOptions().timeZone} · block {load.first.a.blockNumber.toString()} ·
+                    block time
                   </small>
                 </dd>
               </div>
               <div>
                 <dt>Anchored by</dt>
                 <dd>
-                  {load.name ? <Link href={`/@${load.name}`}>@{load.name}</Link> : "A QoreChain account"}
-                  <small className={s.mono}>{load.a.byAddress}</small>
+                  <Who row={load.first} />
                 </dd>
               </div>
               <div>
@@ -152,20 +172,38 @@ export function Certificate({ hash }: { hash: string }) {
               <div>
                 <dt>Transaction</dt>
                 <dd>
-                  {load.tx ? (
-                    <a href={explorerTx(load.tx)} target="_blank" rel="noreferrer" className={s.mono}>
-                      {load.tx.slice(0, 18)}… <Icon name="link" size={13} />
-                    </a>
-                  ) : (
-                    "Not found in that block's logs"
-                  )}
+                  <TxLink tx={load.first.tx} />
                 </dd>
               </div>
               <div>
                 <dt>Signed with</dt>
-                <dd>The account&apos;s ML-DSA-87 post-quantum key, checked by the Mizuhiki registry contract</dd>
+                <dd>
+                  The account&apos;s ML-DSA-87 post-quantum key, checked by {CONTRACT_LABEL[load.first.a.contract]}
+                </dd>
               </div>
             </dl>
+
+            {load.rows.length > 1 ? (
+              <section className={s.others} aria-label="Every account that anchored this fingerprint">
+                <h2>Anchored by {load.rows.length} accounts</h2>
+                <p className={s.muted}>
+                  Each account keeps its own record of this fingerprint, signed with its own key. Earliest first.
+                </p>
+                <ol>
+                  {load.rows.map((r, i) => (
+                    <li key={`${r.a.by}-${r.a.contract}`}>
+                      <span className={s.otherN}>{i + 1}</span>
+                      <div>
+                        <Who row={r} />
+                        <small>
+                          {when(r.a.at)} · block {r.a.blockNumber.toString()} · <TxLink tx={r.tx} />
+                        </small>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            ) : null}
 
             <section className={s.verify} aria-label="Check a file against this certificate">
               <h2>Have the file? Check it here.</h2>
@@ -193,7 +231,8 @@ export function Certificate({ hash }: { hash: string }) {
                   changed since.
                 </li>
                 <li>
-                  <Icon name="check" size={15} /> The account above anchored it, with its post-quantum key.
+                  <Icon name="check" size={15} /> {load.rows.length > 1 ? "Each account listed" : "The account above"}{" "}
+                  had it at that time and anchored it with its own post-quantum key.
                 </li>
                 <li>
                   <Icon name="x" size={15} /> It does not show the document, and does not prove who wrote it.
@@ -216,5 +255,24 @@ export function Certificate({ hash }: { hash: string }) {
         )}
       </main>
     </div>
+  );
+}
+
+function Who({ row }: { row: Row }) {
+  return (
+    <>
+      {row.name ? <Link href={`/@${row.name}`}>@{row.name}</Link> : "A QoreChain account"}
+      <small className={s.mono}>{row.a.byAddress}</small>
+    </>
+  );
+}
+
+function TxLink({ tx }: { tx: string | null }) {
+  return tx ? (
+    <a href={explorerTx(tx)} target="_blank" rel="noreferrer" className={s.mono}>
+      {tx.slice(0, 18)}… <Icon name="link" size={13} />
+    </a>
+  ) : (
+    <>Not found in that block&apos;s logs</>
   );
 }

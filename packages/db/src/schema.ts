@@ -87,8 +87,32 @@ export const blobs = pgTable("blobs", {
   hash: text("hash").primaryKey(),
   size: integer("size").notNull(),
   createdAt: ts("created_at").notNull().defaultNow(),
-  expiresAt: ts("expires_at"),
 });
+
+/**
+ * Who keeps a blob, and until when (THREAT_MODEL A2). A blob lives while it is
+ * new (an upload not yet referenced has a day) or any hold on it is live. Each
+ * route adds or releases only its own caller's holds, so nobody can shorten or
+ * remove someone else's: knowing a hash never lets anyone delete it.
+ */
+export const blobHolds = pgTable(
+  "blob_holds",
+  {
+    hash: text("hash").notNull(),
+    /** The account that keeps it (for a drop: the recipient). */
+    holder: text("holder").notNull(),
+    /** What it is kept for, e.g. "draft", "drop:<envelope>", "room:<id>:batch". */
+    purpose: text("purpose").notNull(),
+    /** Null keeps it until released. */
+    expiresAt: ts("expires_at"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.hash, t.holder, t.purpose] }),
+    index("blob_holds_hash").on(t.hash),
+    index("blob_holds_holder").on(t.holder, t.purpose),
+  ],
+);
 
 /** Sealed items addressed to an owner (messages, files, form answers, notes…). */
 export const envelopes = pgTable(
@@ -632,6 +656,21 @@ export const recoveryAnswers = pgTable(
     contact: text("contact").notNull(),
     /** Blob hash: the contact's piece re-sealed to the one-time key. */
     envelope: text("envelope").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.requestId, t.contact] })],
+);
+
+/**
+ * A contact saying "I don't recognise this" to a recovery request (security review H2). Once too
+ * few contacts are left to reach the threshold, the request is cancelled, so strangers' requests
+ * never stand in the way of the owner's.
+ */
+export const recoveryDismissals = pgTable(
+  "recovery_dismissals",
+  {
+    requestId: text("request_id").notNull(),
+    contact: text("contact").notNull(),
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.requestId, t.contact] })],

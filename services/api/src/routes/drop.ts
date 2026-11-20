@@ -16,6 +16,7 @@ import { sha256Hex } from "../lib/blobstore";
 import { formNotifies, formRefusal } from "./forms";
 import { fileDropCheck } from "./filerequests";
 import { fail, isAddress } from "../lib/http";
+import { hold } from "../lib/holds";
 
 export const DROP_KINDS = [
   "message",
@@ -224,12 +225,9 @@ export const dropRoutes =
         const expiresAt = self ? null : new Date(Date.now() + ctx.cfg.DROP_RETENTION_DAYS * 86400_000);
         await ctx.blobs.put(bytes);
         await ctx.db.transaction(async (tx) => {
-          await tx
-            .insert(blobs)
-            .values({ hash, size: bytes.length, expiresAt })
-            .onConflictDoUpdate({ target: blobs.hash, set: { expiresAt } });
-          if (b.data.chunks.length > 0)
-            await tx.update(blobs).set({ expiresAt }).where(inArray(blobs.hash, b.data.chunks));
+          await tx.insert(blobs).values({ hash, size: bytes.length }).onConflictDoNothing();
+          // The recipient holds the envelope and its pieces for the retention period (their own items: until deleted).
+          await hold(tx, [hash, ...b.data.chunks], address, `drop:${hash}`, expiresAt);
           await tx
             .insert(envelopes)
             .values({

@@ -14,10 +14,11 @@ import {
   type Signed,
 } from "@mizuhiki/core";
 import type { Ctx } from "../server";
-import { blobs, cards, counters, drafts, envelopes, pages, payments, reports } from "@mizuhiki/db";
+import { cards, counters, drafts, envelopes, pages, payments, reports } from "@mizuhiki/db";
 import { sessionAddress } from "../lib/auth";
 import { kemKeyOf, pqKeyOf, resolveName } from "../lib/chainreads";
 import { fail, isAddress, isHash } from "../lib/http";
+import { hold, release } from "../lib/holds";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -277,10 +278,9 @@ export const pageRoutes =
         .insert(drafts)
         .values({ address, blobHash })
         .onConflictDoUpdate({ target: drafts.address, set: { blobHash, updatedAt: new Date() } });
-      // The current draft blob is kept; the one it replaces is swept.
-      await db.update(blobs).set({ expiresAt: null }).where(eq(blobs.hash, blobHash));
-      if (prev && prev.blobHash !== blobHash)
-        await db.update(blobs).set({ expiresAt: new Date() }).where(eq(blobs.hash, prev.blobHash));
+      // This account keeps its current draft; its hold on the one it replaces goes (other holders keep theirs).
+      await hold(db, [blobHash], address, "draft");
+      if (prev && prev.blobHash !== blobHash) await release(db, address, "draft", [prev.blobHash]);
       return { ok: true };
     });
 
@@ -290,7 +290,7 @@ export const pageRoutes =
       if (!address) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
       const [prev] = await db.select().from(drafts).where(eq(drafts.address, address));
       await db.delete(drafts).where(eq(drafts.address, address));
-      if (prev) await db.update(blobs).set({ expiresAt: new Date() }).where(eq(blobs.hash, prev.blobHash));
+      if (prev) await release(db, address, "draft", [prev.blobHash]);
       return { ok: true };
     });
 

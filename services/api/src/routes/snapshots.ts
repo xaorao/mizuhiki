@@ -15,6 +15,7 @@ import type { Ctx } from "../server";
 import { sessionAddress } from "../lib/auth";
 import { pqKeyOf } from "../lib/chainreads";
 import { fail, isHash } from "../lib/http";
+import { hold, release } from "../lib/holds";
 
 const HASH = /^[0-9a-f]{64}$/;
 const FORM_ID = /^[A-Za-z0-9_-]{1,40}$/;
@@ -88,8 +89,11 @@ export const snapshotRoutes =
           "nothing-stored",
         );
       }
+      const [taken] = await db.select({ owner: snapshots.owner }).from(snapshots).where(eq(snapshots.hash, hash));
+      if (taken && taken.owner !== owner)
+        return fail(reply, 409, "TAKEN", "That snapshot belongs to someone else. Nothing was kept.", "nothing-stored");
       await db.transaction(async (tx) => {
-        await tx.update(blobs).set({ expiresAt: null }).where(eq(blobs.hash, hash));
+        await hold(tx, [hash], owner, `snapshot:${formId}`);
         await tx
           .insert(snapshots)
           .values({ hash, owner, formId, title, sig })
@@ -125,8 +129,8 @@ export const snapshotRoutes =
         const r = await tx
           .delete(snapshots)
           .where(and(eq(snapshots.hash, hash), eq(snapshots.owner, owner)))
-          .returning({ hash: snapshots.hash });
-        if (r.length) await tx.update(blobs).set({ expiresAt: new Date() }).where(eq(blobs.hash, hash));
+          .returning({ hash: snapshots.hash, formId: snapshots.formId });
+        if (r[0]) await release(tx, owner, `snapshot:${r[0].formId}`, [hash]);
         return r.length > 0;
       });
       if (!gone) return fail(reply, 404, "NOT_FOUND", "That snapshot is not yours, or it was already deleted.");

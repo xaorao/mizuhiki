@@ -3,11 +3,13 @@
  * the test reads the anchor straight from QoreChain (source of truth), then a
  * stranger in a separate browser opens the certificate and checks the right
  * and a wrong file. Also: anchoring the same file twice sends nothing, the
- * public check page, a bad link and an unknown fingerprint.
+ * public check page, a bad link and an unknown fingerprint. And the security review's M2 case: someone who
+ * learned a fingerprint anchors it first; the author's own anchor still goes through and the certificate
+ * lists both, earliest first.
  */
 import { createHash, randomBytes } from "node:crypto";
 import { test, expect } from "./fixtures";
-import { readAnchor, evmOf } from "@mizuhiki/chain";
+import { readAnchor, readAnchors, evmOf } from "@mizuhiki/chain";
 import { ensureOwner, restoreInBrowser } from "./owner";
 
 const NAME = "mzk-e2e-editor";
@@ -20,33 +22,35 @@ test("proof: anchor a document, certificate from chain, match and no match, anch
   const owner = await ensureOwner("e2e-editor", NAME);
   const doc = Buffer.concat([Buffer.from(`Signed services agreement, version 3. ${Date.now()}\n`), randomBytes(2048)]);
   const hash = createHash("sha256").update(doc).digest("hex");
+  // Unique per run, so the list check finds this run's label and not one from an earlier run.
+  const fileName = `services-agreement-v3-${hash.slice(0, 6)}.pdf`;
+  const note = `Kinari x Leaf & Kettle ${hash.slice(0, 6)}`;
 
   const octx = await browser.newContext();
   const o = await octx.newPage();
   await restoreInBrowser(o, owner.phrase);
   await o.getByRole("link", { name: "Proofs" }).first().click();
   await o.waitForURL("**/app/proof");
-  await o
-    .locator('input[type="file"]')
-    .setInputFiles({ name: "services-agreement-v3.pdf", mimeType: "application/pdf", buffer: doc });
+  await o.locator('input[type="file"]').setInputFiles({ name: fileName, mimeType: "application/pdf", buffer: doc });
   const sheet = o.getByRole("dialog", { name: "Prove it existed" });
   await expect(sheet.getByText(hash)).toBeVisible();
-  await sheet.getByLabel("Private note (optional)").fill("Kinari x Leaf & Kettle");
+  await sheet.getByLabel("Private note (optional)").fill(note);
   await sheet.getByRole("button", { name: "Anchor on QoreChain" }).click();
   await expect(sheet.getByText("Anchored. It is on QoreChain now.")).toBeVisible({ timeout: 240_000 });
   await o.screenshot({ path: info.outputPath("anchored.png") });
 
-  // Source of truth: the registry contract has the anchor, by the owner's account.
+  // Source of truth: AnchorBook has the anchor, by the owner's account.
   const a = await readAnchor(hash);
   expect(a).not.toBeNull();
   expect(a?.by.toLowerCase()).toBe(evmOf(owner.address).toLowerCase());
   expect(a?.byAddress).toBe(owner.address);
   expect(a?.kind).toBe("document");
+  expect(a?.contract).toBe("book");
 
   // The list shows the private label (opened on this device) once the indexer has the log.
   await sheet.getByRole("button", { name: "Done" }).click();
-  await expect(o.getByText("services-agreement-v3.pdf")).toBeVisible({ timeout: 60_000 });
-  await expect(o.getByText(/Kinari x Leaf & Kettle/)).toBeVisible();
+  await expect(o.getByText(fileName)).toBeVisible({ timeout: 60_000 });
+  await expect(o.getByText(note)).toBeVisible();
 
   // Anchoring the same file again sends nothing and says so.
   await o.locator('input[type="file"]').setInputFiles({ name: "same.pdf", mimeType: "application/pdf", buffer: doc });
@@ -100,6 +104,78 @@ test("proof: anchor a document, certificate from chain, match and no match, anch
   await p.goto("/proof/xyz");
   await expect(p.getByRole("heading", { name: "That is not a document fingerprint" })).toBeVisible();
   await sctx.close();
+});
+
+test("proof: someone who anchors a fingerprint first cannot block its author (review M2)", async ({
+  browser,
+}, info) => {
+  test.skip(info.project.name !== "desktop", "on-chain flow runs once");
+  test.setTimeout(600_000);
+  const author = await ensureOwner("e2e-editor", NAME);
+  const other = await ensureOwner("e2e-pass-holder", "mzk-e2e-passacct");
+  const doc = Buffer.concat([Buffer.from(`Draft term sheet ${Date.now()}\n`), randomBytes(1024)]);
+  const hash = createHash("sha256").update(doc).digest("hex");
+
+  const anchorAs = async (phrase: string) => {
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    await restoreInBrowser(page, phrase);
+    await page.getByRole("link", { name: "Proofs" }).first().click();
+    await page.waitForURL("**/app/proof");
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles({ name: "term-sheet.pdf", mimeType: "application/pdf", buffer: doc });
+    const sheet = page.getByRole("dialog", { name: "Prove it existed" });
+    await sheet.getByRole("button", { name: "Anchor on QoreChain" }).click();
+    await expect(sheet.getByText("Anchored. It is on QoreChain now.")).toBeVisible({ timeout: 240_000 });
+    return { ctx, page, sheet };
+  };
+
+  // The other account anchors first, as someone who learned the fingerprint would.
+  const first = await anchorAs(other.phrase);
+  await first.ctx.close();
+  // The author's anchor still goes through, and the sheet says someone came first.
+  const second = await anchorAs(author.phrase);
+  await expect(second.sheet.getByText(/Another account anchored this fingerprint earlier/)).toBeVisible();
+  await second.page.screenshot({ path: info.outputPath("second-anchor.png") });
+  await second.ctx.close();
+
+  // Source of truth: two records in AnchorBook, the other account's first.
+  const all = await readAnchors(hash);
+  expect(all.map((x) => x.byAddress)).toEqual([other.address, author.address]);
+  expect(all.every((x) => x.contract === "book")).toBe(true);
+  expect(all[0]!.blockNumber).toBeLessThan(all[1]!.blockNumber);
+
+  // A stranger's certificate lists both, earliest first, each with its own transaction.
+  const sctx = await browser.newContext();
+  const p = await sctx.newPage();
+  await p.goto(`/proof/${hash}`);
+  const list = p.getByRole("region", { name: "Every account that anchored this fingerprint" });
+  await expect(list.getByRole("heading", { name: "Anchored by 2 accounts" })).toBeVisible({ timeout: 30_000 });
+  const items = list.getByRole("listitem");
+  await expect(items).toHaveCount(2);
+  await expect(items.nth(0)).toContainText(other.address);
+  await expect(items.nth(1)).toContainText(author.address);
+  await expect(items.nth(1).getByRole("link", { name: `@${NAME}` })).toBeVisible();
+  await expect(list.getByRole("link", { name: /^0x[0-9a-f]{16}/ })).toHaveCount(2);
+  await expect(p.getByText("First anchored")).toBeVisible();
+  await p.screenshot({ path: info.outputPath("certificate-two.png"), fullPage: true });
+  await sctx.close();
+});
+
+test("proof: an anchor made in the registry before AnchorBook still has its certificate", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "desktop");
+  const owner = await ensureOwner("e2e-editor", NAME);
+  const r = await fetch(`${process.env.API_URL ?? "http://127.0.0.1:4000"}/proofs?by=${owner.address}`);
+  const { proofs } = (await r.json()) as { proofs: { contentHash: string; block: string }[] };
+  const old = (await Promise.all(proofs.map(async (x) => (await readAnchors(x.contentHash))[0]))).find(
+    (x) => x?.contract === "registry",
+  );
+  test.skip(!old, "no registry-era anchor for this account");
+  await page.goto(`/proof/${old!.contentHash.slice(2)}`);
+  await expect(page.getByRole("heading", { name: /existed, unchanged/ })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("checked by the Mizuhiki registry contract")).toBeVisible();
+  await expect(page.getByRole("link", { name: /^0x[0-9a-f]{16}/ })).toBeVisible();
 });
 
 test("proof on a phone: certificate fits and checks a file", async ({ page }, info) => {

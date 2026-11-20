@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { connection } from "next/server";
 import { ToastProvider } from "@mizuhiki/ui";
 import { AppLinks } from "@/lib/AppLinks";
 import { AccountProvider } from "@/account/AccountProvider";
@@ -22,7 +23,9 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // Every page renders per request, so Next.js can put proxy.ts's fresh CSP nonce on its own scripts.
+  await connection();
   return (
     <html lang="en" className={`${sans.variable} ${mono.variable}`}>
       <head>

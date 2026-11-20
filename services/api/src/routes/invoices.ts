@@ -15,6 +15,7 @@ import type { Ctx } from "../server";
 import { sessionAddress } from "../lib/auth";
 import { pqKeyOf } from "../lib/chainreads";
 import { fail } from "../lib/http";
+import { hold, release } from "../lib/holds";
 
 const ID = /^[a-z0-9]{10,32}$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -117,8 +118,9 @@ export const invoiceRoutes =
       }
 
       await db.transaction(async (tx) => {
-        // Invoices and their attachments are kept until the owner deletes them.
-        await tx.update(blobs).set({ expiresAt: null }).where(inArray(blobs.hash, must));
+        // Invoices and their attachments are kept until the owner deletes them; an edit replaces the set.
+        await release(tx, owner, `invoice:${b.data.id}`);
+        await hold(tx, must, owner, `invoice:${b.data.id}`);
         const now = new Date();
         await tx
           .insert(invoices)
@@ -224,6 +226,7 @@ export const invoiceRoutes =
         .returning({ id: invoices.id });
       if (r.length === 0)
         return fail(reply, 404, "NOT_FOUND", "Only your own drafts can be deleted. Sent invoices can be cancelled.");
+      await release(db, owner, `invoice:${id}`);
       return { ok: true };
     });
 

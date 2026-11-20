@@ -4,10 +4,10 @@
  * everything stored for it (chain data stays).
  */
 import type { FastifyPluginCallback } from "fastify";
-import { and, desc, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
-  blobs,
+  blobHolds,
   capsules,
   drafts,
   envelopes,
@@ -29,11 +29,45 @@ import type { Ctx } from "../server";
 import { sessionAddress } from "../lib/auth";
 import { fail } from "../lib/http";
 import { PUSH_TYPES, pushEnabled, type PushType } from "../lib/push";
+import { releaseAll } from "../lib/holds";
 
 const b64u = z
   .string()
   .regex(/^[A-Za-z0-9_-]+={0,2}$/)
   .max(200);
+
+/**
+ * The push services browsers use (Chrome and Edge via FCM, Firefox via Mozilla, Safari via Apple, legacy Edge
+ * via Windows Push). Subscriptions to anything else are refused.
+ */
+const PUSH_HOSTS = [
+  /^fcm\.googleapis\.com$/,
+  /^updates\.push\.services\.mozilla\.com$/,
+  /^web\.push\.apple\.com$/,
+  /\.notify\.windows\.com$/,
+];
+function isPushService(endpoint: string): boolean {
+  try {
+    const u = new URL(endpoint);
+    return u.protocol === "https:" && !u.port && PUSH_HOSTS.some((h) => h.test(u.hostname));
+  } catch {
+    return false;
+  }
+}
+
+/** Hold purposes (lib/holds.ts) that belong to the page and its owner's own items. */
+const DELETED_WITH_PAGE = [
+  "drop:",
+  "draft",
+  "media",
+  "snapshot:",
+  "form:",
+  "invoice:",
+  "product:",
+  "pass:",
+  "recovery:owner",
+  "capsule-draft:",
+];
 
 export const settingsRoutes =
   (ctx: Ctx): FastifyPluginCallback =>
@@ -87,7 +121,11 @@ export const settingsRoutes =
       return { ok: true };
     });
 
-    /** This browser's push subscription (from PushManager.subscribe). */
+    /**
+     * This browser's push subscription (from PushManager.subscribe). Only the browsers' own push services are
+     * accepted, so the server never posts to an address of a caller's choosing (security review L1), and a
+     * subscription stays with the account that registered it.
+     */
     app.put("/owner/push", async (req, reply) => {
       const me = await sessionAddress(db, req);
       if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
@@ -95,12 +133,18 @@ export const settingsRoutes =
       const b = z
         .object({ endpoint: z.url({ protocol: /^https$/ }).max(1000), keys: z.object({ p256dh: b64u, auth: b64u }) })
         .safeParse(req.body);
-      if (!b.success)
+      if (!b.success || !isPushService(b.data.endpoint))
         return fail(reply, 400, "BAD_REQUEST", "This browser's subscription is not valid. Nothing changed.");
+      const [taken] = await db
+        .select({ address: pushSubscriptions.address })
+        .from(pushSubscriptions)
+        .where(eq(pushSubscriptions.endpoint, b.data.endpoint));
+      if (taken && taken.address !== me)
+        return fail(reply, 409, "TAKEN", "This browser is subscribed for another account. Turn it off there first.");
       await db
         .insert(pushSubscriptions)
         .values({ endpoint: b.data.endpoint, address: me, keys: b.data.keys })
-        .onConflictDoUpdate({ target: pushSubscriptions.endpoint, set: { address: me, keys: b.data.keys } });
+        .onConflictDoUpdate({ target: pushSubscriptions.endpoint, set: { keys: b.data.keys } });
       return { ok: true };
     });
 
@@ -136,56 +180,13 @@ export const settingsRoutes =
       const b = z.object({ confirm: z.literal("delete my page") }).safeParse(req.body);
       if (!b.success)
         return fail(reply, 400, "CONFIRM", "Type the confirmation to delete. Nothing was deleted.", "nothing-changed");
-      const hashes = new Set<string>();
-      const add = (h: unknown) => {
-        if (typeof h === "string" && /^[0-9a-f]{64}$/.test(h)) hashes.add(h);
-      };
-      const env = await db
-        .select({ hash: envelopes.hash, chunks: envelopes.chunks })
-        .from(envelopes)
-        .where(eq(envelopes.owner, me));
-      for (const e of env) {
-        add(e.hash);
-        for (const c of e.chunks) add(c);
-      }
-      for (const i of await db
-        .select({ a: invoices.envelope, b: invoices.privateEnvelope })
-        .from(invoices)
-        .where(eq(invoices.owner, me))) {
-        add(i.a);
-        add(i.b);
-      }
-      for (const f of await db.select({ d: forms.draftEnvelope }).from(forms).where(eq(forms.owner, me))) add(f.d);
-      for (const p of await db.select({ d: products.draftEnvelope }).from(products).where(eq(products.owner, me)))
-        add(p.d);
-      for (const d of await db.select({ h: drafts.blobHash }).from(drafts).where(eq(drafts.address, me))) add(d.h);
-      for (const c of await db
-        .select({ d: capsules.draftEnvelope })
-        .from(capsules)
-        .where(and(eq(capsules.owner, me), eq(capsules.state, "draft"))))
-        add(c.d);
-      for (const r of await db
-        .select({ p: recoveryContacts.piece })
-        .from(recoveryContacts)
-        .where(eq(recoveryContacts.owner, me)))
-        add(r.p);
-      const myPasses = await db
-        .select({ id: passes.id, key: passes.keyEnvelope })
-        .from(passes)
-        .where(eq(passes.owner, me));
-      for (const p of myPasses) add(p.key);
+      // Only this account's own holds are released, by purpose; anything someone else keeps stays theirs.
+      const myPasses = await db.select({ id: passes.id }).from(passes).where(eq(passes.owner, me));
       const passIds = myPasses.map((p) => p.id);
-      if (passIds.length)
-        for (const i of await db
-          .select({ e: passItems.envelope })
-          .from(passItems)
-          .where(inArray(passItems.passId, passIds)))
-          add(i.e);
-      for (const o of await db
-        .select({ e: recoveryOfflineItems.envelope })
-        .from(recoveryOfflineItems)
-        .where(eq(recoveryOfflineItems.owner, me)))
-        add(o.e);
+      const [{ held } = { held: 0 }] = await db
+        .select({ held: sql<number>`count(distinct ${blobHolds.hash})::int` })
+        .from(blobHolds)
+        .where(eq(blobHolds.holder, me));
       await db.transaction(async (tx) => {
         await tx.update(pages).set({ unpublished: true }).where(eq(pages.address, me));
         await tx.delete(envelopes).where(eq(envelopes.owner, me));
@@ -212,14 +213,12 @@ export const settingsRoutes =
         await tx.delete(recoveryOfflineItems).where(eq(recoveryOfflineItems.owner, me));
         await tx.update(recoverySettings).set({ offlineKey: null, version: 0 }).where(eq(recoverySettings.owner, me));
         await tx.delete(pushSubscriptions).where(eq(pushSubscriptions.address, me));
-        if (hashes.size)
-          await tx
-            .update(blobs)
-            .set({ expiresAt: new Date() })
-            .where(and(inArray(blobs.hash, [...hashes]), isNotNull(blobs.hash)));
+        // Rooms are shared and stay; capsules already armed stay (others are named in them); guardian and
+        // recovery-contact holds for other people's capsules and recoveries stay too.
+        for (const prefix of DELETED_WITH_PAGE) await releaseAll(tx, me, prefix);
       });
       await db.execute(sql`select pg_notify('mzk_events', ${`page:${me}`})`);
-      return { ok: true, removed: hashes.size };
+      return { ok: true, released: held };
     });
 
     done();

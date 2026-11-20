@@ -24,7 +24,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { pqSign } from "@qorechain/qoresign";
 import { NETWORK } from "./config";
 import { ChainError } from "./errors";
-import { mizuhikiRegistryAbi, capsuleVaultAbi } from "./abi";
+import { mizuhikiRegistryAbi, capsuleVaultAbi, anchorBookAbi } from "./abi";
 import type { Signer } from "./native";
 
 export const qorechainTestnet = defineChain({
@@ -151,7 +151,7 @@ export function localDigest(contract: Address, signer: Address, nonce: bigint, a
   );
 }
 
-type Abi = typeof mizuhikiRegistryAbi | typeof capsuleVaultAbi;
+type Abi = typeof mizuhikiRegistryAbi | typeof capsuleVaultAbi | typeof anchorBookAbi;
 
 /** Sign the next action for `signer` on `contract`, after checking our digest equals the contract's. */
 export async function signAction(
@@ -245,7 +245,7 @@ export function revertSentence(errorName: string): string {
     case "NotYet":
       return "It is not time to open this capsule yet.";
     case "AlreadyAnchored":
-      return "This file was already proven. Its certificate exists.";
+      return "You anchored this file already. Its certificate exists.";
     default:
       return "The contract refused this step. Nothing was changed.";
   }

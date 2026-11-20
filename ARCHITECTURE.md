@@ -66,7 +66,7 @@ React components built from `brand/system/project/tokens.css` and the approved L
 - **Auth:** Sign In With QoreChain (`createSiwqMessage` / `verifySiwq` + on-chain key check). A successful sign-in returns a short-lived session token bound to the address. Owner-only endpoints (inbox index, drafts, form results counters, settings) require it. Visitor endpoints need no account.
 - **Pages:** `PUT /pages/:address` takes a signed manifest; the server verifies the hybrid signature against the chain, checks the name record on the registry, stores it and serves it. `GET /pages/@:name` returns manifest plus signature so every visitor's browser verifies it again.
 - **Drop:** `POST /drop/:address` takes envelope bytes, checks header magic, size cap, rate limit per IP-hash and per recipient, and a proof-of-work stamp (SHA-256 hashcash bound to recipient, size and minute). Stores the blob, writes a metadata row, notifies the owner. File chunks use `POST /blobs` (content-addressed, the drop references them).
-- **Blobs:** content-addressed (`sha256`) store behind a `BlobStore` interface; the shipped implementation is a sharded filesystem store with atomic rename writes and expiry sweeps. Storage is replaceable without touching callers.
+- **Blobs:** content-addressed (`sha256`) store behind a `BlobStore` interface; the shipped implementation is a sharded filesystem store with atomic rename writes. What keeps a blob is a set of holds (`blob_holds`: account, purpose, optional expiry; `lib/holds.ts`): a blob lives while it is less than a day old or any hold on it is live, and the sweep removes the rest. Routes add and release only their caller's own holds, so knowing a hash never lets anyone delete another account's copy (THREAT_MODEL A2). Storage is replaceable without touching callers.
 - **Relay:** WebSocket fan-out of sealed room batches with per-room sequence numbers; offline members fetch from storage on return.
 - **Inbox index, forms, invoices, shop, passes, capsules, insights, push:** metadata and counters only; contents are sealed blobs.
 - **Abuse:** report endpoint and takedown of public pages; sealed content cannot be read, so it can only be expired.
@@ -81,7 +81,8 @@ By default the **seller's own device** delivers: when the dashboard is open (or 
 
 ### 2.8 `contracts` — Solidity (Foundry), EVM lane
 
-- **`MizuhikiRegistry`:** names (claim, release, transfer), recipient card hash per address, proof anchors (hash, kind, time), room records (create, epoch change with membership hash and distribution hash, role changes), form and product publication hashes, pass records. Every owner action carries an ML-DSA-87 signature over `keccak256(abi.encode(TAG, chainid, this, action fields, nonce))`, verified with `pqcVerify` (0x…0A01) against the key from `pqcKeyStatus` (0x…0A02); per-address nonces stop replay. Events are indexed for `eth_getLogs`.
+- **`MizuhikiRegistry`:** names (claim, release, transfer), recipient card hash per address, proof anchors made before AnchorBook (read-only in practice; still shown on certificates), room records (create, epoch change with membership hash and distribution hash, role changes), form and product publication hashes, pass records. Every owner action carries an ML-DSA-87 signature over `keccak256(abi.encode(TAG, chainid, this, action fields, nonce))`, verified with `pqcVerify` (0x…0A01) against the key from `pqcKeyStatus` (0x…0A02); per-address nonces stop replay. Events are indexed for `eth_getLogs`.
+- **`AnchorBook`:** proof anchors, one record per account per fingerprint (time, block, kind), ML-DSA-authorised and relayable like the registry. A first-come registry record let anyone who learned a fingerprint anchor it before its author and make the author's anchor fail (security review M2); here every account's record stands, and certificates list all of them, earliest first. Testnet `0x9d5379a7f28bae86e087abb8e7a72274335f316a` (deploy tx `0xa2e4eeb8…`).
 - **`CapsuleVault`:** owner, guardians, threshold, mode (at a time, after a wait, if quiet), wait and quiet periods, last check-in, request state and status. Owner check-in, cancel, reject, and guardian request and approval are all ML-DSA-authorised and relayable. Release is a state flip at block time; guardians' clients read it before sealing their shares to recipients.
 - Unit tests run under Foundry with a verifier stand-in deployed at the precompile address by the test harness (the local EVM has no ML-DSA precompile); the same attacks (bad signature, replay, wrong signer, wrong contract, expired) are then re-run against the deployed contracts on testnet with real ML-DSA-87 signatures.
 
@@ -98,12 +99,13 @@ By default the **seller's own device** delivers: when the dashboard is open (or 
 
 ### On chain
 
-| Record                                                         | Where                               | Written by                              |
-| -------------------------------------------------------------- | ----------------------------------- | --------------------------------------- |
-| ML-DSA-87 key, ML-KEM-1024 key                                 | chain PQC module                    | the owner's device                      |
-| Payments, invoice and order settlement                         | `MsgSend` with tagged memo          | the payer's wallet                      |
-| Names, card hashes, anchors, room epochs, publications, passes | `MizuhikiRegistry` events and state | the owner (ML-DSA-authorised)           |
-| Capsule plans and state                                        | `CapsuleVault`                      | owner and guardians (ML-DSA-authorised) |
+| Record                                                | Where                                                        | Written by                                 |
+| ----------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------ |
+| ML-DSA-87 key, ML-KEM-1024 key                        | chain PQC module                                             | the owner's device                         |
+| Payments, invoice and order settlement                | `MsgSend` with tagged memo                                   | the payer's wallet                         |
+| Names, card hashes, room epochs, publications, passes | `MizuhikiRegistry` events and state                          | the owner (ML-DSA-authorised)              |
+| Proof anchors                                         | `AnchorBook` (and older `MizuhikiRegistry`) events and state | each anchoring account (ML-DSA-authorised) |
+| Capsule plans and state                               | `CapsuleVault`                                               | owner and guardians (ML-DSA-authorised)    |
 
 ### Off chain (PostgreSQL 17; every row is either public or ciphertext metadata)
 
@@ -116,7 +118,8 @@ By default the **seller's own device** delivers: when the dashboard is open (or 
 | `pages`                                        | address, name, manifest_json, signature, version, published_at                            | signed, public                       |
 | `drafts`                                       | address, blob_hash, updated_at                                                            | draft sealed to the owner            |
 | `envelopes`                                    | hash, owner, kind, size, recipients, sender_sig, created_at, expires_at, archived         | bytes in the blob store              |
-| `blobs`                                        | hash, size, created_at, expires_at                                                        | content-addressed                    |
+| `blobs`                                        | hash, size, created_at                                                                    | content-addressed                    |
+| `blob_holds`                                   | hash, holder, purpose, expires_at                                                         | who keeps a blob, and until when     |
 | `payments`                                     | tx_hash, from, to, denom, amount, memo, height, time, kind, ref                           | from the indexer                     |
 | `invoices`                                     | id, owner, number, link_blob, total, denom, due, status, paid_tx                          | contents sealed                      |
 | `forms`                                        | id, owner, slug, definition_json, settings_json, counters                                 | questions are public by design       |

@@ -1,11 +1,10 @@
 import type { FastifyPluginCallback } from "fastify";
-import { eq, lt, and, isNotNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { Ctx } from "../server";
-import { blobs, media } from "@mizuhiki/db";
+import { blobHolds, blobs, media } from "@mizuhiki/db";
 import { sessionAddress } from "../lib/auth";
 import { fail, isHash } from "../lib/http";
-
-const UNCLAIMED_HOURS = 24;
+import { hold, sweepable } from "../lib/holds";
 
 /** Image sniffing by magic bytes: the declared type must match the bytes. */
 function imageType(b: Uint8Array): "image/png" | "image/jpeg" | "image/webp" | undefined {
@@ -29,8 +28,8 @@ export const blobRoutes =
   (ctx: Ctx): FastifyPluginCallback =>
   (app, _opts, done) => {
     /**
-     * Store sealed bytes. Content-blind: the server only checks size. A blob not
-     * referenced by a drop, draft or other record within a day is swept.
+     * Store sealed bytes. Content-blind: the server only checks size. A blob that
+     * nobody holds a day after upload is swept (lib/holds.ts).
      */
     app.put("/blobs", { config: { rateLimit: { max: 240, timeWindow: "1 minute" } } }, async (req, reply) => {
       const body = req.body;
@@ -45,10 +44,7 @@ export const blobRoutes =
           "nothing-stored",
         );
       const r = await ctx.blobs.put(new Uint8Array(body));
-      await ctx.db
-        .insert(blobs)
-        .values({ hash: r.hash, size: r.size, expiresAt: new Date(Date.now() + UNCLAIMED_HOURS * 3600_000) })
-        .onConflictDoNothing();
+      await ctx.db.insert(blobs).values({ hash: r.hash, size: r.size }).onConflictDoNothing();
       return { hash: r.hash, size: r.size };
     });
 
@@ -79,10 +75,8 @@ export const blobRoutes =
         return fail(reply, 415, "NOT_AN_IMAGE", "Use a PNG, JPEG or WebP image. Nothing was stored.", "nothing-stored");
       const r = await ctx.blobs.put(new Uint8Array(body));
       await ctx.db.insert(media).values({ hash: r.hash, owner, type, size: r.size }).onConflictDoNothing();
-      await ctx.db
-        .insert(blobs)
-        .values({ hash: r.hash, size: r.size })
-        .onConflictDoUpdate({ target: blobs.hash, set: { expiresAt: null } });
+      await ctx.db.insert(blobs).values({ hash: r.hash, size: r.size }).onConflictDoNothing();
+      await hold(ctx.db, [r.hash], owner, "media");
       return { hash: r.hash, type };
     });
 
@@ -102,16 +96,13 @@ export const blobRoutes =
     done();
   };
 
-/** Delete blobs whose expiry passed (unclaimed uploads, expired drops). */
+/** Delete blobs nobody holds any more (unclaimed uploads, expired drops, released drafts). */
 export async function sweepBlobs(ctx: Ctx): Promise<number> {
-  const due = await ctx.db
-    .select({ hash: blobs.hash })
-    .from(blobs)
-    .where(and(isNotNull(blobs.expiresAt), lt(blobs.expiresAt, new Date())))
-    .limit(500);
-  for (const d of due) {
-    await ctx.blobs.delete(d.hash);
-    await ctx.db.delete(blobs).where(eq(blobs.hash, d.hash));
+  const due = await sweepable(ctx.db);
+  for (const hash of due) {
+    await ctx.blobs.delete(hash);
+    await ctx.db.delete(blobHolds).where(eq(blobHolds.hash, hash));
+    await ctx.db.delete(blobs).where(eq(blobs.hash, hash));
   }
   return due.length;
 }

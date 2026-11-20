@@ -899,12 +899,14 @@ describe("snapshots", () => {
       payload,
       headers: auth ? { authorization: `Bearer ${auth}` } : {},
     });
-  const expiryOf = async (hash: string) => {
+  /** Live holds on a blob (lib/holds.ts): what keeps it from the sweep. */
+  const liveHolds = async (hash: string) => {
     const postgres = (await import("postgres")).default;
     const sql = postgres(DB);
-    const rows = await sql<{ expires_at: Date | null }[]>`select expires_at from blobs where hash = ${hash}`;
+    const rows = await sql<{ holder: string }[]>`
+      select holder from blob_holds where hash = ${hash} and (expires_at is null or expires_at > now())`;
     await sql.end();
-    return rows[0]?.expires_at;
+    return rows.map((r) => r.holder);
   };
 
   it("keeps only a snapshot the form's owner signed for that sealed copy", async () => {
@@ -932,11 +934,11 @@ describe("snapshots", () => {
       (await keep(ownerToken, { ...good, hash: missing, sig: sign(owner, { formId: FORM, envelope: missing }) }))
         .statusCode,
     ).toBe(409);
-    expect(await expiryOf(hash)).not.toBeNull();
+    expect(await liveHolds(hash)).toEqual([]);
 
     const ok = await keep(ownerToken, good);
     expect(ok.statusCode).toBe(200);
-    expect(await expiryOf(hash)).toBeNull();
+    expect(await liveHolds(hash)).toEqual([owner.address]);
 
     const list = (
       await app.inject({ url: `/owner/snapshots?formId=${FORM}`, headers: { authorization: `Bearer ${ownerToken}` } })
@@ -982,9 +984,7 @@ describe("snapshots", () => {
     expect((await del(ownerToken)).statusCode).toBe(200);
     expect((await app.inject({ url: `/snapshots/${hash}` })).statusCode).toBe(404);
     expect((await del(ownerToken)).statusCode).toBe(404);
-    const expiry = await expiryOf(hash);
-    expect(expiry).toBeInstanceOf(Date);
-    expect((expiry as Date).getTime()).toBeLessThanOrEqual(Date.now());
+    expect(await liveHolds(hash)).toEqual([]);
   });
 });
 

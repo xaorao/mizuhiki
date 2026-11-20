@@ -629,6 +629,47 @@ describe("shop: protections", () => {
     expect(live?.n).toBe(3);
   });
 
+  it("unpaid orders that expire give a discount's use back, so nobody can use up a seller's code (review L2)", async () => {
+    const p = await publishProduct(
+      { slug: "once-code" },
+      { v: 1, pages: [{ id: "pageone", title: "", blocks: [{ t: "text", text: "x" }] }] },
+    );
+    await app.inject({
+      method: "PUT",
+      url: "/owner/discounts",
+      headers: await auth(seller),
+      payload: {
+        id: "discone001",
+        code: "ONCE",
+        percent: 10,
+        amountOff: null,
+        token: null,
+        productIds: [],
+        maxUses: 1,
+        expiresAt: null,
+      },
+    });
+    const order = () =>
+      app.inject({
+        method: "POST",
+        url: "/orders",
+        payload: { request: request([line(p)], { discountCode: "ONCE" }) },
+      });
+    expect((await order()).statusCode).toBe(201);
+    // While that order is held, the single use is taken.
+    expect((await order()).json<{ error: { code: string } }>().error.code).toBe("NO_DISCOUNT");
+    const postgres = (await import("postgres")).default;
+    const sql = postgres(DB);
+    await sql`update orders set expires_at = now() - interval '1 second' where seller = ${seller.address} and status = 'awaiting'`;
+    await sql.end();
+    // It expired unpaid: the code works again.
+    expect((await order()).statusCode).toBe(201);
+    const list = (await app.inject({ url: "/owner/discounts", headers: await auth(seller) })).json<{
+      discounts: { id: string; uses: number }[];
+    }>().discounts;
+    expect(list.find((d) => d.id === "discone001")?.uses).toBe(1);
+  });
+
   it("a server cannot sell at an old, lower price: the deliverer refuses an old version paid long after it changed", async () => {
     const p = await publishProduct(
       { slug: "old-price", price: { token: "QOR", amount: QOR("0.02").toString(), pwyw: null } },

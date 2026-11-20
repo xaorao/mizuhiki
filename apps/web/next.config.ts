@@ -8,6 +8,7 @@ const config: NextConfig = {
   // Router (that marks a parallel-route slot), so /@name maps to /p/name.
   // Baseline security headers. Nothing may frame Mizuhiki (clickjacking on the
   // signed-in app), except published forms, which owners embed on their sites.
+  // The page CSP lives in proxy.ts (it needs a fresh nonce per request).
   // When two rules set the same header, the later one wins (Next.js docs).
   async headers() {
     const base = [
@@ -15,12 +16,9 @@ const config: NextConfig = {
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
       { key: "X-Frame-Options", value: "DENY" },
-      { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
     ];
-    const embeddable = [
-      { key: "X-Frame-Options", value: "" },
-      { key: "Content-Security-Policy", value: "frame-ancestors *" },
-    ];
+    // The Content-Security-Policy, with its per-request script nonce and frame-ancestors, is set in proxy.ts.
+    const embeddable = [{ key: "X-Frame-Options", value: "" }];
     return [
       { source: "/:path*", headers: base },
       { source: "/@:name/f/:slug", headers: embeddable },

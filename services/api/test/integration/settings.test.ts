@@ -2,7 +2,7 @@
  * Settings (spec 5.17) on a real Postgres: names, notification toggles and
  * subscriptions, a Web Push encrypted to a browser key (RFC 8291) and opened
  * here the way the browser would, with no content in it; a dead subscription
- * removed; delete my page hides the page and sweeps everything stored for it.
+ * removed; delete my page hides the page and releases only this account's own holds.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createECDH, randomBytes } from "node:crypto";
@@ -101,7 +101,18 @@ describe("settings", () => {
       (await app.inject({ url: "/owner/notifications", headers: auth() })).json<{ prefs: Record<string, boolean> }>()
         .prefs.rooms,
     ).toBe(false);
-    // Only https push endpoints are stored.
+    // Only the browsers' own push services are stored (review L1): not plain http, not any other host.
+    for (const bad of ["https://127.0.0.1/x", "https://evil.example/fcm", "https://fcm.googleapis.com:8443/x"])
+      expect(
+        (
+          await app.inject({
+            method: "PUT",
+            url: "/owner/push",
+            headers: auth(),
+            payload: { endpoint: bad, keys: { p256dh: "a", auth: "b" } },
+          })
+        ).statusCode,
+      ).toBe(400);
     expect(
       (
         await app.inject({
@@ -119,7 +130,7 @@ describe("settings", () => {
     const browser = createECDH("prime256v1");
     browser.generateKeys();
     const authSecret = randomBytes(16);
-    const endpoint = `https://push.example/${randomBytes(6).toString("hex")}`;
+    const endpoint = `https://fcm.googleapis.com/fcm/send/${randomBytes(6).toString("hex")}`;
     expect(
       (
         await app.inject({
@@ -163,11 +174,12 @@ describe("settings", () => {
     expect(await push.send(owner.address, "items")).toBe(0);
     expect(await push.send(owner.address, "rooms")).toBe(0);
     // A subscription the push service no longer knows is removed.
-    await sql`insert into push_subscriptions (endpoint, address, keys) values (${"https://push.example/gone"}, ${owner.address}, ${JSON.stringify({ p256dh: b64u(browser.getPublicKey()), auth: b64u(authSecret) })}::jsonb)`;
+    await sql`insert into push_subscriptions (endpoint, address, keys) values (${"https://fcm.googleapis.com/fcm/send/gone"}, ${owner.address}, ${JSON.stringify({ p256dh: b64u(browser.getPublicKey()), auth: b64u(authSecret) })}::jsonb)`;
     await push.send(owner.address, "payments");
     expect(
-      (await sql`select count(*)::int as n from push_subscriptions where endpoint = ${"https://push.example/gone"}`)[0]
-        ?.n,
+      (
+        await sql`select count(*)::int as n from push_subscriptions where endpoint = ${"https://fcm.googleapis.com/fcm/send/gone"}`
+      )[0]?.n,
     ).toBe(0);
     await sql.end();
   });
@@ -187,6 +199,9 @@ describe("settings", () => {
     const hash = randomBytes(32).toString("hex");
     await sql`insert into blobs (hash, size) values (${hash}, 10) on conflict do nothing`;
     await sql`insert into envelopes (hash, owner, kind, size, readers) values (${hash}, ${owner.address}, 'message', 10, 1)`;
+    // The owner holds it for the drop; another account holds the same bytes for itself.
+    await sql`insert into blob_holds (hash, holder, purpose) values (${hash}, ${owner.address}, ${`drop:${hash}`})`;
+    await sql`insert into blob_holds (hash, holder, purpose) values (${hash}, ${"qor1someoneelse"}, ${"draft"})`;
     await sql`insert into pages (address, name, record, version) values (${owner.address}, ${"zz-del-test"}, ${sql.json({})}, 1) on conflict (address) do update set unpublished = false`;
     expect(
       (await app.inject({ method: "DELETE", url: "/owner/page", headers: auth(), payload: { confirm: "yes" } }))
@@ -201,8 +216,10 @@ describe("settings", () => {
     expect(r.statusCode).toBe(200);
     expect((await sql`select count(*)::int as n from envelopes where owner = ${owner.address}`)[0]?.n).toBe(0);
     expect((await sql`select unpublished from pages where address = ${owner.address}`)[0]?.unpublished).toBe(true);
-    const [b] = await sql`select expires_at from blobs where hash = ${hash}`;
-    expect(b?.expires_at).not.toBeNull();
+    // Only the owner's own hold went; the other account's copy is untouched.
+    const holds = await sql<{ holder: string }[]>`select holder from blob_holds where hash = ${hash}`;
+    expect(holds.map((h) => h.holder)).toEqual(["qor1someoneelse"]);
+    await sql`delete from blob_holds where hash = ${hash}`;
     await sql.end();
   });
 });

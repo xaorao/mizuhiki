@@ -30,6 +30,7 @@ import {
   wordsToSeed,
   type RecoveryInvite,
   type Signed,
+  solvePowAsync,
 } from "@mizuhiki/core";
 import { resolveOwner } from "@mizuhiki/chain";
 import { generateSealKeys, sealKeysFromSeed, type SealKeyPair } from "@qorechain/qoreseal";
@@ -217,6 +218,10 @@ export async function acceptHelp(a: Tokened, owner: string): Promise<void> {
 export const declineHelp = (a: Tokened, owner: string) => api.post(`/recovery/helping/${owner}/decline`, {}, T(a));
 
 /** Open this contact's piece and re-seal it to the request's one-time key. The piece is never shown. */
+/** "The words differ": this contact will not answer, and a request too few contacts are left for is cancelled. */
+export const dismissRequest = (a: Tokened, r: RequestRow) =>
+  api.post<{ ok: true; status: string }>(`/recovery/requests/${r.id}/dismiss`, {}, T(a));
+
 export async function answerRequest(a: Tokened, h: Helping, r: RequestRow): Promise<void> {
   const mine = h.owners.find((o) => o.owner === r.owner && o.pieceVersion === r.version && o.piece);
   if (!mine?.piece) throw new RecoveryError("You do not hold a current piece for this person.");
@@ -251,10 +256,15 @@ export interface Pending {
 /** Start a recovery for an @name or address; the one-time key stays in this browser until it is done. */
 export async function startRecovery(who: string): Promise<Pending> {
   const one = oneTime();
+  // The anti-spam stamp the server asks for, bound to this name and this request's secret.
+  const { powBits } = await api.get<{ powBits: number }>("/drop/config");
+  const name = who.trim().replace(/^@/, "").toLowerCase();
+  const pow = await solvePowAsync(`recovery:${name}`, one.secretHash, powBits);
   const r = await api.post<{ id: string; owner: string; threshold: number }>("/recovery/requests", {
     who: who.trim(),
     recipient: one.recipient,
     secretHash: one.secretHash,
+    pow,
   });
   const p: Pending = {
     id: r.id,

@@ -2,7 +2,7 @@
 /** "Prove it existed": anchor a hash with the owner's key, with real steps and a certificate at the end. */
 import { useState } from "react";
 import { Button, ButtonLink, Hanko, Oops, Segmented, SealMoment, Sheet, TextField, type SealStep } from "@mizuhiki/ui";
-import { ChainError, type AnchorKind } from "@mizuhiki/chain";
+import { ChainError, type AnchorKind, type AnchorRecord } from "@mizuhiki/chain";
 import type { Account } from "@/account/AccountProvider";
 import { ApiFailure } from "@/lib/api";
 import { PROVE_STEP_LABEL, certificatePath, prove, type ProveStep } from "./proof";
@@ -20,13 +20,14 @@ export function ProveSheet({
   target: Hashed;
   defaultKind?: AnchorKind;
   onClose: () => void;
-  onDone?: () => void;
+  /** Called with what was just written (read back from QoreChain), so lists can show it before any indexer. */
+  onDone?: (r: { record: AnchorRecord; txHash: string | null; note: string }) => void;
 }) {
   const [kind, setKind] = useState<AnchorKind>(defaultKind);
   const [note, setNote] = useState("");
   const [phase, setPhase] = useState<"ready" | "working" | "done" | "failed">("ready");
   const [steps, setSteps] = useState<SealStep[]>([]);
-  const [result, setResult] = useState<{ fresh: boolean; mine: boolean; tx: string | null } | null>(null);
+  const [result, setResult] = useState<{ fresh: boolean; othersEarlier: number; tx: string | null } | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const order: ProveStep[] = ["window", "sign", "send", "label"];
 
@@ -51,9 +52,9 @@ export function ProveSheet({
         },
       });
       setSteps(order.map((x) => ({ label: PROVE_STEP_LABEL[x], state: "done" })));
-      setResult({ fresh: r.fresh, mine: r.mine, tx: r.txHash });
+      setResult({ fresh: r.fresh, othersEarlier: r.othersEarlier, tx: r.txHash });
       setPhase("done");
-      onDone?.();
+      onDone?.({ record: r.record, txHash: r.txHash, note });
     } catch (e) {
       const moved = e instanceof ChainError ? e.moved : "unknown";
       const base = e instanceof ChainError || e instanceof ApiFailure ? e.message : "The anchor could not be written.";
@@ -112,18 +113,17 @@ export function ProveSheet({
       {phase === "done" && result ? (
         <div className={s.proveDone}>
           <Hanko size={84}>証</Hanko>
-          <h3>
-            {result.fresh
-              ? "Anchored. It is on QoreChain now."
-              : result.mine
-                ? "You anchored this already."
-                : "Someone else anchored this file earlier."}
-          </h3>
+          <h3>{result.fresh ? "Anchored. It is on QoreChain now." : "You anchored this already."}</h3>
           <p className={s.muted}>
-            {result.mine
-              ? "The certificate shows the time, your account and the transaction. Share it with anyone who should be able to check."
-              : "The certificate shows who anchored it first and when. A file can only be anchored once."}
+            The certificate shows the time, your account and the transaction. Share it with anyone who should be able to
+            check.
           </p>
+          {result.othersEarlier > 0 ? (
+            <p className={s.muted} role="note">
+              {result.othersEarlier === 1 ? "Another account" : `${result.othersEarlier} other accounts`} anchored this
+              fingerprint earlier. Every account keeps its own record, so the certificate lists each one with its time.
+            </p>
+          ) : null}
           <ButtonLink href={certificatePath(target.hash)} variant="cord" icon="arrow" target="_blank">
             Open the certificate
           </ButtonLink>

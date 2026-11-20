@@ -29,11 +29,24 @@ import {
 } from "@mizuhiki/core";
 import { DENOMS, getTx } from "@mizuhiki/chain";
 import { storePayments } from "@mizuhiki/indexer";
-import { blobs, cards, discounts, media, names, orderSlots, orders, payments, products, reviews } from "@mizuhiki/db";
+import {
+  blobHolds,
+  blobs,
+  cards,
+  discounts,
+  media,
+  names,
+  orderSlots,
+  orders,
+  payments,
+  products,
+  reviews,
+} from "@mizuhiki/db";
 import type { Ctx } from "../server";
 import { sessionAddress } from "../lib/auth";
 import { pqKeyOf, ownerOfName } from "../lib/chainreads";
 import { fail, isAddress, isHash } from "../lib/http";
+import { hold, release } from "../lib/holds";
 
 const ID = /^[A-Za-z0-9_-]{6,40}$/;
 const REF = /^[A-Za-z0-9_-]{22}$/;
@@ -56,9 +69,34 @@ export const shopRoutes =
     const notify = async (kind: string, address: string) => {
       await db.execute(sql`select pg_notify('mzk_events', ${`${kind}:${address}`})`);
     };
-    const keep = async (hashes: (string | null | undefined)[]) => {
+    /** This account's hold on exactly `hashes` for `purpose` (what it held before for it is released). */
+    const keep = async (holder: string, purpose: string, hashes: (string | null | undefined)[]) => {
       const h = hashes.filter((x): x is string => !!x);
-      if (h.length) await db.update(blobs).set({ expiresAt: null }).where(inArray(blobs.hash, h));
+      await db.transaction(async (tx) => {
+        await release(tx, holder, purpose);
+        await hold(tx, h, holder, purpose);
+      });
+    };
+    /**
+     * A discount's uses: orders that are paid, or still awaiting payment inside their hold. Unpaid orders that
+     * expired do not count (security review L2), so nobody can use up a seller's code with orders they never pay.
+     */
+    const usesOf = async (ids: string[]): Promise<Map<string, number>> => {
+      if (!ids.length) return new Map();
+      const rows = await db
+        .select({ id: orders.discountId, n: sql<number>`count(*)::int` })
+        .from(orders)
+        .where(
+          and(
+            inArray(orders.discountId, ids),
+            or(
+              inArray(orders.status, ["paid", "balance_due", "delivered"]),
+              and(eq(orders.status, "awaiting"), gt(orders.expiresAt, new Date())),
+            ),
+          ),
+        )
+        .groupBy(orders.discountId);
+      return new Map(rows.map((r) => [r.id ?? "", r.n]));
     };
     const blobsExist = async (hashes: string[]) => {
       if (hashes.length === 0) return true;
@@ -166,7 +204,7 @@ export const shopRoutes =
         !row ||
         !row.active ||
         (row.expiresAt && row.expiresAt < new Date()) ||
-        (row.maxUses !== null && row.uses >= row.maxUses)
+        (row.maxUses !== null && ((await usesOf([row.id])).get(row.id) ?? 0) >= row.maxUses)
       )
         return "bad";
       if (row.amountOff && row.token !== token) return "bad";
@@ -334,7 +372,7 @@ export const shopRoutes =
           "Some sealed parts did not arrive. Nothing was saved.",
           "nothing-stored",
         );
-      await keep(must);
+      await keep(me, `product:${b.data.id}`, must);
       const now = new Date();
       await db
         .insert(products)
@@ -438,7 +476,10 @@ export const shopRoutes =
           "HAS_ORDERS",
           "People bought this, so it cannot be deleted (they keep access). Unpublish it instead.",
         );
-      await db.delete(products).where(eq(products.id, id));
+      await db.transaction(async (tx) => {
+        await tx.delete(products).where(eq(products.id, id));
+        await release(tx, me, `product:${id}`);
+      });
       return { ok: true };
     });
 
@@ -569,7 +610,15 @@ export const shopRoutes =
       const me = await sessionAddress(db, req);
       if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
       return {
-        discounts: await db.select().from(discounts).where(eq(discounts.owner, me)).orderBy(desc(discounts.createdAt)),
+        discounts: await (async () => {
+          const rows = await db
+            .select()
+            .from(discounts)
+            .where(eq(discounts.owner, me))
+            .orderBy(desc(discounts.createdAt));
+          const used = await usesOf(rows.map((r) => r.id));
+          return rows.map((r) => ({ ...r, uses: used.get(r.id) ?? 0 }));
+        })(),
       };
     });
 
@@ -739,11 +788,6 @@ export const shopRoutes =
             holdBy,
             expiresAt,
           });
-          if (disc)
-            await tx
-              .update(discounts)
-              .set({ uses: sql`${discounts.uses} + 1` })
-              .where(eq(discounts.id, disc.id));
         });
       } catch (e) {
         // Postgres unique violation, possibly wrapped by the query builder (DrizzleQueryError.cause).
@@ -919,7 +963,21 @@ export const shopRoutes =
           "The sealed delivery did not arrive. Nothing was delivered.",
           "nothing-stored",
         );
-      await keep([b.data.envelope]);
+      // What the buyer bought stays as long as the order does, even if the seller later deletes the product
+      // or the page: the delivery and the content of every product in the order are held for the order.
+      const content = await db
+        .select({ hash: blobHolds.hash })
+        .from(blobHolds)
+        .where(
+          and(
+            eq(blobHolds.holder, o.seller),
+            inArray(
+              blobHolds.purpose,
+              lines.map((l) => `product:${l.productId}`),
+            ),
+          ),
+        );
+      await hold(db, [b.data.envelope, ...content.map((c) => c.hash)], o.seller, `order:${ref}`);
       await db
         .update(orders)
         .set({ status: "delivered", delivery: b.data.envelope, deliveredBy: me, deliveredAt: new Date() })

@@ -16,6 +16,7 @@ import { parseAddress } from "@qorechain/qoresign";
 import { membershipHash, roomContext, roomIdBytes32, PERMISSIONS, sha256Hex as hashBytes, utf8 } from "@mizuhiki/core";
 import { readRoom, roleOnChain, ROOM_ROLE } from "@mizuhiki/chain";
 import {
+  blobHolds,
   blobs,
   cards,
   roomBatches,
@@ -29,6 +30,7 @@ import {
 import type { Ctx } from "../server";
 import { sessionAddress } from "../lib/auth";
 import { fail, isAddress, isHash } from "../lib/http";
+import { hold, release, releaseAll } from "../lib/holds";
 
 const ROOM_ID = /^[a-z0-9]{12,32}$/;
 const INVITE_ID = /^[a-z0-9]{12,32}$/;
@@ -173,7 +175,9 @@ export const roomRoutes =
         );
 
       await db.transaction(async (tx) => {
-        await tx.update(blobs).set({ expiresAt: null }).where(eq(blobs.hash, b.data.distribution));
+        // A room keeps its own blobs (holder "room:<id>"), so members leaving or deleting their pages never
+        // remove what the room still shows.
+        await hold(tx, [b.data.distribution], `room:${id}`, "keys");
         await tx.insert(rooms).values({
           id,
           chainId: roomIdBytes32(id),
@@ -512,7 +516,7 @@ export const roomRoutes =
         const expiresAt = r.autoDeleteSeconds > 0 ? new Date(Date.now() + r.autoDeleteSeconds * 1000) : null;
         let seq: string | undefined;
         await db.transaction(async (tx) => {
-          await tx.update(blobs).set({ expiresAt }).where(eq(blobs.hash, b.data.hash));
+          await hold(tx, [b.data.hash], `room:${id}`, "batch", expiresAt);
           const [row] = await tx
             .insert(roomBatches)
             .values({
@@ -561,8 +565,13 @@ export const roomRoutes =
         .from(roomBatches)
         .where(eq(roomBatches.hash, hash));
       if ((still[0]?.n ?? 0) === 0) {
-        await ctx.blobs.delete(hash);
-        await db.delete(blobs).where(eq(blobs.hash, hash));
+        await release(db, `room:${id}`, "batch", [hash]);
+        // Gone at once unless another account holds the same bytes for itself.
+        const [other] = await db.select({ h: blobHolds.hash }).from(blobHolds).where(eq(blobHolds.hash, hash)).limit(1);
+        if (!other) {
+          await ctx.blobs.delete(hash);
+          await db.delete(blobs).where(eq(blobs.hash, hash));
+        }
       }
       await notify(
         "room",
@@ -694,10 +703,7 @@ export const roomRoutes =
 
       const now = new Date();
       await db.transaction(async (tx) => {
-        await tx
-          .update(blobs)
-          .set({ expiresAt: null })
-          .where(inArray(blobs.hash, [b.data.distribution, ...histories]));
+        await hold(tx, [b.data.distribution, ...histories], `room:${id}`, "keys");
         await tx.update(rooms).set({ epoch: b.data.epoch, updatedAt: now }).where(eq(rooms.id, id));
         await tx.insert(roomEpochs).values({
           roomId: id,
@@ -854,8 +860,10 @@ export const roomRoutes =
         .safeParse(req.body);
       if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request. Nothing changed.");
       const m = await memberRow(id, me);
-      if (!isAdmin(m) && !(m?.status === "active" && m.permissions.includes("info")))
-        return fail(reply, 403, "NOT_ADMIN", "You cannot change this room's settings.");
+      // Who may join and how long messages are kept are admin decisions (security review L4); the "info"
+      // permission covers the room's name, photo and description only.
+      if (!isAdmin(m))
+        return fail(reply, 403, "NOT_ADMIN", "Only admins can change who joins and how long messages are kept.");
       await db
         .update(rooms)
         .set({ ...b.data, updatedAt: new Date() })
@@ -916,16 +924,8 @@ export const roomRoutes =
         await tx.update(rooms).set({ closed: true, updatedAt: new Date() }).where(eq(rooms.id, id));
         await tx.delete(roomBatches).where(eq(roomBatches.roomId, id));
         await tx.update(roomInvites).set({ revoked: true }).where(eq(roomInvites.roomId, id));
-        if (batches.length)
-          await tx
-            .update(blobs)
-            .set({ expiresAt: new Date() })
-            .where(
-              inArray(
-                blobs.hash,
-                batches.map((x) => x.hash),
-              ),
-            );
+        // Closed for everyone: the room lets go of everything it kept.
+        await releaseAll(tx, `room:${id}`);
       });
       await notify(
         "room",
@@ -958,7 +958,7 @@ export const roomRoutes =
       if (!(await blobsExist([b.data.card])))
         return fail(reply, 409, "MISSING_PARTS", "The sealed invite card did not arrive.", "nothing-stored");
       await db.transaction(async (tx) => {
-        await tx.update(blobs).set({ expiresAt: null }).where(eq(blobs.hash, b.data.card));
+        await hold(tx, [b.data.card], `room:${id}`, "invites");
         if (b.data.primary)
           await tx
             .update(roomInvites)

@@ -27,6 +27,7 @@ import type { Ctx } from "../server";
 import { sessionAddress } from "../lib/auth";
 import { pqKeyOf } from "../lib/chainreads";
 import { fail } from "../lib/http";
+import { hold, release, setHoldExpiry } from "../lib/holds";
 
 const ID = /^[0-9a-f]{64}$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -132,7 +133,10 @@ export const capsuleRoutes =
           "The sealed copy did not arrive. Nothing was saved.",
           "nothing-stored",
         );
-      await db.update(blobs).set({ expiresAt: null }).where(eq(blobs.hash, b.data.draftEnvelope));
+      await db.transaction(async (tx) => {
+        await release(tx, me, `capsule-draft:${b.data.id}`);
+        await hold(tx, [b.data.draftEnvelope], me, `capsule-draft:${b.data.id}`);
+      });
       await db
         .insert(capsules)
         .values({ id: b.data.id, owner: me, label: b.data.label, draftEnvelope: b.data.draftEnvelope })
@@ -153,6 +157,7 @@ export const capsuleRoutes =
       const gs = await db.select().from(capsuleGuardians).where(eq(capsuleGuardians.capsuleId, id));
       await db.delete(capsuleGuardians).where(eq(capsuleGuardians.capsuleId, id));
       await db.delete(capsules).where(eq(capsules.id, id));
+      await release(db, me, `capsule-draft:${id}`);
       for (const g of gs) await notify(g.guardian);
       return { ok: true };
     });
@@ -331,7 +336,9 @@ export const capsuleRoutes =
           "nothing-stored",
         );
       await db.transaction(async (tx) => {
-        await tx.update(blobs).set({ expiresAt: null }).where(inArray(blobs.hash, hashes));
+        // The armed plan's content and pieces are kept by the owner (also through a later page delete).
+        await release(tx, me, `capsule:${id}`);
+        await hold(tx, hashes, me, `capsule:${id}`);
         await tx
           .update(capsules)
           .set({ plan: b.data.plan, state: "armed", armedTx: b.data.txHash, label: plan.label, updatedAt: new Date() })
@@ -351,6 +358,9 @@ export const capsuleRoutes =
       if (chain.status !== "cancelled")
         return fail(reply, 409, "NOT_CANCELLED", "QoreChain does not show this capsule as cancelled yet.");
       await db.update(capsules).set({ state: "cancelled", updatedAt: new Date() }).where(eq(capsules.id, id));
+      // Cancelled on chain: nothing will open, so the owner's copies are let go.
+      await release(db, me, `capsule:${id}`);
+      await release(db, me, `capsule-draft:${id}`);
       const plan = planOf(c);
       if (plan)
         for (const a of new Set([...plan.body.guardians, ...plan.body.recipients.map((r) => r.address)]))
@@ -513,25 +523,23 @@ export const capsuleRoutes =
         );
       const expiresAt = plan.body.deleteAfter ? new Date(windowEnd * 1000) : null;
       await db.transaction(async (tx) => {
-        await tx
-          .update(blobs)
-          .set({ expiresAt })
-          .where(
-            inArray(
-              blobs.hash,
-              b.data.items.map((i) => i.envelope),
-            ),
-          );
+        // The guardian keeps the pieces they handed over for the access window (or for good).
+        await hold(
+          tx,
+          b.data.items.map((i) => i.envelope),
+          me,
+          `capsule:${id}:release`,
+          expiresAt,
+        );
+        // "Delete after the window", chosen in the owner's signed plan, ends the owner's hold on the content.
         if (expiresAt)
-          await tx
-            .update(blobs)
-            .set({ expiresAt })
-            .where(
-              inArray(
-                blobs.hash,
-                plan.body.recipients.map((r) => r.content),
-              ),
-            );
+          await setHoldExpiry(
+            tx,
+            plan.signer,
+            `capsule:${id}`,
+            expiresAt,
+            plan.body.recipients.map((r) => r.content),
+          );
         for (const i of b.data.items)
           await tx
             .insert(capsuleReleases)

@@ -16,7 +16,7 @@ import {
   toBase64Url,
   utf8,
 } from "@mizuhiki/core";
-import { anchorDocument, anchorTx, readAnchor, type AnchorKind, type AnchorRecord } from "@mizuhiki/chain";
+import { anchorDocument, anchorTx, readAnchors, type AnchorKind, type AnchorRecord } from "@mizuhiki/chain";
 import type { Account } from "@/account/AccountProvider";
 import { api } from "@/lib/api";
 
@@ -76,10 +76,9 @@ export async function prove(args: {
   file: { name: string; size: number; type: string };
   note: string;
   onStep: (s: ProveStep) => void;
-}): Promise<{ record: AnchorRecord; txHash: string | null; fresh: boolean; mine: boolean }> {
+}): Promise<{ record: AnchorRecord; txHash: string | null; fresh: boolean; othersEarlier: number }> {
   const r = await anchorDocument(args.account.owner, args.hash, args.kind, (s) => args.onStep(s));
-  const mine = r.record.byAddress === args.account.owner.address;
-  if (mine) {
+  if (r.fresh) {
     args.onStep("label");
     await fileLabel(args.account, {
       v: 1,
@@ -91,7 +90,12 @@ export async function prove(args: {
       kind: args.kind,
     });
   }
-  return { ...r, mine };
+  // Other accounts may hold the same fingerprint (each keeps its own record); say so if one came first.
+  const all = await readAnchors(args.hash);
+  const othersEarlier = all.filter(
+    (a) => a.by.toLowerCase() !== r.record.by.toLowerCase() && a.blockNumber < r.record.blockNumber,
+  ).length;
+  return { ...r, othersEarlier };
 }
 
 /** The owner's private labels, opened here. Labels that fail to open are skipped. */
@@ -116,4 +120,4 @@ export async function readLabels(account: Account, token: string): Promise<Recor
   return out;
 }
 
-export { anchorTx, readAnchor };
+export { anchorTx, readAnchors };

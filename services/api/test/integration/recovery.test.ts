@@ -26,6 +26,7 @@ import {
   toBase64Url,
   toHex,
   utf8,
+  solvePow,
 } from "@mizuhiki/core";
 import { ensurePersona, type ReadyPersona } from "@mizuhiki/testnet";
 import type { FastifyInstance } from "fastify";
@@ -110,6 +111,18 @@ function newDevice() {
     secret,
     recipient: { mlkem: toHex(keys.mlkemPublicKey), x25519: toHex(keys.x25519PublicKey) },
     secretHash: sha256Hex(utf8(secret)),
+  };
+}
+
+/** The body a new device posts: who, its one-time key, its secret's hash, and the anti-spam stamp. */
+async function requestBody(who: string, d: ReturnType<typeof newDevice>) {
+  const bits = (await app.inject({ url: "/drop/config" })).json<{ powBits: number }>().powBits;
+  const name = who.trim().replace(/^@/, "").toLowerCase();
+  return {
+    who,
+    recipient: d.recipient,
+    secretHash: d.secretHash,
+    pow: solvePow(`recovery:${name}`, d.secretHash, bits),
   };
 }
 
@@ -336,7 +349,7 @@ describe("recovery", () => {
         await app.inject({
           method: "POST",
           url: "/recovery/requests",
-          payload: { who: stranger.address, recipient: d.recipient, secretHash: d.secretHash },
+          payload: await requestBody(stranger.address, d),
         }),
       ),
     ).toBe("NO_RECOVERY");
@@ -344,7 +357,7 @@ describe("recovery", () => {
       await app.inject({
         method: "POST",
         url: "/recovery/requests",
-        payload: { who: owner.address, recipient: d.recipient, secretHash: d.secretHash },
+        payload: await requestBody(owner.address, d),
       })
     ).json<{ id: string }>();
     cancelled = r.id;
@@ -373,13 +386,71 @@ describe("recovery", () => {
     expect(view).toMatchObject({ status: "cancelled", pieces: [] });
   });
 
+  it("strangers' requests never block the owner's, need a stamp, and contacts can turn them down (review H2)", async () => {
+    // No stamp: refused.
+    const d0 = newDevice();
+    const bare = await app.inject({
+      method: "POST",
+      url: "/recovery/requests",
+      payload: { who: owner.address, recipient: d0.recipient, secretHash: d0.secretHash },
+    });
+    expect(bare.statusCode).toBe(400);
+    // A stranger fills every open slot for the owner…
+    const theirs: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const d = newDevice();
+      const r = await app.inject({
+        method: "POST",
+        url: "/recovery/requests",
+        payload: await requestBody(owner.address, d),
+      });
+      expect(r.statusCode).toBe(201);
+      theirs.push(r.json<{ id: string }>().id);
+    }
+    // …and the owner's own request still gets in: the oldest unanswered one makes room.
+    const mine = newDevice();
+    const real = await app.inject({
+      method: "POST",
+      url: "/recovery/requests",
+      payload: await requestBody(owner.address, mine),
+    });
+    expect(real.statusCode).toBe(201);
+    const state = async (id: string, d?: ReturnType<typeof newDevice>) =>
+      d
+        ? (await app.inject({ url: `/recovery/requests/${id}`, headers: { "x-recovery-secret": d.secret } })).json<{
+            status: string;
+          }>().status
+        : (await app.inject({ url: "/owner/recovery", headers: await auth(owner) }))
+            .json<{ requests: { id: string; status: string }[] }>()
+            .requests.find((x) => x.id === id)?.status;
+    expect(await state(theirs[0] ?? "")).toBe("cancelled");
+    expect(await state(real.json<{ id: string }>().id, mine)).toBe("open");
+    // Contacts turn a stranger's request down; once too few are left for the threshold it is cancelled.
+    const target = theirs[1] ?? "";
+    const dismiss = async (c: ReadyPersona) =>
+      app.inject({ method: "POST", url: `/recovery/requests/${target}/dismiss`, headers: await auth(c) });
+    expect(
+      (await app.inject({ method: "POST", url: `/recovery/requests/${target}/dismiss`, headers: await auth(stranger) }))
+        .statusCode,
+    ).toBe(403);
+    const first = (await dismiss(contacts[0] as ReadyPersona)).json<{ status: string }>();
+    expect(first.status).not.toBe("cancelled");
+    // The contact who turned it down cannot then answer it.
+    expect(code(await answer(contacts[0] as ReadyPersona, target, newDevice().recipient))).toBe("DISMISSED");
+    const second = (await dismiss(contacts[1] as ReadyPersona)).json<{ status: string }>();
+    expect(second.status).toBe("cancelled");
+    // Clean up: the owner cancels what is left, so later tests start clear.
+    for (const id of [theirs[2] ?? "", real.json<{ id: string }>().id])
+      await app.inject({ method: "POST", url: `/owner/recovery/requests/${id}/cancel`, headers: await auth(owner) });
+  });
+
   it("a real recovery: two contacts answer, pieces held for the wait, then released only with the secret; the phrase is rebuilt", async () => {
     const d = newDevice();
     const r = (
       await app.inject({
         method: "POST",
         url: "/recovery/requests",
-        payload: { who: owner.address, recipient: d.recipient, secretHash: d.secretHash },
+        payload: await requestBody(owner.address, d),
       })
     ).json<{ id: string; threshold: number }>();
     expect(r.threshold).toBe(2);
@@ -512,7 +583,7 @@ describe("recovery", () => {
       await app.inject({
         method: "POST",
         url: "/recovery/requests",
-        payload: { who: owner.address, recipient: d.recipient, secretHash: d.secretHash },
+        payload: await requestBody(owner.address, d),
       })
     ).json<{ id: string }>();
     const set = await splitPhrase(p(owner).phrase, 2, 2);
