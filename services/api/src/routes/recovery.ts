@@ -39,7 +39,7 @@ import {
 } from "@mizuhiki/db";
 import type { Ctx } from "../server";
 import { sessionAddress } from "../lib/auth";
-import { pqKeyOf } from "../lib/chainreads";
+import { pqKeyOf, ownerOfName } from "../lib/chainreads";
 import { fail } from "../lib/http";
 
 const ADDR = /^qor1[02-9ac-hj-np-z]{38}$/;
@@ -654,8 +654,7 @@ export const recoveryRoutes =
       const who = b.data.who.trim().replace(/^@/, "").toLowerCase();
       let owner = ADDR.test(who) ? who : null;
       if (!owner) {
-        const [n] = await db.select({ a: names.address }).from(names).where(eq(names.name, who));
-        owner = n?.a ?? null;
+        owner = (await ownerOfName(db, who)) ?? null;
       }
       // Same answer whether or not the account exists or has contacts, so the endpoint is no directory.
       const s = owner ? await settingsOf(owner) : null;
@@ -747,8 +746,7 @@ export const recoveryRoutes =
         if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
         const who = b.data.who.trim().replace(/^@/, "").toLowerCase();
         let owner = ADDR.test(who) ? who : null;
-        if (!owner)
-          owner = (await db.select({ a: names.address }).from(names).where(eq(names.name, who)))[0]?.a ?? null;
+        if (!owner) owner = (await ownerOfName(db, who)) ?? null;
         const s = owner ? await settingsOf(owner) : null;
         const key = s?.offlineKey as { mlkem: string; x25519: string } | null | undefined;
         if (!owner || !key) return fail(reply, 404, "NO_OFFLINE_KEY", "That account has no offline reader turned on.");

@@ -13,7 +13,7 @@ import { blobs, counters, envelopes, forms, names } from "@mizuhiki/db";
 import type { Ctx } from "../server";
 import type { Db } from "@mizuhiki/db";
 import { sessionAddress } from "../lib/auth";
-import { pqKeyOf } from "../lib/chainreads";
+import { pqKeyOf, ownerOfName } from "../lib/chainreads";
 import { fail } from "../lib/http";
 
 const ID = /^[A-Za-z0-9_-]{1,40}$/;
@@ -311,11 +311,9 @@ export const formRoutes =
 
     app.get("/forms/:name/:slug", async (req, reply) => {
       const { name, slug } = req.params as { name: string; slug: string };
-      const [n] = await db
-        .select({ address: names.address })
-        .from(names)
-        .where(eq(names.name, normalizeNameInput(name)));
-      if (!n) return fail(reply, 404, "NOT_FOUND", "This form isn't available.");
+      const address = await ownerOfName(db, name);
+      if (!address) return fail(reply, 404, "NOT_FOUND", "This form isn't available.");
+      const n = { address };
       const [f] = await db
         .select()
         .from(forms)

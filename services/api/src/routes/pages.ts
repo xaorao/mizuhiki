@@ -1,5 +1,5 @@
 import type { FastifyPluginCallback } from "fastify";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { verifyRecipientCard, type RecipientCard } from "@qorechain/qoreseal";
 import { NETWORK } from "@mizuhiki/chain";
@@ -215,7 +215,8 @@ export const pageRoutes =
           n: sql<number>`count(*)::int`,
         })
         .from(payments)
-        .where(eq(payments.toAddr, address))
+        // Only payments made through the page (with a Mizuhiki reference), as Insights counts them.
+        .where(and(eq(payments.toAddr, address), isNotNull(payments.kind)))
         .groupBy(payments.denom);
       return {
         views: { week: views?.week ?? 0, previousWeek: views?.prev ?? 0 },

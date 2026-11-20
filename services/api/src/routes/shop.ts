@@ -32,7 +32,7 @@ import { storePayments } from "@mizuhiki/indexer";
 import { blobs, cards, discounts, media, names, orderSlots, orders, payments, products, reviews } from "@mizuhiki/db";
 import type { Ctx } from "../server";
 import { sessionAddress } from "../lib/auth";
-import { pqKeyOf } from "../lib/chainreads";
+import { pqKeyOf, ownerOfName } from "../lib/chainreads";
 import { fail, isAddress, isHash } from "../lib/http";
 
 const ID = /^[A-Za-z0-9_-]{6,40}$/;
@@ -513,11 +513,9 @@ export const shopRoutes =
 
     app.get("/products/:name/:slug", async (req, reply) => {
       const { name, slug } = req.params as { name: string; slug: string };
-      const [owner] = await db
-        .select({ address: names.address })
-        .from(names)
-        .where(eq(names.name, normalizeNameInput(name)));
-      if (!owner) return fail(reply, 404, "NOT_FOUND", "This product is not available.");
+      const address = await ownerOfName(db, name);
+      if (!address) return fail(reply, 404, "NOT_FOUND", "This product is not available.");
+      const owner = { address };
       const [p] = await db
         .select()
         .from(products)
@@ -530,11 +528,9 @@ export const shopRoutes =
     /** Published products of a page (for a Shop section, product buttons, bundles). */
     app.get("/shop/:name", async (req, reply) => {
       const { name } = req.params as { name: string };
-      const [owner] = await db
-        .select({ address: names.address })
-        .from(names)
-        .where(eq(names.name, normalizeNameInput(name)));
-      if (!owner) return fail(reply, 404, "NOT_FOUND", "This page does not exist.");
+      const address = await ownerOfName(db, name);
+      if (!address) return fail(reply, 404, "NOT_FOUND", "This page does not exist.");
+      const owner = { address };
       const rows = await db
         .select()
         .from(products)

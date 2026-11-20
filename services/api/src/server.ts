@@ -26,6 +26,7 @@ import { shopRoutes } from "./routes/shop";
 import { passRoutes } from "./routes/passes";
 import { recoveryRoutes } from "./routes/recovery";
 import { capsuleRoutes } from "./routes/capsules";
+import { insightRoutes } from "./routes/insights";
 
 export interface Ctx {
   cfg: Config;
@@ -120,6 +121,7 @@ export async function buildServer(
   await app.register(passRoutes(ctx));
   await app.register(recoveryRoutes(ctx));
   await app.register(capsuleRoutes(ctx));
+  await app.register(insightRoutes(ctx));
   return {
     app,
     ctx,

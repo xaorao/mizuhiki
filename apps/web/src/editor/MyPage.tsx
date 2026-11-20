@@ -513,7 +513,13 @@ function ChecklistAction({ id, onAddBlock, onShare }: { id: string; onAddBlock: 
 }
 
 /** Paid to you: test dollars first (plain money words), then any other token in its own unit. */
-function PaidTile({ paid }: { paid: { denom: string; total: string; count: number }[] }) {
+export function PaidTile({
+  paid,
+  label = "Paid to you",
+}: {
+  paid: { denom: string; total: string; count: number }[];
+  label?: string;
+}) {
   const count = paid.reduce((n, p) => n + p.count, 0);
   const lead = paid.find((p) => p.denom === DENOMS.fUSD.denom) ?? paid[0];
   const leadDenom = lead ? denomByBase(lead.denom) : DENOMS.fUSD;
@@ -532,7 +538,7 @@ function PaidTile({ paid }: { paid: { denom: string; total: string; count: numbe
       : n.toLocaleString("en-US", { maximumFractionDigits: 6 }) + " " + symbol;
   return (
     <StatTile
-      label="Paid to you"
+      label={label}
       value={value}
       format={money}
       detail={

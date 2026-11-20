@@ -182,12 +182,14 @@ test("passes: invite, accept, safety words, confirm, a visitor's message sealed 
   await o.screenshot({ path: info.outputPath("02-invited.png"), fullPage: true });
 
   // ---- a stranger cannot see it
-  const { page: x } = await party(browser, problems, "stranger");
+  const { ctx: xctx, page: x } = await party(browser, problems, "stranger");
   await restoreInBrowser(x, stranger.phrase);
   await x.goto(`/app/passes/${passId}`);
   await x.getByLabel("Device passphrase").fill("lantern river maple tea");
   await x.getByRole("button", { name: "Unlock" }).click();
   await expect(x.getByText("This pass does not exist or is not for you.")).toBeVisible({ timeout: 30_000 });
+  // The refusal is a deliberate 404; close the stranger's browser so nothing repeats it later.
+  await xctx.close();
   problems.splice(0, problems.length, ...problems.filter((p) => !(p.startsWith("[stranger]") && p.includes("404"))));
 
   // ---- accountant: accepts, sees safety words

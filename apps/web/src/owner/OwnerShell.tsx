@@ -68,6 +68,7 @@ function Frame({ children }: { children: ReactNode }) {
       items: [
         { href: "/app", label: "Blocks", icon: "home" },
         { href: "/app/design", label: "Design", icon: "palette" },
+        { href: "/app/insights", label: "Insights", icon: "chart" },
       ],
     },
     {

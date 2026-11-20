@@ -1,0 +1,172 @@
+/* Insights (spec 5.16). Single-series charts in the brand cord (validated against white: lightness, chroma and
+   contrast pass), recessive hairline grid, 4px rounded column ends, text in text tokens only. */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.chartHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.tableToggle {
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  font: inherit;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--ink-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.tableToggle:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.chart {
+  position: relative;
+}
+.chart svg {
+  display: block;
+  overflow: visible;
+}
+.grid {
+  stroke: var(--line-strong, #e9dfe8);
+  stroke-width: 1;
+  opacity: 0.35;
+}
+.axis {
+  stroke: var(--ink-subtle);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.tick {
+  font-size: 11px;
+  fill: var(--ink-muted);
+  font-family: var(--font-sans);
+}
+.bar {
+  fill: var(--cord);
+  transition: opacity var(--t-press) var(--ease-out);
+}
+.barOn {
+  fill: var(--cord-deep, var(--cord));
+}
+.chart rect:focus-visible {
+  outline: none;
+  stroke: var(--focus);
+  stroke-width: 2;
+}
+.tip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-sm);
+  background: var(--white);
+  box-shadow: var(--drop-sm, var(--drop));
+  font-size: 13px;
+  color: var(--ink);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 2;
+}
+.tableWrap {
+  overflow-x: auto;
+  max-height: 320px;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.table th,
+.table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--ink-subtle);
+}
+.table td {
+  font-variant-numeric: tabular-nums;
+}
+.ranks,
+.forms {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.ranks li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px 48px;
+  gap: 10px;
+  align-items: center;
+}
+.rankName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+.rankBar {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--paper);
+  border: 1px solid var(--ink-subtle);
+  overflow: hidden;
+}
+.rankBar i {
+  display: block;
+  height: 100%;
+  background: var(--cord);
+  border-radius: 999px;
+}
+.rankNum {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.forms li {
+  display: grid;
+  gap: 6px;
+}
+.formHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.formHead a {
+  font-weight: 700;
+  color: var(--ink);
+}
+.forms small {
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 860px) {
+  .tiles,
+  .cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    transition: none;
+  }
+}
