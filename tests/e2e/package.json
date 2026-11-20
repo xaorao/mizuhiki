@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "test": "playwright test",
-    "shots": "tsx tools/shots.ts"
+    "shots": "tsx tools/shots.ts",
+    "demo:seed": "tsx tools/demo-seed.ts",
+    "demo:content": "playwright test -c demo.config.ts landing-content",
+    "demo:shots": "playwright test -c demo.config.ts landing-shots"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
