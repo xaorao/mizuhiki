@@ -31,6 +31,7 @@ import type { Ctx } from "../server";
 import { sessionAddress } from "../lib/auth";
 import { fail, isAddress, isHash } from "../lib/http";
 import { hold, release, releaseAll } from "../lib/holds";
+import { MAX_CHUNKS } from "./drop";
 
 const ROOM_ID = /^[a-z0-9]{12,32}$/;
 const INVITE_ID = /^[a-z0-9]{12,32}$/;
@@ -452,7 +453,14 @@ export const roomRoutes =
         const me = await sessionAddress(db, req);
         if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing was sent.", "nothing-stored");
         const { id } = req.params as { id: string };
-        const b = z.object({ hash: z.string().regex(HASH), deleteHash: z.string().regex(HASH) }).safeParse(req.body);
+        const b = z
+          .object({
+            hash: z.string().regex(HASH),
+            deleteHash: z.string().regex(HASH),
+            // The sealed pieces of a file or photo in this message: kept as long as the message is.
+            chunks: z.array(z.string().regex(HASH)).max(MAX_CHUNKS).default([]),
+          })
+          .safeParse(req.body);
         if (!b.success)
           return fail(
             reply,
@@ -513,10 +521,31 @@ export const roomRoutes =
             },
             epoch: r.epoch,
           });
+        const pieces = [...new Set(b.data.chunks)];
+        if (pieces.length && !isAdmin(m) && !m.permissions.includes("files"))
+          return fail(
+            reply,
+            403,
+            "NO_PERMISSION",
+            "An admin turned off files for you in this room. Nothing was sent.",
+            "nothing-stored",
+          );
+        if (pieces.length) {
+          const found = await db.select({ hash: blobs.hash }).from(blobs).where(inArray(blobs.hash, pieces));
+          if (found.length !== pieces.length)
+            return fail(
+              reply,
+              400,
+              "MISSING_PIECES",
+              "Some pieces of the file did not finish uploading. Nothing was sent; try again.",
+              "nothing-stored",
+            );
+        }
         const expiresAt = r.autoDeleteSeconds > 0 ? new Date(Date.now() + r.autoDeleteSeconds * 1000) : null;
         let seq: string | undefined;
         await db.transaction(async (tx) => {
           await hold(tx, [b.data.hash], `room:${id}`, "batch", expiresAt);
+          if (pieces.length) await hold(tx, pieces, `room:${id}`, `batch:${b.data.hash}`, expiresAt);
           const [row] = await tx
             .insert(roomBatches)
             .values({
@@ -565,12 +594,21 @@ export const roomRoutes =
         .from(roomBatches)
         .where(eq(roomBatches.hash, hash));
       if ((still[0]?.n ?? 0) === 0) {
+        const pieces = (
+          await db
+            .select({ h: blobHolds.hash })
+            .from(blobHolds)
+            .where(and(eq(blobHolds.holder, `room:${id}`), eq(blobHolds.purpose, `batch:${hash}`)))
+        ).map((x) => x.h);
         await release(db, `room:${id}`, "batch", [hash]);
+        await release(db, `room:${id}`, `batch:${hash}`);
         // Gone at once unless another account holds the same bytes for itself.
-        const [other] = await db.select({ h: blobHolds.hash }).from(blobHolds).where(eq(blobHolds.hash, hash)).limit(1);
-        if (!other) {
-          await ctx.blobs.delete(hash);
-          await db.delete(blobs).where(eq(blobs.hash, hash));
+        for (const h of [hash, ...pieces]) {
+          const [other] = await db.select({ h: blobHolds.hash }).from(blobHolds).where(eq(blobHolds.hash, h)).limit(1);
+          if (!other) {
+            await ctx.blobs.delete(h);
+            await db.delete(blobs).where(eq(blobs.hash, h));
+          }
         }
       }
       await notify(

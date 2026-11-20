@@ -45,6 +45,8 @@ export const isChainError = (e: unknown, code?: ChainErrorCode): e is ChainError
  */
 export function isUnreachable(e: unknown): boolean {
   if (isChainError(e, "NETWORK")) return true;
+  // A read that ran out of time (`AbortSignal.timeout`).
+  if (e instanceof Error && e.name === "TimeoutError") return true;
   if (e instanceof BaseError) return !!e.walk((x) => x instanceof HttpRequestError || x instanceof TimeoutError);
   // fetch() itself: Chromium "Failed to fetch", Firefox "NetworkError when attempting…", Safari "Load failed".
   return e instanceof TypeError && /failed to fetch|networkerror|load failed|network/i.test(e.message);

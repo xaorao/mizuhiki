@@ -233,6 +233,34 @@ const chainPlan = (p: CapsulePlan) => ({
 });
 
 describe("capsules", () => {
+  it("a draft keeps the sealed pieces of its attached files; a missing piece is refused", async () => {
+    const id = newId();
+    const draft = sealItem({
+      purpose: Purpose.capsule(id),
+      readers: [recipientOf(owner.seal)],
+      plaintext: utf8("{}"),
+      context: "draft",
+      anonymous: true,
+    });
+    const env = await put(draft.envelope);
+    const pieces = [await put(randomBytes(4096)), await put(randomBytes(4096))];
+    const headers = await auth(owner);
+    const save = (files: string[]) =>
+      app.inject({
+        method: "PUT",
+        url: "/owner/capsules",
+        headers,
+        payload: { id, label: "With files", draftEnvelope: env, files },
+      });
+    expect((await save([...pieces, "f".repeat(64)])).statusCode).toBe(409);
+    expect((await save(pieces)).statusCode).toBe(200);
+    const pg = (await import("postgres")).default(DB);
+    const held = await pg<{ hash: string }[]>`
+      select hash from blob_holds where holder = ${owner.address} and purpose = ${`capsule-draft:${id}`}`;
+    await pg.end();
+    expect(held.map((h) => h.hash).sort()).toEqual([env, ...pieces].sort());
+  });
+
   it("capsule A: request, reject, request, cancel; the API keeps only plans that match the chain", async () => {
     const id = newId();
     await guarded(id);

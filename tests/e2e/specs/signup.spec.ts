@@ -48,6 +48,8 @@ test("sign up: name, goal, look, blocks, profile, key, setup on chain, live page
   await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(page.getByRole("heading", { name: "Create your key" })).toBeVisible();
+  // The words are made just after the step appears.
+  await expect(page.locator("ol[aria-label='Your 24 recovery words'] b")).toHaveCount(24);
   const words = await page.locator("ol[aria-label='Your 24 recovery words'] b").allInnerTexts();
   expect(words).toHaveLength(24);
   const phrase = words.join(" ");

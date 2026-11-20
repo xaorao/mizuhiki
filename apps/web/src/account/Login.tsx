@@ -4,7 +4,7 @@
  * the key: unlock with the passphrase or a passkey. On a new device: type the 24
  * words, set a passphrase for this device. A second tab shows "Open elsewhere".
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Icon, Kicker, LockLine, Musubi, Oops, TextField, Wordmark } from "@mizuhiki/ui";
 import { isPhraseWord, isValidPhrase, normalizePhrase, passphraseProblem } from "@mizuhiki/core";
@@ -15,8 +15,23 @@ export function Login({ next }: { next: string }) {
   const acct = useAccount();
   const router = useRouter();
   const [mode, setMode] = useState<"unlock" | "restore">("unlock");
+  // Leave for `next` once. Next 16's router appends the hash a second time when the target route was prefetched
+  // ("#list" became "#list#list"), so it navigates to the path and query, and the hash is put back once it lands.
+  const left = useRef(false);
   useEffect(() => {
-    if (acct.status === "unlocked") router.replace(next);
+    if (acct.status !== "unlocked" || left.current) return;
+    left.current = true;
+    const at = next.indexOf("#");
+    if (at < 0) return router.replace(next);
+    const base = next.slice(0, at);
+    router.replace(base);
+    let tries = 0;
+    const settle = () => {
+      if (window.location.pathname + window.location.search === base)
+        window.history.replaceState(window.history.state, "", next);
+      else if (++tries < 600) requestAnimationFrame(settle);
+    };
+    requestAnimationFrame(settle);
   }, [acct.status, next, router]);
   useEffect(() => {
     if (acct.status === "none") setMode("restore");

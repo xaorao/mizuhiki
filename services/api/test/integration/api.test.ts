@@ -631,7 +631,7 @@ describe("forms", () => {
     // The indexer fills names from the registry; it is not running in this suite.
     const postgres = (await import("postgres")).default;
     const sql = postgres(DB);
-    await sql`insert into names (name, name_hash, address, evm, "primary", claimed_tx, claimed_block) values (${owner.name ?? ""}, 'x', ${owner.address}, ${owner.evm}, true, 'x', 1) on conflict do nothing`;
+    await sql`insert into names (name, name_hash, address, evm, "primary", claimed_tx, claimed_block) values (${owner.name ?? ""}, ${`test:${owner.name ?? ""}`}, ${owner.address}, ${owner.evm}, true, 'x', 1) on conflict do nothing`;
     await sql.end();
     token = await signIn(owner);
   });

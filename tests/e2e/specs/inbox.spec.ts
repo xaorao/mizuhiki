@@ -249,10 +249,24 @@ test("inbox: signed message with a picture, verified sender, preview, save, seal
   await expect(o.getByText("Live", { exact: true })).toBeVisible();
   const liveText = `Live drop ${Date.now()}`;
   const liveHash = await dropRaw(owner.address, [recipientOf(owner.seal)], liveText);
-  const liveRow = list.getByRole("button", { name: /Anonymous.*Sealed · tap to open/ }).first();
-  await expect(liveRow).toBeVisible({ timeout: 15_000 });
-  await liveRow.click();
-  await expect(detail.getByText(liveText)).toBeVisible({ timeout: 30_000 });
+  const sealedRows = list.getByRole("button", { name: /Anonymous.*Sealed · tap to open/ });
+  await expect(sealedRows.first()).toBeVisible({ timeout: 15_000 });
+  // Other suites drop anonymously into this inbox at the same time, so open sealed rows until this one shows.
+  await expect(async () => {
+    for (let i = 0; i < (await sealedRows.count()); i++) {
+      await sealedRows.nth(i).click();
+      const opened = await detail
+        .getByText(liveText)
+        .waitFor({ state: "visible", timeout: 8_000 })
+        .then(
+          () => true,
+          () => false,
+        );
+      if (opened) return;
+    }
+    throw new Error("the live drop is not among the sealed rows yet");
+  }).toPass({ timeout: 60_000 });
+  await expect(detail.getByText(liveText)).toBeVisible();
   await expect(detail.locator("b", { hasText: /^Anonymous$/ })).toBeVisible();
   await expect(detail.getByText(/Anonymous: there is no way to reply/)).toBeVisible();
   expect(liveHash).toMatch(/^[0-9a-f]{64}$/);

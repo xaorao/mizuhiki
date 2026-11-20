@@ -6,7 +6,7 @@ import { fetchKemKey } from "@qorechain/qoreseal/network";
 import { NETWORK, chainRest } from "./config";
 import { ChainError } from "./errors";
 import { sendTx, type SendOpts, type SendResult, type Signer } from "./native";
-import type { RestOpts } from "./rest";
+import { timedFetch, type RestOpts } from "./rest";
 
 export interface KeyState {
   pq: "missing" | "ours" | "other";
@@ -16,8 +16,8 @@ export interface KeyState {
 
 export async function keyState(signer: Signer, seal: SealKeyPair, o: RestOpts = {}): Promise<KeyState> {
   const rest = o.rest ?? chainRest();
-  const pq = await fetchPqKeyStatus({ rest, address: signer.address });
-  const kem = await fetchKemKey({ rest, address: signer.address });
+  const pq = await fetchPqKeyStatus({ rest, fetch: timedFetch, address: signer.address });
+  const kem = await fetchKemKey({ rest, fetch: timedFetch, address: signer.address });
   const pqState = !pq.registered
     ? "missing"
     : pq.publicKey && toHex(pq.publicKey) === toHex(signer.pq.publicKey)

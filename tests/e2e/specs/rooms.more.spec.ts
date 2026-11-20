@@ -10,7 +10,11 @@
 import { test, expect } from "./fixtures";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { readRoom, roleOnChain, ROOM_ROLE } from "@mizuhiki/chain";
+import { execFileSync } from "node:child_process";
 import { roomIdBytes32 } from "@mizuhiki/core";
+
+const PSQL = "/opt/homebrew/opt/postgresql@17/bin/psql";
+const DEV_DB = process.env.DATABASE_URL ?? "postgres://mizuhiki:mizuhiki-local-dev@127.0.0.1:5432/mizuhiki";
 import { parseAddress } from "@qorechain/qoresign";
 import { personaPhrase } from "@mizuhiki/testnet";
 import { ensureOwner, restoreInBrowser } from "./owner";
@@ -87,6 +91,23 @@ test("a family room: page button, automatic admission with history, inbox reques
   await expect(
     A.page.getByRole("article").filter({ has: A.page.getByRole("img", { name: "recipes.png" }) }),
   ).toBeVisible({ timeout: 90_000 });
+  // Source of truth: the room keeps every sealed piece of the photo and the file as long as their messages, so
+  // they are still there tomorrow (a piece nobody holds is swept a day after upload).
+  {
+    const out = execFileSync(PSQL, [
+      DEV_DB,
+      "-At",
+      "-c",
+      `select count(*) from blob_holds where holder = 'room:${roomId}' and purpose like 'batch:%' group by purpose`,
+    ])
+      .toString()
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map(Number);
+    expect(out.length, "file and photo messages each hold their pieces").toBeGreaterThanOrEqual(2);
+    expect(out.every((n) => n >= 1)).toBe(true);
+  }
 
   // ---- The room's invite goes on Ana's public page
   await A.page.getByRole("button", { name: "More" }).click();

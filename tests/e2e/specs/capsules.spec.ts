@@ -10,6 +10,7 @@
  * Source of truth: CapsuleVault read from QoreChain after every step; the
  * plan's hash on chain compared with the signed plan the API serves.
  */
+import { execFileSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
@@ -17,6 +18,9 @@ import { planHash, type CapsulePlan, type Signed } from "@mizuhiki/core";
 import { lastCheckInOf, readCapsule } from "@mizuhiki/chain";
 import { test, expect } from "./fixtures";
 import { API, apiToken, ensureOwner, restoreInBrowser } from "./owner";
+
+const PSQL = "/opt/homebrew/opt/postgresql@17/bin/psql";
+const DEV_DB = process.env.DATABASE_URL ?? "postgres://mizuhiki:mizuhiki-local-dev@127.0.0.1:5432/mizuhiki";
 
 const OWNER = "mzk-e2e-capown";
 const GUARD = "mzk-e2e-capgrd";
@@ -112,12 +116,27 @@ async function arm(o: Page, info: { outputPath: (n: string) => string }, shot?: 
 }
 
 /** The signed plan the API serves matches the hash CapsuleVault keeps. */
-async function planMatchesChain(token: string, id: string) {
+async function planMatchesChain(token: string, id: string, withFile = false) {
   const r = await fetch(`${API}/owner/capsules`, { headers: { authorization: `Bearer ${token}` } });
   const list = (await r.json()) as { capsules: { id: string; plan: Signed<CapsulePlan> | null }[] };
   const plan = list.capsules.find((c) => c.id === id)?.plan?.body;
   expect(plan).toBeTruthy();
   expect(planHash(plan as CapsulePlan).toLowerCase()).toBe((await chain(id)).planHash.toLowerCase());
+  // The armed capsule keeps the sealed pieces of its attached file too, not only the envelopes the plan names:
+  // a piece nobody holds would be swept a day after upload, long before the capsule opens.
+  const p = plan as CapsulePlan;
+  const held = Number(
+    execFileSync(PSQL, [
+      DEV_DB,
+      "-At",
+      "-c",
+      `select count(distinct hash) from blob_holds where purpose = 'capsule:${id}'`,
+    ])
+      .toString()
+      .trim(),
+  );
+  if (withFile) expect(held).toBeGreaterThan(p.recipients.length + p.pieces.length);
+  else expect(held).toBe(p.recipients.length + p.pieces.length);
 }
 
 test("capsules: arm with a confirmed guardian; request, reject, request, cancel; a second capsule approved, handed over and opened by the recipient; check in", async ({
@@ -185,7 +204,7 @@ test("capsules: arm with a confirmed guardian; request, reject, request, cancel;
   const labelB = `Letters ${Date.now().toString(36)}`;
   const b = await makeCapsule(o, g, labelB, "For family after a wait", true);
   await arm(o, info);
-  await planMatchesChain(ownerToken, b);
+  await planMatchesChain(ownerToken, b, true);
   // Before release the recipient sees it sealed, with no Open.
   await r.reload();
   await unlock(r);

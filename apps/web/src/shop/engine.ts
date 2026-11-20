@@ -62,6 +62,7 @@ import {
   sendTx,
   waitForTx,
   assertOwnsName,
+  isUnreachable,
 } from "@mizuhiki/chain";
 import type { Account } from "@/account/AccountProvider";
 import { api, ApiFailure } from "@/lib/api";
@@ -470,13 +471,37 @@ export async function loadProduct(name: string, slug: string): Promise<PublicPro
   return { ...p, def: await verifyProduct(p.record, name) };
 }
 
+// Chain reads behind product checks, kept for a minute: a shop of a hundred products is one owner and one key,
+// not two hundred round trips.
+const CHAIN_TTL = 60_000;
+const ownerReads = new Map<string, { at: number; v: Promise<void> }>();
+const keyReads = new Map<string, { at: number; v: Promise<Uint8Array> }>();
+function once<T>(m: Map<string, { at: number; v: Promise<T> }>, key: string, load: () => Promise<T>): Promise<T> {
+  const hit = m.get(key);
+  if (hit && Date.now() - hit.at < CHAIN_TTL) return hit.v;
+  const v = load().catch((e: unknown) => {
+    m.delete(key);
+    throw e;
+  });
+  m.set(key, { at: Date.now(), v });
+  return v;
+}
+const sellerKey = (signer: string) =>
+  once(keyReads, signer, async () => {
+    const pq = await pqKeyViaEvm(signer);
+    if (!pq.registered || !pq.publicKey || !pq.possessionProven)
+      throw new Error("The seller's key is not on QoreChain, so this product cannot be checked.");
+    return pq.publicKey;
+  });
+
 /** Verify a product record; with `name`, also that QoreChain says that name belongs to its signer. */
 export async function verifyProduct(record: Signed<ProductDef>, name?: string): Promise<ProductDef> {
-  if (name) await assertOwnsName(name, record.signer);
-  const pq = await pqKeyViaEvm(record.signer);
-  if (!pq.registered || !pq.publicKey || !pq.possessionProven)
-    throw new Error("The seller's key is not on QoreChain, so this product cannot be checked.");
-  const body = verifyRecord(record, { kind: "product", signer: record.signer, pqPublicKey: pq.publicKey });
+  if (name) await once(ownerReads, `${name} ${record.signer}`, () => assertOwnsName(name, record.signer));
+  const body = verifyRecord(record, {
+    kind: "product",
+    signer: record.signer,
+    pqPublicKey: await sellerKey(record.signer),
+  });
   const def = ProductDefSchema.parse(body);
   if (def.owner !== record.signer) throw new Error("This product is signed by someone other than its seller.");
   return def;
@@ -486,12 +511,14 @@ export async function loadShop(name: string): Promise<{ def: ProductDef; rating:
   const r = await api.get<{ products: { record: Signed<ProductDef>; rating: PublicProduct["rating"] }[] }>(
     `/shop/${encodeURIComponent(name)}`,
   );
+  // QoreChain is asked who holds the name, and for that account's key, once; each signature is then checked here.
   const out: { def: ProductDef; rating: PublicProduct["rating"] }[] = [];
   for (const p of r.products) {
     try {
       out.push({ def: await verifyProduct(p.record, name), rating: p.rating });
-    } catch {
-      // A product that does not verify is not shown.
+    } catch (e) {
+      // A product that does not verify is not shown; QoreChain not answering is an error for the whole shop.
+      if (isUnreachable(e)) throw e;
     }
   }
   return out;

@@ -28,6 +28,7 @@ import { sessionAddress } from "../lib/auth";
 import { pqKeyOf } from "../lib/chainreads";
 import { fail } from "../lib/http";
 import { hold, release, setHoldExpiry } from "../lib/holds";
+import { MAX_CHUNKS } from "./drop";
 
 const ID = /^[0-9a-f]{64}$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -116,6 +117,8 @@ export const capsuleRoutes =
           id: z.string().regex(ID),
           label: z.string().trim().min(1).max(80),
           draftEnvelope: z.string().regex(HASH),
+          // The sealed pieces of the files attached so far (their keys are inside the draft).
+          files: z.array(z.string().regex(HASH)).max(MAX_CHUNKS).default([]),
         })
         .safeParse(req.body);
       if (!b.success)
@@ -125,7 +128,7 @@ export const capsuleRoutes =
         return fail(reply, 409, "TAKEN", "That capsule id is taken. Nothing was saved.", "nothing-stored");
       if (existing?.state === "cancelled")
         return fail(reply, 409, "CANCELLED", "This capsule was cancelled. Make a new one.", "nothing-stored");
-      if (!(await blobsExist([b.data.draftEnvelope])))
+      if (!(await blobsExist([b.data.draftEnvelope, ...b.data.files])))
         return fail(
           reply,
           409,
@@ -135,7 +138,7 @@ export const capsuleRoutes =
         );
       await db.transaction(async (tx) => {
         await release(tx, me, `capsule-draft:${b.data.id}`);
-        await hold(tx, [b.data.draftEnvelope], me, `capsule-draft:${b.data.id}`);
+        await hold(tx, [b.data.draftEnvelope, ...b.data.files], me, `capsule-draft:${b.data.id}`);
       });
       await db
         .insert(capsules)
@@ -244,7 +247,14 @@ export const capsuleRoutes =
       const { id } = req.params as { id: string };
       const c = await own(id, me);
       if (!c) return fail(reply, 404, "NOT_FOUND", "No such capsule.", "nothing-stored");
-      const b = z.object({ plan: SignedShape, txHash: z.string().regex(/^0x[0-9a-f]{64}$/i) }).safeParse(req.body);
+      const b = z
+        .object({
+          plan: SignedShape,
+          txHash: z.string().regex(/^0x[0-9a-f]{64}$/i),
+          // The sealed pieces of every file in the recipients' content: kept with the capsule until it opens.
+          files: z.array(z.string().regex(HASH)).max(MAX_CHUNKS).default([]),
+        })
+        .safeParse(req.body);
       const parsed = b.success ? CapsulePlanSchema.safeParse(b.data.plan.body) : null;
       if (
         !b.success ||
@@ -295,7 +305,7 @@ export const capsuleRoutes =
           "Every guardian in the plan must have accepted and been confirmed by you. Nothing was armed.",
           "nothing-stored",
         );
-      const hashes = [...plan.recipients.map((r) => r.content), ...plan.pieces.map((p) => p.envelope)];
+      const hashes = [...plan.recipients.map((r) => r.content), ...plan.pieces.map((p) => p.envelope), ...b.data.files];
       if (!(await blobsExist(hashes)))
         return fail(
           reply,

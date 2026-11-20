@@ -142,9 +142,12 @@ test("invoices: create, send to @name, payer opens by link and pays, owner sees 
   await v.screenshot({ path: info.outputPath("payer.png"), fullPage: true });
   await v.getByRole("button", { name: /^Pay #\d{4}$/ }).click();
   const sheet = v.getByRole("dialog", { name: /Pay invoice #\d{4}/ });
+  // Chosen before unlocking: the sheet asks for the passphrase and carries on once the wallet is open.
+  await sheet.getByRole("radio", { name: /Pay with my Mizuhiki wallet/ }).click();
+  await expect(sheet.getByLabel("Device passphrase")).toBeFocused();
+  await expect(sheet.getByText("this continues once it unlocks", { exact: false })).toBeVisible();
   await sheet.getByLabel("Device passphrase").fill("lantern river maple tea");
   await sheet.getByRole("button", { name: "Unlock my wallet" }).click();
-  await sheet.getByRole("radio", { name: /Pay with my Mizuhiki wallet/ }).click();
   await v.getByRole("dialog", { name: "Review" }).getByRole("button", { name: "Pay 2.4 fUSD" }).click();
   const paid = v.getByRole("dialog", { name: "Paid Kinari" });
   await expect(paid.getByText("Paid Kinari 2.4 fUSD.")).toBeVisible({ timeout: 180_000 });

@@ -14,6 +14,7 @@ import { NETWORK, chainRest } from "./config";
 import { ChainError } from "./errors";
 import { hexToBytes } from "viem";
 import { publicClient } from "./evm";
+import { timedFetch } from "./rest";
 
 const KEY_STATUS = "0x0000000000000000000000000000000000000a02" as const;
 const keyStatusAbi = [
@@ -42,7 +43,10 @@ export async function pqKeyViaEvm(
 }
 
 export async function resolveOwner(address: string, card: RecipientCard): Promise<SealRecipient> {
-  const [pq, kem] = await Promise.all([pqKeyViaEvm(address), fetchKemKey({ rest: chainRest(), address })]);
+  const [pq, kem] = await Promise.all([
+    pqKeyViaEvm(address),
+    fetchKemKey({ rest: chainRest(), fetch: timedFetch, address }),
+  ]);
   if (!pq.registered || !pq.publicKey || !pq.possessionProven) {
     throw new ChainError("REFUSED", "This page's owner has not finished setting up their keys. Nothing was sent.");
   }

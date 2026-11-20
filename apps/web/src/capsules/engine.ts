@@ -117,7 +117,12 @@ export async function saveDraft(a: Tokened, d: CapsuleDraft): Promise<void> {
   await api.put("/blobs", s.envelope);
   await api.put(
     "/owner/capsules",
-    { id: d.id, label: d.label.trim() || "Untitled capsule", draftEnvelope: s.hash },
+    {
+      id: d.id,
+      label: d.label.trim() || "Untitled capsule",
+      draftEnvelope: s.hash,
+      files: d.files.flatMap((f) => f.chunks),
+    },
     T(a),
   );
 }
@@ -365,7 +370,11 @@ export async function arm(
     classical: a.keys.classical,
     pq: a.keys.pq,
   });
-  await api.put(`/owner/capsules/${d.id}/plan`, { plan: record, txHash }, T(a));
+  await api.put(
+    `/owner/capsules/${d.id}/plan`,
+    { plan: record, txHash, files: d.files.flatMap((f) => f.chunks) },
+    T(a),
+  );
   return txHash;
 }
 

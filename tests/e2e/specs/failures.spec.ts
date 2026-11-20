@@ -108,8 +108,12 @@ test("our API down while the owner is in the app: every screen says so, offers T
   await page.unroute(API_ALL);
   // Each retry re-renders the screen, so press the first visible one left until none are.
   const retry = page.getByRole("button", { name: "Try again" }).filter({ visible: true });
+  // A screen can recover on its own between the count and the click, so a vanished button is not a failure.
   for (let i = 0; i < 6 && (await retry.count()) > 0; i++) {
-    await retry.first().click();
+    await retry
+      .first()
+      .click({ timeout: 5_000 })
+      .catch(() => undefined);
     await page.waitForLoadState("networkidle");
   }
   await expect(page.getByText(`@${NAME}`).first()).toBeVisible({ timeout: 60_000 });

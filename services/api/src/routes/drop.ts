@@ -34,7 +34,7 @@ export const DROP_KINDS = [
 /** Kinds an owner files for themselves (private labels): kept until deleted, never "unread". */
 export const SELF_KINDS: readonly string[] = ["proof", "formtags", "formsnaps"];
 const MAX_ENVELOPE = 256 * 1024;
-const MAX_CHUNKS = 600; // 600 x 4 MiB = 2.4 GB across all files in one drop
+export const MAX_CHUNKS = 600; // 600 x 4 MiB = 2.4 GB across all files in one drop
 
 const SenderSig = z.object({
   kind: z.literal("sender"),

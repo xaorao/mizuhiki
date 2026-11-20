@@ -5,7 +5,7 @@
  * public line, three ways to pay (QoreX, the Mizuhiki wallet, manual), a review
  * with the full address and fee, staged sending, and a receipt.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import {
   Avatar,
   Button,
@@ -58,6 +58,8 @@ const TIPS = [0, 10, 15, 20] as const;
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "back"] as const;
 const AMOUNT_RE = /^\d{0,9}(\.\d{0,6})?$/;
 
+const PASS_FIELD = "pay-device-passphrase";
+
 export function PaySheet({
   open,
   onClose,
@@ -101,6 +103,9 @@ export function PaySheet({
   const [failure, setFailure] = useState<PayFailure | null>(null);
   const [pass, setPass] = useState("");
   const [unlockErr, setUnlockErr] = useState<string | null>(null);
+  const [unlocking, setUnlocking] = useState(false);
+  // "Pay with my Mizuhiki wallet" chosen before the wallet was unlocked: carried out as soon as it is.
+  const [wantMzk, setWantMzk] = useState(false);
   const [resending, setResending] = useState(false);
   const [hasQorex, setHasQorex] = useState(false);
   const waitTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -253,13 +258,31 @@ export function PaySheet({
 
   const unlockHere = async () => {
     setUnlockErr(null);
+    setUnlocking(true);
     try {
       await acct.unlock(pass);
       setPass("");
     } catch (e) {
+      setWantMzk(false);
       setUnlockErr(failureText(e, "That passphrase did not unlock this device."));
+    } finally {
+      setUnlocking(false);
     }
   };
+  const chooseMzk = () => {
+    if (self) return;
+    if (mzkReady) return void toReview("mizuhiki");
+    if (acct.status !== "locked") return;
+    setWantMzk(true);
+    if (!unlocking) document.getElementById(PASS_FIELD)?.focus();
+  };
+  const continueMzk = useEffectEvent(() => {
+    setWantMzk(false);
+    void toReview("mizuhiki");
+  });
+  useEffect(() => {
+    if (wantMzk && mzkReady && phase === "method") continueMzk();
+  }, [wantMzk, mzkReady, phase]);
 
   const sending = phase === "sending";
   const total = totals?.total ?? "0";
@@ -393,7 +416,7 @@ export function PaySheet({
             />
             <ChoiceCard
               selected={false}
-              onSelect={() => mzkReady && void toReview("mizuhiki")}
+              onSelect={chooseMzk}
               title="Pay with my Mizuhiki wallet"
               detail={
                 self
@@ -401,7 +424,11 @@ export function PaySheet({
                   : mzkReady
                     ? "Signed here with your keys. Your note can be read by you too."
                     : acct.status === "locked"
-                      ? "Unlock Mizuhiki on this device first."
+                      ? unlocking
+                        ? "Unlocking your wallet. This continues by itself."
+                        : wantMzk
+                          ? "Type your device passphrase below; this continues once it unlocks."
+                          : "Unlock Mizuhiki on this device first."
                       : "Needs a Mizuhiki account on this device."
               }
               icon={<Icon name="key" />}
@@ -425,6 +452,7 @@ export function PaySheet({
               }}
             >
               <TextField
+                id={PASS_FIELD}
                 label="Device passphrase"
                 type="password"
                 autoComplete="current-password"
@@ -432,8 +460,8 @@ export function PaySheet({
                 onChange={(e) => setPass(e.target.value)}
                 error={unlockErr ?? undefined}
               />
-              <Button type="submit" variant="line" icon="key" disabled={!pass}>
-                Unlock my wallet
+              <Button type="submit" variant="line" icon="key" disabled={!pass || unlocking} busy={unlocking}>
+                {unlocking ? "Unlocking…" : "Unlock my wallet"}
               </Button>
             </form>
           ) : null}

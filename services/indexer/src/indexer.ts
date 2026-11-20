@@ -6,11 +6,12 @@
  * transaction body, and links it. Both are checkpointed and idempotent.
  */
 import { decodeEventLog, type Log } from "viem";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, like, sql } from "drizzle-orm";
 import {
   CONTRACTS,
   anchorBookAbi,
   capsuleVaultAbi,
+  latestBlock,
   mizuhikiRegistryAbi,
   publicClient,
   searchTxs,
@@ -245,15 +246,77 @@ export async function storePayments(db: Db, owner: string, t: TxResponse): Promi
   return n;
 }
 
-/** One pass over every owner with a published page. */
+/** Native transfers read per page of the chain's tx search (its own maximum). */
+const PAY_PAGE = 50;
+/** At most this many pages per pass, so a long catch-up never holds the loop for minutes. */
+const PAY_PAGES_PER_PASS = 20;
+
+/**
+ * Payments to every owner with a published page, in one chain query per page of results: every native
+ * MsgSend since the shared checkpoint, kept when it pays one of our owners. The cost follows the chain's
+ * transfer volume, not the number of pages (one search per owner took a minute at 86 pages).
+ */
 export async function indexAllPayments(db: Db, defaultSince: bigint): Promise<number> {
-  const owners = await db.select({ address: pages.address }).from(pages);
+  const stream = "pay:all";
+  const saved = await getCheckpoint(db, stream);
+  // First run after per-owner scanning: start where the least advanced owner had reached, so nothing is skipped.
+  const legacy = saved
+    ? undefined
+    : (
+        await db.execute<{ m: string | null }>(
+          sql`select min(position::numeric)::text as m from index_checkpoints where stream like 'pay:qor%'`,
+        )
+      )[0]?.m;
+  const from = BigInt(saved ?? legacy ?? defaultSince.toString());
+  const owners = new Set((await db.select({ address: pages.address }).from(pages)).map((o) => o.address));
+  const paid = new Set<string>();
   let n = 0;
-  for (const o of owners) {
-    const found = await indexPaymentsFor(db, o.address, defaultSince);
-    // Tell that owner's open dashboards; the payload names no payer and no amount.
-    if (found > 0) await db.execute(sql`select pg_notify('mzk_events', ${`pay:${o.address}`})`);
+  // An owner new since the last pass may have been paid before their page existed (onboarding funds the
+  // account first): read that owner's history once; their own checkpoint marks it done.
+  const known = new Set(
+    (
+      await db
+        .select({ s: indexCheckpoints.stream })
+        .from(indexCheckpoints)
+        .where(like(indexCheckpoints.stream, "pay:qor%"))
+    ).map((r) => r.s.slice(4)),
+  );
+  for (const owner of owners) {
+    if (known.has(owner)) continue;
+    const found = await indexPaymentsFor(db, owner, defaultSince);
+    if (found > 0) paid.add(owner);
     n += found;
   }
+  // Everything up to this height is in the search below once every page has been read.
+  const horizon = (await latestBlock()).height;
+  let maxHeight = from;
+  let complete = false;
+  for (let page = 1; page <= PAY_PAGES_PER_PASS; page++) {
+    const { txs, total } = await searchTxs(
+      `message.action='/cosmos.bank.v1beta1.MsgSend' AND tx.height>=${from.toString()}`,
+      { page, limit: PAY_PAGE, orderBy: "ORDER_BY_ASC" },
+    );
+    for (const t of txs) {
+      const msgs = (t.tx?.body?.messages ?? []) as unknown as MsgSendJson[];
+      const to = new Set(msgs.map((m) => m.to_address).filter((a): a is string => !!a && owners.has(a)));
+      for (const owner of to) {
+        const found = await storePayments(db, owner, t);
+        if (found > 0) paid.add(owner);
+        n += found;
+      }
+      const h = BigInt(t.height);
+      if (h > maxHeight) maxHeight = h;
+    }
+    if (page * PAY_PAGE >= total || txs.length === 0) {
+      complete = true;
+      break;
+    }
+  }
+  // A finished scan moves on to the horizon, so quiet stretches are not searched again. The search includes
+  // `from` itself, so that height is read again next pass; storing is idempotent.
+  const next = complete && horizon > maxHeight ? horizon : maxHeight;
+  await setCheckpoint(db, stream, next.toString());
+  // Tell those owners' open dashboards; the payload names no payer and no amount.
+  for (const owner of paid) await db.execute(sql`select pg_notify('mzk_events', ${`pay:${owner}`})`);
   return n;
 }

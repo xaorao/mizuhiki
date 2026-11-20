@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BaseError, HttpRequestError, TimeoutError } from "viem";
-import { ChainError, isUnreachable } from "@mizuhiki/chain";
+import { ChainError, READ_TIMEOUT_MS, isUnreachable, timedFetch } from "@mizuhiki/chain";
 import { MizuhikiError } from "@mizuhiki/core";
 import { ApiFailure } from "../../src/lib/api";
 import { OFFLINE_TEXT, failureText } from "../../src/lib/failure";
@@ -44,5 +44,28 @@ describe("failureText: words a person can act on", () => {
     ).toBe("The room was not made.");
     expect(failureText(new RangeError("Invalid array length"), "Not saved.")).toBe("Not saved.");
     expect(failureText("a string", "Not saved.")).toBe("Not saved.");
+  });
+});
+
+describe("chain reads have a time limit", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it("a read that runs out of time counts as unreachable, not as a wrong answer", () => {
+    expect(isUnreachable(new DOMException("The operation timed out.", "TimeoutError"))).toBe(true);
+    expect(failureText(new DOMException("The operation timed out.", "TimeoutError"), "x")).toBe(OFFLINE_TEXT);
+  });
+  it("timedFetch always sends a limit, and still honours the caller's own cancel", async () => {
+    let seen: AbortSignal | undefined;
+    vi.stubGlobal("fetch", (_u: unknown, i?: RequestInit) => {
+      seen = i?.signal ?? undefined;
+      return Promise.resolve(new Response("{}"));
+    });
+    await timedFetch("https://example.invalid/");
+    expect(seen).toBeInstanceOf(AbortSignal);
+    expect(seen?.aborted).toBe(false);
+    const mine = new AbortController();
+    await timedFetch("https://example.invalid/", { signal: mine.signal });
+    mine.abort();
+    expect(seen?.aborted).toBe(true);
+    expect(READ_TIMEOUT_MS).toBeLessThanOrEqual(20_000);
   });
 });

@@ -13,7 +13,7 @@ import {
   type EvmWindow,
 } from "@qorechain/sdk";
 import { chainRest } from "./config";
-import { recentBlockSeconds, type RestOpts } from "./rest";
+import { recentBlockSeconds, timedFetch, type RestOpts } from "./rest";
 import { sendTx, type EncodedMsg, type SendOpts, type SendResult, type Signer } from "./native";
 
 export type { EvmWindow };
@@ -45,7 +45,7 @@ export async function blocksFor(minutes: number, o: RestOpts = {}): Promise<numb
 }
 
 export async function readWindow(address: string, o: RestOpts = {}): Promise<EvmWindow> {
-  return fetchEvmWindow({ rest: o.rest ?? chainRest(), address });
+  return fetchEvmWindow({ rest: o.rest ?? chainRest(), fetch: o.fetch ?? timedFetch, address });
 }
 
 export async function openWindow(

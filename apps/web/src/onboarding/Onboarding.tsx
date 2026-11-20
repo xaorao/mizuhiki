@@ -977,7 +977,10 @@ function ReadyStep({
             title: e.message,
             detail:
               e.moved === "no"
-                ? "Nothing changed on chain."
+                ? // Most chain messages already say nothing moved; say only what to do next then.
+                  /Nothing (was )?(changed|sent|moved)/i.test(e.message)
+                  ? "Retry to carry on from this step."
+                  : "Nothing changed on chain."
                 : e.moved === "unknown"
                   ? "It may still go through; we check again when you retry."
                   : "Only the network fee was spent.",

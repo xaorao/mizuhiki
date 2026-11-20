@@ -16,7 +16,7 @@ import {
 } from "@qorechain/qoresign/network";
 import { NETWORK, chainRest } from "./config";
 import { ChainError, explainRefusal } from "./errors";
-import { accountInfo, waitForTx, type RestOpts, type TxResponse } from "./rest";
+import { accountInfo, timedFetch, waitForTx, type RestOpts, type TxResponse } from "./rest";
 
 export interface EncodedMsg {
   typeUrl: string;
@@ -115,7 +115,11 @@ export function sendTx(signer: Signer, messages: EncodedMsg[], memo = "", o: Sen
       );
     }
     const bodyBytes = encodeBody(messages, memo);
-    const version: SignBytesVersion = await resolveSignBytesVersion({ rest, chainId: NETWORK.chainId });
+    const version: SignBytesVersion = await resolveSignBytesVersion({
+      rest,
+      fetch: timedFetch,
+      chainId: NETWORK.chainId,
+    });
     const sign = (gas: bigint, v: SignBytesVersion) =>
       signHybrid({
         chainId: NETWORK.chainId,
@@ -130,7 +134,7 @@ export function sendTx(signer: Signer, messages: EncodedMsg[], memo = "", o: Sen
     o.onStage?.("simulating");
     let gasLimit: bigint;
     try {
-      gasLimit = (await simulateTx({ rest, txBytes: sign(400_000n, version) })).suggestedGasLimit;
+      gasLimit = (await simulateTx({ rest, fetch: timedFetch, txBytes: sign(400_000n, version) })).suggestedGasLimit;
     } catch (e) {
       const d = (e as { details?: { codespace?: string; code?: number; log?: string } }).details;
       const r = explainRefusal(d?.codespace ?? "", d?.code ?? 0, d?.log ?? String(e));
@@ -185,7 +189,7 @@ export async function estimateTx(
   if (!acct.exists)
     throw new ChainError("NO_ACCOUNT", "This account has no test QOR yet, so it cannot pay the network fee.");
   const bodyBytes = encodeBody(messages, memo);
-  const version = await resolveSignBytesVersion({ rest, chainId: NETWORK.chainId });
+  const version = await resolveSignBytesVersion({ rest, fetch: timedFetch, chainId: NETWORK.chainId });
   const { txBytes } = signHybrid({
     chainId: NETWORK.chainId,
     accountNumber: acct.accountNumber,
@@ -197,7 +201,7 @@ export async function estimateTx(
     signBytesVersion: version,
   });
   try {
-    const gasLimit = (await simulateTx({ rest, txBytes })).suggestedGasLimit;
+    const gasLimit = (await simulateTx({ rest, fetch: timedFetch, txBytes })).suggestedGasLimit;
     return { gasLimit, fee: feeFor(gasLimit) };
   } catch (e) {
     const d = (e as { details?: { codespace?: string; code?: number; log?: string } }).details;

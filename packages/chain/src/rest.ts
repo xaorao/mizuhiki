@@ -9,7 +9,16 @@ export interface RestOpts {
   signal?: AbortSignal;
 }
 
-const f = (o: RestOpts): Fetch => o.fetch ?? ((u, i) => globalThis.fetch(u, i));
+/** How long one read waits for QoreChain before it counts as unreachable (a hung node otherwise hangs the screen). */
+export const READ_TIMEOUT_MS = 15_000;
+
+/** fetch with a time limit, for reads and simulations only: a broadcast is never cut short, its outcome would be unknown. */
+export const timedFetch: Fetch = (u, i) => {
+  const limit = AbortSignal.timeout(READ_TIMEOUT_MS);
+  return globalThis.fetch(u, { ...i, signal: i?.signal ? AbortSignal.any([i.signal, limit]) : limit });
+};
+
+const f = (o: RestOpts): Fetch => o.fetch ?? timedFetch;
 
 /** GET JSON with bounded retries on network errors and 5xx (reads are safe to retry). */
 export async function getJson(

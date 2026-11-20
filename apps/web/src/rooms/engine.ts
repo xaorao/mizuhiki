@@ -501,6 +501,18 @@ export const newMsgId = () => toBase64Url(randomBytes(12));
  * Seal and send one message under the current epoch key. If the key changed
  * meanwhile (the server answers STALE_EPOCH), refresh the keys and seal again.
  */
+/**
+ * The sealed pieces a message refers to (a file, or a room photo), so the relay keeps them as long as the message.
+ * Only their hashes are sent; the key that opens them stays inside the sealed message.
+ */
+function piecesOf(body: RoomBody): string[] {
+  const facts = body.kind === "file" ? body.file : body.kind === "info" ? body.photo : undefined;
+  const chunks = (facts as { chunks?: unknown } | undefined)?.chunks;
+  return Array.isArray(chunks)
+    ? chunks.filter((c): c is string => typeof c === "string" && /^[0-9a-f]{64}$/.test(c))
+    : [];
+}
+
 export async function postMessage(
   account: Tokened,
   roomId: string,
@@ -538,7 +550,7 @@ export async function postMessage(
         try {
           const r = await api.post<{ seq: string; epoch: number }>(
             `/rooms/${roomId}/batches`,
-            { hash: up.hash, deleteHash: sha256Hex(utf8(token)) },
+            { hash: up.hash, deleteHash: sha256Hex(utf8(token)), chunks: piecesOf(parsed) },
             T(account),
           );
           return { seq: r.seq, msgId, epoch: r.epoch };

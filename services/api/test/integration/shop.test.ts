@@ -196,7 +196,7 @@ beforeAll(async () => {
   helper = await ensurePersona("shop-api-helper");
   for (const p of [seller, buyer, helper])
     await app.inject({ method: "PUT", url: "/cards", headers: await auth(p), payload: { card: p.card } });
-  await sql`insert into names (name, name_hash, address, evm, "primary", claimed_tx, claimed_block) values (${seller.name}, 'x', ${seller.address}, ${seller.evm}, true, 'x', 1) on conflict do nothing`;
+  await sql`insert into names (name, name_hash, address, evm, "primary", claimed_tx, claimed_block) values (${seller.name}, ${`test:${seller.name}`}, ${seller.address}, ${seller.evm}, true, 'x', 1) on conflict do nothing`;
   await sql.end();
 }, 600_000);
 
