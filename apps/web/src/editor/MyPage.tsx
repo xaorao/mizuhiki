@@ -29,13 +29,13 @@ import type { Block } from "@mizuhiki/core";
 import { useOwner } from "@/owner/OwnerProvider";
 import { PageView } from "@/page/PageView";
 import { pageUrl } from "@/lib/site";
-import { ApiFailure } from "@/lib/api";
 import { buildSpareKeySheet, downloadBytes } from "@/lib/sparekey";
 import { AddSheet } from "./AddSheet";
 import { BlockCard } from "./BlockCard";
 import { mapBlocks, moveBlock, updateBlock } from "./blocks";
 import { checklistState, markChecklist } from "./checklist";
 import s from "./editor.module.css";
+import { failureText } from "@/lib/failure";
 
 export function MyPage() {
   const o = useOwner();
@@ -123,7 +123,16 @@ export function MyPage() {
       <div className={s.page}>
         <div className={s.main}>
           {o.loadError ? (
-            <Oops title="Your page did not open">{o.loadError}</Oops>
+            <Oops
+              title="Your page did not open"
+              action={
+                <Button variant="line" size="sm" icon="refresh" onClick={o.reload}>
+                  Try again
+                </Button>
+              }
+            >
+              {o.loadError}
+            </Oops>
           ) : (
             <>
               <Skeleton lines={1} height={60} />
@@ -159,7 +168,7 @@ export function MyPage() {
       })
       .catch((e: unknown) => {
         mm.react("worried", 1800, false);
-        toast.show(e instanceof ApiFailure ? e.message : "Not published. Your changes are still saved here.", {
+        toast.show(failureText(e, "Not published. Your changes are still saved here."), {
           tone: "error",
           ms: 6000,
         });

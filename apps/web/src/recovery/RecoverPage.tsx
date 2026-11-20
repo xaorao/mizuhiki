@@ -26,6 +26,7 @@ import {
 } from "./engine";
 import p from "@/passes/passes.module.css";
 import s from "./recovery.module.css";
+import { failureText } from "@/lib/failure";
 
 const when = (iso: string) =>
   new Date(iso).toLocaleString("en-GB", {
@@ -128,7 +129,7 @@ function Waiting({ p: pend, onReset }: { p: Pending; onReset: () => void }) {
       setR(await pollRecovery(pend));
       setErr(null);
     } catch (e) {
-      setErr(e instanceof ApiFailure ? e.message : "The request could not be checked. Trying again.");
+      setErr(failureText(e, "The request could not be checked. Trying again."));
     }
   }, [pend]);
   useEffect(() => {
@@ -151,7 +152,7 @@ function Waiting({ p: pend, onReset }: { p: Pending; onReset: () => void }) {
       await markDone(pend);
       router.push("/app/spare-key");
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Your account was not restored. Nothing changed.");
+      setErr(failureText(e, "Your account was not restored. Nothing changed."));
     } finally {
       setBusy(false);
     }

@@ -7,9 +7,9 @@
 import { useEffect, useState } from "react";
 import { Button, ChoiceCard, Icon, Oops, Sheet, TextArea, TextField, ToggleRow } from "@mizuhiki/ui";
 import { NAMING_LABEL, NAMING_RULES, type FileRequest, type NamingRule } from "@mizuhiki/core";
-import { ApiFailure } from "@/lib/api";
 import type { RequestInput } from "./engine";
 import s from "./requests.module.css";
+import { failureText } from "@/lib/failure";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 /** An instant as the value of <input type="date"> and <input type="time"> in this device's zone. */
@@ -90,7 +90,7 @@ export function RequestSheet({
         naming,
       });
     } catch (e) {
-      setError(e instanceof ApiFailure || e instanceof Error ? e.message : "The request was not saved.");
+      setError(failureText(e, "The request was not saved."));
     } finally {
       setBusy(false);
     }

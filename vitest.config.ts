@@ -1,4 +1,8 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
+
+// The web app's "@/..." imports (tsconfig paths), for its unit tests. A pattern, so "@mizuhiki/..." is untouched.
+const webSrc = fileURLToPath(new URL("./apps/web/src/", import.meta.url));
 
 export default defineConfig({
   test: {
@@ -6,6 +10,7 @@ export default defineConfig({
       {
         test: {
           name: "unit",
+          alias: [{ find: /^@\//, replacement: webSrc }],
           include: [
             "packages/*/test/**/*.test.ts",
             "services/*/test/unit/**/*.test.ts",

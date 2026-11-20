@@ -28,7 +28,6 @@ import {
 } from "@mizuhiki/ui";
 import { ROOM_TEMPLATES } from "@mizuhiki/core";
 import { useAccount } from "@/account/AccountProvider";
-import { ApiFailure } from "@/lib/api";
 import { SEND_STEP_LABEL, sendSealed, type SendStep } from "@/lib/send";
 import { can } from "../derive";
 import {
@@ -67,6 +66,7 @@ import {
 } from "./limits";
 import { AddToPage } from "./AddToPage";
 import s from "./invite.module.css";
+import { failureText } from "@/lib/failure";
 
 type View = "main" | "new" | "qr" | "forward" | "reset";
 
@@ -77,8 +77,7 @@ const STATE_STATUS: Record<LinkState, Status> = {
   revoked: "danger",
 };
 
-const failText = (e: unknown, fallback: string) =>
-  e instanceof ApiFailure || e instanceof Error ? e.message : fallback;
+const failText = (e: unknown, fallback: string) => failureText(e, fallback);
 
 export function InviteLinks({ room, onClose }: { room: RoomState; onClose: () => void }) {
   const { account } = useAccount();

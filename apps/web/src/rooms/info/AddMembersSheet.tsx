@@ -13,6 +13,7 @@ import type { RoomState } from "../useRoom";
 import { isAdminRole, parsePerson } from "./model";
 import { InlineError, StepList, changeFailure, useSteps } from "./Progress";
 import s from "./info.module.css";
+import { failureText } from "@/lib/failure";
 
 type History = "share" | "hide";
 
@@ -83,7 +84,7 @@ export function AddMembersSheet({ room, open, onClose }: { room: RoomState; open
       );
       setInput("");
     } catch (e) {
-      setInputErr(`That person could not be looked up. ${(e as Error).message}`);
+      setInputErr(`That person could not be looked up. ${failureText(e, "Try again.")}`);
     } finally {
       setFinding(false);
     }
@@ -120,7 +121,7 @@ export function AddMembersSheet({ room, open, onClose }: { room: RoomState; open
       onClose();
       void room.reload();
     } catch (e) {
-      setErr(admin ? changeFailure(e, steps.at) : `Nobody was suggested. ${(e as Error).message}`);
+      setErr(admin ? changeFailure(e, steps.at) : `Nobody was suggested. ${failureText(e, "Try again.")}`);
       setBusy(false);
       void room.reload();
     }

@@ -14,6 +14,7 @@ import { blockProblem } from "@/editor/blocks";
 import { ownedPasses, periodKeysOf } from "@/passes/engine";
 import type { OfflineKey } from "@/passes/model";
 import { forgetPassKeys } from "@/lib/passKeys";
+import { failureText } from "@/lib/failure";
 
 export type SaveState = "idle" | "saving" | "saved" | "offline" | "error";
 
@@ -28,6 +29,8 @@ interface OwnerCtx {
   account: Account;
   loading: boolean;
   loadError: string | null;
+  /** Try the first load again (after it failed: offline, Mizuhiki unreachable). */
+  reload: () => void;
   published: Manifest | null;
   draft: Draft | null;
   /** Apply a change (pushes undo history, schedules a sealed save). */
@@ -66,6 +69,12 @@ export function OwnerProvider({ account, children }: { account: Account; childre
   const [draft, setDraft] = useState<Draft | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const reload = useCallback(() => {
+    setLoadError(null);
+    setLoading(true);
+    setAttempt((n) => n + 1);
+  }, []);
   const [save, setSave] = useState<SaveState>("idle");
   const [publishing, setPublishing] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -114,7 +123,7 @@ export function OwnerProvider({ account, children }: { account: Account; childre
         else if (pub) setDraft(draftFromManifest(pub));
         else setLoadError("This account has no page yet. Finish sign-up first.");
       } catch (e) {
-        if (life.alive) setLoadError(e instanceof ApiFailure ? e.message : "Could not open your page.");
+        if (life.alive) setLoadError(failureText(e, "Could not open your page."));
       } finally {
         if (life.alive) setLoading(false);
       }
@@ -124,7 +133,7 @@ export function OwnerProvider({ account, children }: { account: Account; childre
       life.alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately once per account; see above.
-  }, [accountKey, setPublished]);
+  }, [accountKey, setPublished, attempt]);
 
   const persist = useCallback(() => {
     clearTimeout(saveTimer.current);
@@ -327,6 +336,7 @@ export function OwnerProvider({ account, children }: { account: Account; childre
       account,
       loading,
       loadError,
+      reload,
       published,
       draft,
       edit,
@@ -349,6 +359,7 @@ export function OwnerProvider({ account, children }: { account: Account; childre
       account,
       loading,
       loadError,
+      reload,
       published,
       draft,
       edit,

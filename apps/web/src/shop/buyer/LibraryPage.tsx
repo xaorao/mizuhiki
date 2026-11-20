@@ -24,7 +24,6 @@ import {
 } from "@mizuhiki/ui";
 import { formatAmount, isValidPhrase, normalizePhrase, type ProductDef } from "@mizuhiki/core";
 import { useAccount } from "@/account/AccountProvider";
-import { ApiFailure } from "@/lib/api";
 import {
   buyerKeyFrom,
   buyerKeys,
@@ -50,6 +49,7 @@ import {
   type SavedProduct,
 } from "./store";
 import s from "./buyer.module.css";
+import { failureText } from "@/lib/failure";
 
 type Tab = "purchases" | "saved" | "reviews";
 interface Row {
@@ -113,9 +113,7 @@ export function LibraryPage() {
       try {
         await add(await myOrders(withToken(acct.account, await acct.token())), "account");
       } catch (e) {
-        errs.push(
-          `Your account's purchases could not be loaded: ${e instanceof ApiFailure ? e.message : "try again"}.`,
-        );
+        errs.push(`Your account's purchases could not be loaded: ${failureText(e, "try again")}.`);
       }
     }
     const ks = await buyerKeys().catch(() => [] as BuyerKey[]);

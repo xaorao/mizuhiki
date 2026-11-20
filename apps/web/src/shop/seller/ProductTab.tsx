@@ -7,7 +7,7 @@
 import { useRef, useState } from "react";
 import { Button, CopyValue, Icon, IconButton, Panel, TextArea, TextField, useToast } from "@mizuhiki/ui";
 import type { ProductDef } from "@mizuhiki/core";
-import { mediaUrl, ApiFailure } from "@/lib/api";
+import { mediaUrl } from "@/lib/api";
 import { SITE_URL } from "@/lib/site";
 import { slugify, uploadImage } from "../engine";
 import { move, productPath, wrapSelection } from "./model";
@@ -16,6 +16,7 @@ import { PricingPanel } from "./PricingPanel";
 import { KindPanel } from "./KindPanel";
 import { DeliveryPanel } from "./DeliveryPanel";
 import s from "./seller.module.css";
+import { failureText } from "@/lib/failure";
 
 const CTAS: ProductDef["cta"][] = ["I want this!", "Buy this", "Pay", "Book a time", "Support"];
 const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -290,7 +291,7 @@ function Images({ draft, patch, tokened }: EditorProps) {
           where === "cover" ? (added.length === 1 ? "Cover added" : `${added.length} covers added`) : "Thumbnail added",
         );
     } catch (e) {
-      warnings.push(e instanceof ApiFailure ? e.message : "The image did not upload. Nothing was added.");
+      warnings.push(failureText(e, "The image did not upload. Nothing was added."));
     } finally {
       setBusy(null);
       setNote((n) => ({ ...n, [where]: warnings.join(" ") || undefined }));

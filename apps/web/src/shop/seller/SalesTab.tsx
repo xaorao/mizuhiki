@@ -23,7 +23,6 @@ import {
 import { formatAmount, parseAmount } from "@mizuhiki/core";
 import { explorerAddress, explorerTx } from "@mizuhiki/chain";
 import { useOwnerSession } from "@/owner/OwnerProvider";
-import { ApiFailure } from "@/lib/api";
 import { useDebounced, useRoomEvents } from "@/rooms/useRoom";
 import { listSales, refund, requestBalance, withToken, type OrderView } from "../engine";
 import { deliverNow, useDelivering, useOutcomes } from "./delivery";
@@ -39,6 +38,7 @@ import {
 } from "./model";
 import { when } from "./bits";
 import s from "./seller.module.css";
+import { failureText } from "@/lib/failure";
 
 type Filter = "all" | "waiting" | "delivered" | "awaiting" | "refunded";
 
@@ -62,7 +62,7 @@ export function SalesTab({ onWaiting }: { onWaiting?: (n: number) => void }) {
       setError(null);
       return os;
     } catch (e) {
-      setError(e instanceof ApiFailure ? e.message : "Your sales could not be loaded. Nothing changed.");
+      setError(failureText(e, "Your sales could not be loaded. Nothing changed."));
       return null;
     }
   }, [tokened]);
@@ -111,7 +111,7 @@ export function SalesTab({ onWaiting }: { onWaiting?: (n: number) => void }) {
       toast.show("Asked for the rest. The buyer sees a Pay the rest button on their purchase.");
       await load();
     } catch (e) {
-      toast.show(e instanceof ApiFailure ? e.message : "That did not work. Nothing changed.", { tone: "error" });
+      toast.show(failureText(e, "That did not work. Nothing changed."), { tone: "error" });
     } finally {
       setBusy(null);
     }

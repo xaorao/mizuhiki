@@ -57,6 +57,7 @@ import type { Address, Hex } from "viem";
 import type { Account } from "@/account/AccountProvider";
 import { api } from "@/lib/api";
 import { cardOf } from "@/lib/send";
+import { failureText } from "@/lib/failure";
 
 export type Tokened = Account & { token: string };
 const T = (a: Tokened) => ({ token: a.token });
@@ -463,7 +464,7 @@ export async function guardianPass(
       if (items.length) await api.post(`/capsules/${c.id}/release`, { version: plan.version, items }, T(a));
       out.push({ id: c.id, handed: items.length });
     } catch (e) {
-      out.push({ id: c.id, handed: 0, why: e instanceof Error ? e.message : "Not handed over." });
+      out.push({ id: c.id, handed: 0, why: failureText(e, "Not handed over.") });
     }
   }
   return out;

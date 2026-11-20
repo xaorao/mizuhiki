@@ -42,6 +42,7 @@ import type { Account } from "@/account/AccountProvider";
 import { api, ApiFailure } from "@/lib/api";
 import { passRecipients } from "@/lib/passKeys";
 import { idb } from "@/lib/idb";
+import { PAY_UNKNOWN_TEXT } from "@/lib/failure";
 
 export type PayToken = "fUSD" | "QOR";
 export type PayMethod = "mizuhiki" | "qorex" | "manual";
@@ -232,7 +233,7 @@ function asFailure(e: unknown): PayFailure {
   if (e instanceof ChainError) return new PayFailure(e.message, e.moved, e.txHash);
   const msg = (e as Error).message;
   if (/reject|denied|cancel/i.test(msg)) return new PayFailure("You cancelled in the wallet. No money moved.", "no");
-  return new PayFailure(msg.startsWith("QoreX") ? msg : "The payment could not be sent. No money moved.", "unknown");
+  return new PayFailure(msg.startsWith("QoreX") ? msg : PAY_UNKNOWN_TEXT, "unknown");
 }
 
 export function qorex(): QorexNativeProvider | undefined {

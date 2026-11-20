@@ -23,10 +23,11 @@ import {
 } from "@mizuhiki/ui";
 import { ROOM_TEMPLATES, ROOM_TYPES, type RoomType } from "@mizuhiki/core";
 import { useAccount } from "@/account/AccountProvider";
-import { createRoom, lookupPerson, RoomError, STEP_LABEL, withToken, type Step } from "./engine";
+import { createRoom, lookupPerson, STEP_LABEL, withToken, type Step } from "./engine";
 import { PersonAvatar, useNames } from "./people";
 import { durationLabel } from "./derive";
 import s from "./rooms.module.css";
+import { failureText } from "@/lib/failure";
 
 type Phase = "kind" | "members" | "details" | "sealing" | "failed";
 const AUTO_DELETE = [0, 86_400, 604_800, 2_592_000] as const;
@@ -130,7 +131,7 @@ export function CreateRoom() {
       );
       router.push(`/app/rooms/${id}?new=1`);
     } catch (e) {
-      setError(e instanceof RoomError || e instanceof Error ? e.message : "Something went wrong.");
+      setError(failureText(e, "Something went wrong."));
       setPhase("failed");
     }
   };

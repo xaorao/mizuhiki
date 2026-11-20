@@ -64,6 +64,7 @@ import type { Account } from "@/account/AccountProvider";
 import { api, ApiFailure } from "@/lib/api";
 import { cardOf } from "@/lib/send";
 import { idb } from "@/lib/idb";
+import { failureText } from "@/lib/failure";
 
 // ---- server shapes ------------------------------------------------------------------------
 
@@ -376,7 +377,10 @@ async function recipientsOf(addresses: string[]) {
       out[a] = await resolveOwner(a, await cardOf(a));
     } catch (e) {
       const who = (await nameOf(a)) ?? shortAddress(a);
-      throw new RoomError(`@${who} cannot be added: ${(e as Error).message}`, "NO_KEY");
+      throw new RoomError(
+        `@${who} cannot be added: ${failureText(e, "their keys could not be read on QoreChain.")}`,
+        "NO_KEY",
+      );
     }
   }
   return out;

@@ -1,5 +1,6 @@
 /** Server-side reads from services/api (public data only; no keys exist on the server). */
 import "server-only";
+import { cache } from "react";
 import type { Manifest, RecipientCard, Signed } from "@mizuhiki/core";
 
 const BASE = process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000";
@@ -8,7 +9,7 @@ export type PageLookup =
   | { state: "ok"; record: Signed<Manifest>; card: RecipientCard | null; registry: { owner: string; cardHash: string } }
   | { state: "missing" | "moved" | "error"; message: string };
 
-export async function lookupPage(name: string): Promise<PageLookup> {
+async function lookupPageOnce(name: string): Promise<PageLookup> {
   let res: Response;
   try {
     res = await fetch(`${BASE}/pages/${encodeURIComponent(name)}`, {
@@ -33,7 +34,7 @@ export type FormLookup =
   | { state: "ok"; record: Signed<import("@mizuhiki/core").FormDef>; open: boolean; closedReason: string | null }
   | { state: "missing" | "error"; message: string };
 
-export async function lookupForm(name: string, slug: string): Promise<FormLookup> {
+async function lookupFormOnce(name: string, slug: string): Promise<FormLookup> {
   try {
     const res = await fetch(`${BASE}/forms/${encodeURIComponent(name)}/${encodeURIComponent(slug)}`, {
       cache: "no-store",
@@ -55,7 +56,7 @@ export type ProductLookup =
   | { state: "missing" | "error"; message: string };
 
 /** A published product's public record, for the page title and social card. The browser verifies the signature. */
-export async function lookupProduct(name: string, slug: string): Promise<ProductLookup> {
+async function lookupProductOnce(name: string, slug: string): Promise<ProductLookup> {
   try {
     const res = await fetch(`${BASE}/products/${encodeURIComponent(name)}/${encodeURIComponent(slug)}`, {
       cache: "no-store",
@@ -78,7 +79,7 @@ export type FileRequestLookup =
   | { state: "missing" | "error"; message: string };
 
 /** A file request's public record (spec 5.7). The browser verifies the signature against the chain. */
-export async function lookupFileRequest(id: string): Promise<FileRequestLookup> {
+async function lookupFileRequestOnce(id: string): Promise<FileRequestLookup> {
   try {
     const res = await fetch(`${BASE}/file-requests/${encodeURIComponent(id)}`, {
       cache: "no-store",
@@ -95,3 +96,10 @@ export async function lookupFileRequest(id: string): Promise<FileRequestLookup> 
     return { state: "error", message: "Mizuhiki could not be reached. Try again in a moment." };
   }
 }
+
+// One lookup per request: a page's metadata and its body ask for the same record, and must not each wait out the
+// timeout when the API is slow (React's request-scoped cache).
+export const lookupPage = cache(lookupPageOnce);
+export const lookupForm = cache(lookupFormOnce);
+export const lookupProduct = cache(lookupProductOnce);
+export const lookupFileRequest = cache(lookupFileRequestOnce);

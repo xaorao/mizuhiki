@@ -57,6 +57,7 @@ import {
 import { MIN_SETUP_UQOR, SETUP_STEPS, runSetup, type SetupStep } from "./setup";
 import { draftFromManifest, saveDraft } from "@/editor/state";
 import s from "./onboarding.module.css";
+import { failureText } from "@/lib/failure";
 
 type Step = "name" | "goal" | "template" | "blocks" | "profile" | "phrase" | "check" | "passphrase" | "ready" | "done";
 const ORDER: Step[] = [
@@ -308,7 +309,7 @@ function NameStep({ value, onChange, onNext }: { value: string; onChange: (v: st
           if (!ctl.signal.aborted)
             setState({
               loading: false,
-              error: e instanceof ApiFailure ? e.message : "Could not check that name right now.",
+              error: failureText(e, "Could not check that name right now."),
             });
         });
     }, 300);
@@ -678,9 +679,7 @@ function BioHelper({ draft, onBio }: { draft: Draft; onBio: (b: string) => void 
               draft: draft.bio,
             })
             .then((r) => onBio(r.bio))
-            .catch((e: unknown) =>
-              toast.show(e instanceof ApiFailure ? e.message : "The helper did not answer.", { tone: "error" }),
-            )
+            .catch((e: unknown) => toast.show(failureText(e, "The helper did not answer."), { tone: "error" }))
             .finally(() => setBusy(false));
         }}
       >
@@ -986,7 +985,11 @@ function ReadyStep({
           });
         else if (e instanceof ApiFailure)
           setError({ title: e.message, detail: "Your keys on chain are safe. Retry to finish." });
-        else setError({ title: "Setup stopped.", detail: (e as Error).message });
+        else
+          setError({
+            title: "Setup stopped.",
+            detail: failureText(e, "Setup stopped before this step finished. Try again."),
+          });
       }
     })();
     return () => ctl.abort();

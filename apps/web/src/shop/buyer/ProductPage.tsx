@@ -27,6 +27,8 @@ import { KIND_INFO, callSlots, formatAmount, parseAmount, type Manifest, type Pr
 import { mediaUrl } from "@/lib/api";
 import { pageUrl } from "@/lib/site";
 import { loadProduct, type PublicProduct } from "../engine";
+import { isUnreachable } from "@mizuhiki/chain";
+import { ChainUnreachable } from "@/public/ChainUnreachable";
 import {
   addDays,
   amountOnly,
@@ -42,12 +44,14 @@ import {
 import { RatingLine, RichText, Ribbon, ShopBar, Stars, Thumb, cachedShop, slotLabel, when } from "./parts";
 import { getCart, isSaved, onStoreChange, putInCart, startNewCart, toggleSaved } from "./store";
 import s from "./buyer.module.css";
+import { failureText } from "@/lib/failure";
 
 type Loaded = PublicProduct & { def: ProductDef };
 type Load =
   | { state: "loading" }
   | { state: "ok"; p: Loaded }
   | { state: "failed"; reason: string }
+  | { state: "unreachable" }
   | { state: "gone"; reason: string };
 
 export interface SellerInfo {
@@ -68,6 +72,7 @@ export function ProductPage({
   line?: number | undefined;
 }) {
   const [load, setLoad] = useState<Load>({ state: "loading" });
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     const life = { alive: true };
     loadProduct(name, slug).then(
@@ -82,16 +87,27 @@ export function ProductPage({
       },
       (e: unknown) => {
         if (!life.alive) return;
-        const msg = (e as Error).message || "";
-        if (/not available/i.test(msg)) setLoad({ state: "gone", reason: msg });
+        const msg = failureText(e, "");
+        if (isUnreachable(e)) setLoad({ state: "unreachable" });
+        else if (/not available/i.test(msg)) setLoad({ state: "gone", reason: msg });
         else setLoad({ state: "failed", reason: msg || "The signature on this product did not check out." });
       },
     );
     return () => {
       life.alive = false;
     };
-  }, [name, slug, seller.owner]);
+  }, [name, slug, seller.owner, attempt]);
 
+  if (load.state === "unreachable")
+    return (
+      <ChainUnreachable
+        what="product"
+        onRetry={() => {
+          setLoad({ state: "loading" });
+          setAttempt((n) => n + 1);
+        }}
+      />
+    );
   if (load.state === "failed")
     return (
       <div className={s.stage}>

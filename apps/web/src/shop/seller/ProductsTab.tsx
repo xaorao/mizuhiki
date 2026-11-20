@@ -10,13 +10,13 @@ import { useRouter } from "next/navigation";
 import { Button, ButtonLink, EmptyState, Oops, Skeleton, StatusChip, useToast } from "@mizuhiki/ui";
 import { formatAmount, KIND_INFO } from "@mizuhiki/core";
 import { useOwner } from "@/owner/OwnerProvider";
-import { ApiFailure } from "@/lib/api";
 import { SITE_URL } from "@/lib/site";
 import { deleteProduct, setProductStatus } from "../engine";
 import { priceLabel, productPath, sumByToken } from "./model";
 import { useProducts, type ProductRow } from "./useProducts";
 import { Confirm, RowMenu, Thumb } from "./bits";
 import s from "./seller.module.css";
+import { failureText } from "@/lib/failure";
 
 export function ProductsTab() {
   const { rows, error, reload, tokened } = useProducts();
@@ -39,7 +39,7 @@ export function ProductsTab() {
       );
       await reload();
     } catch (e) {
-      toast.show(e instanceof ApiFailure ? e.message : "That did not work. Nothing changed.", { tone: "error" });
+      toast.show(failureText(e, "That did not work. Nothing changed."), { tone: "error" });
     } finally {
       setBusy(null);
     }
@@ -55,7 +55,7 @@ export function ProductsTab() {
       setDel(null);
       await reload();
     } catch (e) {
-      setDelError(e instanceof ApiFailure ? e.message : "It was not deleted. Nothing changed.");
+      setDelError(failureText(e, "It was not deleted. Nothing changed."));
     } finally {
       setBusy(null);
     }

@@ -11,6 +11,7 @@ import { ROOM_TEMPLATES, type Block } from "@mizuhiki/core";
 import { openInvite, type InviteCard, type InvitePreview } from "@/rooms/engine";
 import { RoomAvatar } from "@/rooms/people";
 import s from "./public.module.css";
+import { failureText } from "@/lib/failure";
 
 type Room = Extract<Block, { type: "room" }>;
 
@@ -41,7 +42,7 @@ export function RoomSheet({
     setState({ s: "loading" });
     void openInvite(m[1], m[2]).then(
       (r) => setState({ s: "ok", ...r }),
-      (e: unknown) => setState({ s: "failed", why: (e as Error).message }),
+      (e: unknown) => setState({ s: "failed", why: failureText(e, "The room could not be opened. Try again.") }),
     );
   }, [open, invite]);
 

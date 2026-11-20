@@ -13,8 +13,10 @@ import {
   IconButton,
   Kicker,
   Musubi,
+  Oops,
   PhoneFrame,
   Segmented,
+  Skeleton,
   StatusChip,
   TextArea,
   TextField,
@@ -25,11 +27,12 @@ import { DEFAULT_THEME, type Manifest, type Theme } from "@mizuhiki/core";
 import { useOwner } from "@/owner/OwnerProvider";
 import { PageView } from "@/page/PageView";
 import { contrast } from "@/page/theme";
-import { api, ApiFailure, mediaUrl } from "@/lib/api";
+import { api, mediaUrl } from "@/lib/api";
 import { AvatarCrop } from "@/onboarding/AvatarCrop";
 import { TEMPLATES } from "@/onboarding/model";
 import { markChecklist } from "./checklist";
 import s from "./design.module.css";
+import { failureText } from "@/lib/failure";
 
 type Look = Pick<Manifest, "theme" | "displayName" | "bio" | "avatar">;
 
@@ -61,7 +64,25 @@ export function Design() {
       });
   }, [d, look]);
 
-  if (!d || !look) return <div className={s.wrap}>Opening…</div>;
+  if (!d || !look)
+    return (
+      <div className={s.wrap}>
+        {o.loadError ? (
+          <Oops
+            title="Your page did not open"
+            action={
+              <Button variant="line" size="sm" icon="refresh" onClick={o.reload}>
+                Try again
+              </Button>
+            }
+          >
+            {o.loadError}
+          </Oops>
+        ) : (
+          <Skeleton lines={4} />
+        )}
+      </div>
+    );
   const saved: Look = {
     theme: d.manifest.theme,
     displayName: d.manifest.displayName,
@@ -119,7 +140,7 @@ export function Design() {
       if (kind === "avatar") change((l) => ({ ...l, avatar: m }));
       else theme({ wallpaper: { ...look.theme.wallpaper, kind: "image", image: m.hash } });
     } catch (e) {
-      toast.show(e instanceof ApiFailure ? e.message : "The image was not uploaded.", { tone: "error" });
+      toast.show(failureText(e, "The image was not uploaded."), { tone: "error" });
     } finally {
       setUploading(null);
     }

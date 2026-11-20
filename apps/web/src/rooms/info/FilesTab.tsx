@@ -13,6 +13,7 @@ import { fmtBytes, label, useSealedPhoto } from "../people";
 import { FILE_FILTERS, filterFiles, whenLabel, type FileFilter } from "./model";
 import { InlineError } from "./Progress";
 import s from "./info.module.css";
+import { failureText } from "@/lib/failure";
 
 const KIND_ICON: Record<SharedFile["kind"], IconName> = { photo: "image", video: "file", audio: "file", doc: "file" };
 const KIND_WORD: Record<SharedFile["kind"], string> = { photo: "Photo", video: "Video", audio: "Audio", doc: "File" };
@@ -68,7 +69,7 @@ function Viewer({
       setErr(
         gone
           ? "This file is no longer in storage (it may have been auto-deleted). Nothing was opened."
-          : `This file could not be unsealed on this device. Nothing was saved. ${(e as Error).message}`,
+          : `This file could not be unsealed on this device. Nothing was saved. ${failureText(e, "Try again.")}`,
       );
       return null;
     } finally {

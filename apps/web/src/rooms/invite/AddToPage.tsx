@@ -11,6 +11,7 @@ import { useOwner } from "@/owner/OwnerProvider";
 import { updateBlock } from "@/editor/blocks";
 import { markChecklist } from "@/editor/checklist";
 import s from "./invite.module.css";
+import { failureText } from "@/lib/failure";
 
 /** The page stores the path only: `/join/<id>#k=<key>`. */
 export const invitePath = (url: string): string | null => {
@@ -32,9 +33,7 @@ export function AddToPage({ roomId, roomName, url }: { roomId: string; roomName:
     o.publish().then(
       () => toast.show(done),
       (e: unknown) =>
-        setError(
-          `${e instanceof Error ? e.message : "Your page was not published."} The button is saved in your page draft.`,
-        ),
+        setError(`${failureText(e, "Your page was not published.")} The button is saved in your page draft.`),
     );
   }, [queued, o, toast]);
 

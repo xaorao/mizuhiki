@@ -68,6 +68,7 @@ import { api, ApiFailure } from "@/lib/api";
 import { idb } from "@/lib/idb";
 import { cardOf } from "@/lib/send";
 import type { PreparedPayment } from "@/lib/pay";
+import { failureText } from "@/lib/failure";
 
 export type Tokened = Account & { token: string };
 export const withToken = (account: Account, token: string): Tokened => ({ ...account, token });
@@ -431,8 +432,7 @@ export async function deliverPaid(
       out.push({
         ref: o.ref,
         ok: false,
-        why:
-          e instanceof DeliveryRefused || e instanceof ApiFailure ? e.message : "This order could not be sealed here.",
+        why: failureText(e, "This order could not be sealed here."),
       });
     }
   }

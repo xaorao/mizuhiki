@@ -21,12 +21,12 @@ import {
 } from "@mizuhiki/ui";
 import { normalizeNameInput } from "@mizuhiki/core";
 import type { Account } from "@/account/AccountProvider";
-import { ApiFailure } from "@/lib/api";
-import { SEND_STEP_LABEL, SendFailure, sendSealed, type SendResult, type SendStep } from "@/lib/send";
+import { SEND_STEP_LABEL, sendSealed, type SendResult, type SendStep } from "@/lib/send";
 import type { InboxRow, OpenedMessage } from "./model";
 import type { SenderCheck } from "./useInbox";
 import s from "./inbox.module.css";
 import { ownerOfName } from "@mizuhiki/chain";
+import { failureText } from "@/lib/failure";
 
 export type ComposeMode = { kind: "reply"; to: string; toLabel: string } | { kind: "forward" };
 
@@ -74,7 +74,7 @@ export function ComposeSheet({
       }
       return { address: owner, label: `@${name}` };
     } catch (e) {
-      setToErr(e instanceof ApiFailure ? e.message : "That name could not be checked. Nothing was sent.");
+      setToErr(failureText(e, "That name could not be checked. Nothing was sent."));
       return null;
     }
   };
@@ -132,7 +132,7 @@ export function ComposeSheet({
       setPhase("done");
       onSent();
     } catch (e) {
-      setFailure(e instanceof SendFailure ? e.message : "Not sent. Nothing left your device.");
+      setFailure(failureText(e, "Not sent. Nothing left your device."));
       setPhase("failed");
     }
   };

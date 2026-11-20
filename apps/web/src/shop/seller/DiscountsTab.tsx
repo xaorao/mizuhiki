@@ -19,12 +19,12 @@ import {
   useToast,
 } from "@mizuhiki/ui";
 import { TOKENS, parseAmount, type ShopToken } from "@mizuhiki/core";
-import { ApiFailure } from "@/lib/api";
 import { deleteDiscount, listDiscounts, newId, saveDiscount, type DiscountRow } from "../engine";
 import { amountInput, codeProblem, discountState, discountValue } from "./model";
 import { useProducts } from "./useProducts";
 import { Confirm, RowMenu } from "./bits";
 import s from "./seller.module.css";
+import { failureText } from "@/lib/failure";
 
 export function DiscountsTab() {
   const { rows: products, tokened } = useProducts();
@@ -40,7 +40,7 @@ export function DiscountsTab() {
       setList(await listDiscounts(await tokened()));
       setError(null);
     } catch (e) {
-      setError(e instanceof ApiFailure ? e.message : "Your discounts could not be loaded. Nothing changed.");
+      setError(failureText(e, "Your discounts could not be loaded. Nothing changed."));
     }
   }, [tokened]);
   useEffect(() => {
@@ -54,7 +54,7 @@ export function DiscountsTab() {
       toast.show(d.active ? `${d.code} is off` : `${d.code} is on`);
       await load();
     } catch (e) {
-      toast.show(e instanceof ApiFailure ? e.message : "That did not work. Nothing changed.", { tone: "error" });
+      toast.show(failureText(e, "That did not work. Nothing changed."), { tone: "error" });
     }
   };
 
@@ -67,7 +67,7 @@ export function DiscountsTab() {
       setDel(null);
       await load();
     } catch (e) {
-      toast.show(e instanceof ApiFailure ? e.message : "It was not deleted. Nothing changed.", { tone: "error" });
+      toast.show(failureText(e, "It was not deleted. Nothing changed."), { tone: "error" });
     } finally {
       setBusy(false);
     }
@@ -283,7 +283,7 @@ function DiscountSheet({
         active,
       });
     } catch (e) {
-      setErr(e instanceof ApiFailure ? e.message : "The discount was not saved. Nothing changed.");
+      setErr(failureText(e, "The discount was not saved. Nothing changed."));
     } finally {
       setBusy(false);
     }

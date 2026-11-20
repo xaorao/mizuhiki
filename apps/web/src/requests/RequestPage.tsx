@@ -16,7 +16,8 @@ import {
   type RecipientCard,
   type Signed,
 } from "@mizuhiki/core";
-import { assertOwnsName, pqKeyViaEvm } from "@mizuhiki/chain";
+import { assertOwnsName, isUnreachable, pqKeyViaEvm } from "@mizuhiki/chain";
+import { ChainUnreachable } from "@/public/ChainUnreachable";
 import { mediaUrl } from "@/lib/api";
 import { themeVars } from "@/page/theme";
 import { MessageSheet } from "@/public/MessageSheet";
@@ -36,7 +37,8 @@ export function RequestPage({
   owner: string;
   request: Signed<FileRequest>;
 }) {
-  const [check, setCheck] = useState<"checking" | "ok" | "failed">("checking");
+  const [check, setCheck] = useState<"checking" | "ok" | "failed" | "unreachable">("checking");
+  const [attempt, setAttempt] = useState(0);
   const [open, setOpen] = useState(false);
   const [dropped, setDropped] = useState<File[]>([]);
   const [drag, setDrag] = useState(false);
@@ -56,14 +58,15 @@ export function RequestPage({
         if (!pq.registered || !pq.publicKey || !pq.possessionProven) throw new Error("no key");
         verifyRecord(request, { kind: "filerequest", signer: owner, pqPublicKey: pq.publicKey });
         if (life.alive) setCheck("ok");
-      } catch {
-        if (life.alive) setCheck("failed");
+      } catch (e) {
+        // QoreChain not answering is not a mismatch: offer a retry instead.
+        if (life.alive) setCheck(isUnreachable(e) ? "unreachable" : "failed");
       }
     })();
     return () => {
       life.alive = false;
     };
-  }, [request, r.owner, owner, page.signer, name]);
+  }, [request, r.owner, owner, page.signer, name, attempt]);
 
   const style = themeVars(m.theme);
   const state = requestState(r);
@@ -97,6 +100,16 @@ export function RequestPage({
           <Skeleton lines={4} />
         </main>
       </div>
+    );
+  if (check === "unreachable")
+    return (
+      <ChainUnreachable
+        what="request"
+        onRetry={() => {
+          setCheck("checking");
+          setAttempt((n) => n + 1);
+        }}
+      />
     );
   if (check === "failed")
     return (

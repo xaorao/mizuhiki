@@ -8,7 +8,8 @@
 import { useEffect, useState } from "react";
 import { ButtonLink, Musubi, Skeleton } from "@mizuhiki/ui";
 import { verifyRecord, type FormDef, type Manifest, type RecipientCard, type Signed } from "@mizuhiki/core";
-import { assertOwnsName, pqKeyViaEvm } from "@mizuhiki/chain";
+import { assertOwnsName, isUnreachable, pqKeyViaEvm } from "@mizuhiki/chain";
+import { ChainUnreachable } from "@/public/ChainUnreachable";
 import { themeVars } from "@/page/theme";
 import { FormRunner } from "./FormRunner";
 import s from "./runner.module.css";
@@ -28,7 +29,8 @@ export function FormPage({
   form: Signed<FormDef>;
   closedReason: string | null;
 }) {
-  const [check, setCheck] = useState<"checking" | "ok" | "failed">("checking");
+  const [check, setCheck] = useState<"checking" | "ok" | "failed" | "unreachable">("checking");
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     const life = { alive: true };
     void (async () => {
@@ -41,14 +43,15 @@ export function FormPage({
         if (!pq.registered || !pq.publicKey || !pq.possessionProven) throw new Error("no key");
         verifyRecord(form, { kind: "form", signer: owner, pqPublicKey: pq.publicKey });
         if (life.alive) setCheck("ok");
-      } catch {
-        if (life.alive) setCheck("failed");
+      } catch (e) {
+        // QoreChain not answering is not a mismatch: offer a retry instead.
+        if (life.alive) setCheck(isUnreachable(e) ? "unreachable" : "failed");
       }
     })();
     return () => {
       life.alive = false;
     };
-  }, [form, name, owner, page.signer]);
+  }, [form, name, owner, page.signer, attempt]);
 
   const style = themeVars(page.body.theme);
   if (check === "checking")
@@ -59,6 +62,16 @@ export function FormPage({
           <Skeleton lines={4} />
         </main>
       </div>
+    );
+  if (check === "unreachable")
+    return (
+      <ChainUnreachable
+        what="form"
+        onRetry={() => {
+          setCheck("checking");
+          setAttempt((n) => n + 1);
+        }}
+      />
     );
   if (check === "failed")
     return (

@@ -31,7 +31,6 @@ import {
 import { unlockWithPassphrase } from "@mizuhiki/core";
 import { useAccount } from "@/account/AccountProvider";
 import { useOwner } from "@/owner/OwnerProvider";
-import { ApiFailure } from "@/lib/api";
 import { SITE_URL } from "@/lib/site";
 import { buildSpareKeySheet, downloadBytes } from "@/lib/sparekey";
 import { cardOf } from "@/lib/send";
@@ -69,6 +68,7 @@ import {
 import { useRecoveryEvents } from "./useRecoveryEvents";
 import p from "@/passes/passes.module.css";
 import s from "./recovery.module.css";
+import { failureText } from "@/lib/failure";
 
 type Tab = "mine" | "helping";
 const fmt = (iso: string) =>
@@ -107,7 +107,7 @@ export function SpareKeyHome() {
       const found = await Promise.all(who.map(async (a) => [a, await nameOf(a).catch(() => null)] as const));
       setNames(Object.fromEntries(found));
     } catch (e) {
-      setError(e instanceof ApiFailure ? e.message : "Your spare key could not be loaded. Nothing changed.");
+      setError(failureText(e, "Your spare key could not be loaded. Nothing changed."));
     }
   }, [tokened]);
   useEffect(() => {
@@ -286,9 +286,7 @@ function Alarm({
                     toast.show("Cancelled. Nothing is released to that device.");
                     await reload();
                   })
-                  .catch((e: unknown) =>
-                    toast.show(e instanceof Error ? e.message : "It was not cancelled.", { tone: "error" }),
-                  )
+                  .catch((e: unknown) => toast.show(failureText(e, "It was not cancelled."), { tone: "error" }))
                   .finally(() => setBusy(null));
               }}
             >
@@ -335,7 +333,7 @@ function SheetPanel({ m, tokened, reload }: { m: Mine; tokened: () => Promise<To
       setPass("");
       await reload();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "The sheet was not made.");
+      setErr(failureText(e, "The sheet was not made."));
     } finally {
       setBusy(false);
     }
@@ -414,10 +412,7 @@ function ContactsPanel({
       toast.show(`Pieces sealed. Any ${threshold} of ${confirmed.length} contacts can help you.`);
       await reload();
     } catch (e) {
-      toast.show(
-        e instanceof ApiFailure || e instanceof Error ? e.message : "The pieces were not sealed. Nothing changed.",
-        { tone: "error" },
-      );
+      toast.show(failureText(e, "The pieces were not sealed. Nothing changed."), { tone: "error" });
     } finally {
       setSealing(null);
     }
@@ -431,7 +426,7 @@ function ContactsPanel({
       setRemoving(null);
       await reload();
     } catch (e) {
-      toast.show(e instanceof Error ? e.message : "Not removed. Nothing changed.", { tone: "error" });
+      toast.show(failureText(e, "Not removed. Nothing changed."), { tone: "error" });
     } finally {
       setBusy(false);
     }
@@ -589,7 +584,7 @@ function AddContactSheet({
       onClose();
       await onAdded();
     } catch (e) {
-      setErr(e instanceof ApiFailure || e instanceof Error ? e.message : "They were not invited. Nothing changed.");
+      setErr(failureText(e, "They were not invited. Nothing changed."));
     } finally {
       setBusy(false);
     }
@@ -659,10 +654,7 @@ function CheckWordsSheet({
     const life = { alive: true };
     safetyWords(c.contact)
       .then((w) => life.alive && setWords(w))
-      .catch(
-        (e: unknown) =>
-          life.alive && setErr(e instanceof Error ? e.message : "Their key could not be read from QoreChain."),
-      );
+      .catch((e: unknown) => life.alive && setErr(failureText(e, "Their key could not be read from QoreChain.")));
     return () => {
       life.alive = false;
     };
@@ -675,7 +667,7 @@ function CheckWordsSheet({
       onClose();
       await onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Not confirmed. Nothing changed.");
+      setErr(failureText(e, "Not confirmed. Nothing changed."));
     } finally {
       setBusy(false);
     }
@@ -744,9 +736,7 @@ function TestPanel({
       }
     } catch (e) {
       // Checked again on the next tick or event; said plainly meanwhile.
-      setCheckErr(
-        e instanceof ApiFailure || e instanceof Error ? e.message : "The test could not be checked. Trying again.",
-      );
+      setCheckErr(failureText(e, "The test could not be checked. Trying again."));
     }
   }, [run, tokened, toast, reload]);
   useRecoveryEvents(() => void check());
@@ -802,9 +792,7 @@ function TestPanel({
                 setRun(r);
                 setState({ answered: [], result: "waiting" });
               })
-              .catch((e: unknown) =>
-                toast.show(e instanceof Error ? e.message : "The test did not start.", { tone: "error" }),
-              )
+              .catch((e: unknown) => toast.show(failureText(e, "The test did not start."), { tone: "error" }))
               .finally(() => setBusy(false));
           }}
         >
@@ -841,7 +829,7 @@ function OfflinePanel({
       setWords(r.words);
       await reload();
     } catch (e) {
-      toast.show(e instanceof Error ? e.message : "The offline reader was not turned on.", { tone: "error" });
+      toast.show(failureText(e, "The offline reader was not turned on."), { tone: "error" });
     } finally {
       setBusy(null);
     }
@@ -880,7 +868,7 @@ function OfflinePanel({
           : "Older items are already covered.",
       );
     } catch (e) {
-      toast.show(e instanceof Error ? e.message : "Nothing was copied.", { tone: "error" });
+      toast.show(failureText(e, "Nothing was copied."), { tone: "error" });
     } finally {
       setBusy(null);
       setCopying(null);
@@ -1003,7 +991,7 @@ function HelpingView({
       toast.show(ok);
       await reload();
     } catch (e) {
-      toast.show(e instanceof ApiFailure || e instanceof Error ? e.message : "That did not work. Nothing changed.", {
+      toast.show(failureText(e, "That did not work. Nothing changed."), {
         tone: "error",
       });
     } finally {
@@ -1199,9 +1187,7 @@ function AnswerSheet({
               setBusy(true);
               setErr(null);
               void onDismiss()
-                .catch((e: unknown) =>
-                  setErr(e instanceof ApiFailure || e instanceof Error ? e.message : "Nothing changed. Try again."),
-                )
+                .catch((e: unknown) => setErr(failureText(e, "Nothing changed. Try again.")))
                 .finally(() => setBusy(false));
             }}
           >
@@ -1215,13 +1201,7 @@ function AnswerSheet({
               setBusy(true);
               setErr(null);
               void onAnswer()
-                .catch((e: unknown) =>
-                  setErr(
-                    e instanceof ApiFailure || e instanceof Error
-                      ? e.message
-                      : "Your piece was not sent. Nothing changed.",
-                  ),
-                )
+                .catch((e: unknown) => setErr(failureText(e, "Your piece was not sent. Nothing changed.")))
                 .finally(() => setBusy(false));
             }}
           >

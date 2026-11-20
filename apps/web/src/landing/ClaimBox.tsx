@@ -9,9 +9,10 @@ import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { nameProblem, normalizeNameInput } from "@mizuhiki/core";
 import { Icon } from "@mizuhiki/ui";
-import { api, ApiFailure } from "@/lib/api";
+import { api } from "@/lib/api";
 import { SITE_HOST } from "@/lib/site";
 import s from "./landing.module.css";
+import { failureText } from "@/lib/failure";
 
 interface Availability {
   name: string;
@@ -48,8 +49,7 @@ export function ClaimBox({ initial = "", tone = "hero" }: { initial?: string; to
           if (ctl.signal.aborted) return;
           setCheck({
             kind: "error",
-            message:
-              e instanceof ApiFailure ? e.message : "Could not check that name right now. You can still continue.",
+            message: failureText(e, "Could not check that name right now. You can still continue."),
           });
         });
     }, 300);

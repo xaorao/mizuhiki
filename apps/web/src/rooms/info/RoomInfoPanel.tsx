@@ -22,6 +22,7 @@ import { MembersTab } from "./MembersTab";
 import { SettingsSection } from "./SettingsSection";
 import { InlineError } from "./Progress";
 import s from "./info.module.css";
+import { failureText } from "@/lib/failure";
 
 type Tab = "members" | "files" | "actions";
 const TYPE_TONE = { deal: "sora", payroll: "butter", team: "matcha", family: "sakura" } as const;
@@ -222,7 +223,7 @@ export function RoomInfoPanel({
       toast.show(muted ? "Muted. New messages here won't count as unread." : "Unmuted.");
       await room.reload();
     } catch (e) {
-      setMuteErr(`Not changed. ${(e as Error).message}`);
+      setMuteErr(`Not changed. ${failureText(e, "Try again.")}`);
     } finally {
       setMuteBusy(false);
     }

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { encryptFile, fromBase64Url, toBase64Url, type FileFacts } from "@mizuhiki/core";
 import type { Account } from "@/account/AccountProvider";
-import { api, ApiFailure } from "@/lib/api";
+import { api } from "@/lib/api";
 import { copyInvoiceToPasses } from "@/passes/engine";
 import { sendSealed } from "@/lib/send";
 import {
@@ -19,6 +19,7 @@ import {
   type InvoiceRecord,
   type PrivateCopy,
 } from "./model";
+import { failureText } from "@/lib/failure";
 
 export interface Loaded {
   rec: InvoiceRecord;
@@ -47,7 +48,7 @@ export function useInvoices(account: Account, token: () => Promise<string>) {
       setItems(loaded);
       setError(null);
     } catch (e) {
-      setError(e instanceof ApiFailure ? e.message : "Your invoices could not be loaded. Nothing changed.");
+      setError(failureText(e, "Your invoices could not be loaded. Nothing changed."));
     }
   }, [account, token]);
 

@@ -9,6 +9,7 @@ import { Button, LockLine, Sheet, TextArea, useToast } from "@mizuhiki/ui";
 import { useAccount } from "@/account/AccountProvider";
 import { SEND_STEP_LABEL, sendSealed, type SendStep } from "@/lib/send";
 import s from "./rooms.module.css";
+import { failureText } from "@/lib/failure";
 
 export function DirectMessage({ to, toLabel, onClose }: { to: string | null; toLabel: string; onClose: () => void }) {
   const { account } = useAccount();
@@ -35,7 +36,7 @@ export function DirectMessage({ to, toLabel, onClose }: { to: string | null; toL
       setText("");
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      setError(failureText(e, "The conversation could not be opened. Try again."));
     } finally {
       setStep(null);
     }

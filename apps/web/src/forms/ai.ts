@@ -1,8 +1,9 @@
 /** "Describe your form": an AI draft of the questions only (questions are public; answers never go there). */
 import type { FormBlock, FormDef, QuestionKind } from "@mizuhiki/core";
 import type { Account } from "@/account/AccountProvider";
-import { api, ApiFailure } from "@/lib/api";
+import { api } from "@/lib/api";
 import { blankBlock, newForm, newId } from "./model";
+import { failureText } from "@/lib/failure";
 
 interface Draft {
   title: string;
@@ -20,7 +21,7 @@ export async function draftFromDescription(
   try {
     d = await api.post<Draft>("/ai/form", { description }, { token });
   } catch (e) {
-    throw new Error(e instanceof ApiFailure ? e.message : "The helper did not answer. Nothing was created.", {
+    throw new Error(failureText(e, "The helper did not answer. Nothing was created."), {
       cause: e,
     });
   }

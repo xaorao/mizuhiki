@@ -25,7 +25,8 @@ import {
   useToast,
 } from "@mizuhiki/ui";
 import { verifyRecord, type Block, type Manifest, type RecipientCard, type Signed } from "@mizuhiki/core";
-import { assertOwnsName, pqKeyViaEvm } from "@mizuhiki/chain";
+import { assertOwnsName, isUnreachable, pqKeyViaEvm } from "@mizuhiki/chain";
+import { ChainUnreachable } from "./ChainUnreachable";
 import { PageView } from "@/page/PageView";
 import { api } from "@/lib/api";
 import { pageUrl } from "@/lib/site";
@@ -40,7 +41,7 @@ import { useShop } from "@/shop/buyer/parts";
 import s from "./public.module.css";
 import { useCanShare } from "@/lib/useClient";
 
-type Verify = { state: "checking" } | { state: "ok" } | { state: "failed"; reason: string };
+type Verify = { state: "checking" } | { state: "ok" } | { state: "failed"; reason: string } | { state: "unreachable" };
 
 export interface PublicPageProps {
   name: string;
@@ -64,6 +65,7 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
   const router = useRouter();
   const m = record.body;
   const [verify, setVerify] = useState<Verify>({ state: "checking" });
+  const [attempt, setAttempt] = useState(0);
   const firstName = (m.displayName || m.name).split(" ")[0] ?? m.name;
   const blocks = m.blocks;
   const messageBlock = blocks.find(
@@ -87,13 +89,15 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
         verifyRecord(record, { kind: "manifest", signer: registry.owner, pqPublicKey: pq.publicKey });
         if (life.alive) setVerify({ state: "ok" });
       } catch (e) {
-        if (life.alive) setVerify({ state: "failed", reason: (e as Error).message });
+        // QoreChain not answering is not a mismatch: say so and offer a retry, never "does not match".
+        if (life.alive)
+          setVerify(isUnreachable(e) ? { state: "unreachable" } : { state: "failed", reason: (e as Error).message });
       }
     })();
     return () => {
       life.alive = false;
     };
-  }, [m, name, record, registry.owner]);
+  }, [m, name, record, registry.owner, attempt]);
 
   // One view per tab session; content-blind (no IP or cookie is stored).
   useEffect(() => {
@@ -190,6 +194,16 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
     void pendingNotesFor(registry.owner).then(setPendingNotes, () => undefined);
   }, [registry.owner, open.kind]);
 
+  if (verify.state === "unreachable")
+    return (
+      <ChainUnreachable
+        what="page"
+        onRetry={() => {
+          setVerify({ state: "checking" });
+          setAttempt((n) => n + 1);
+        }}
+      />
+    );
   if (verify.state === "failed") {
     return (
       <div className={s.stage}>

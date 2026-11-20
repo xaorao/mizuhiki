@@ -9,6 +9,7 @@ import { ChoiceCard, Icon, Panel, TextField } from "@mizuhiki/ui";
 import { cardOf, offeredHelper } from "../engine";
 import type { EditorProps } from "./editorTypes";
 import s from "./seller.module.css";
+import { failureText } from "@/lib/failure";
 
 const ADDR = /^qor1[02-9ac-hj-np-z]{38}$/;
 
@@ -35,7 +36,7 @@ export function DeliveryPanel({ draft, patch }: EditorProps) {
           setCheck({
             addr: agent,
             ok: false,
-            why: e instanceof Error ? e.message : "This address has no sealing key.",
+            why: failureText(e, "This address has no sealing key."),
           }),
       );
     }, 400);

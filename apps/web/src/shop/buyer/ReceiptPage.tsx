@@ -31,6 +31,7 @@ import { fingerprint } from "./model";
 import { loadOrder } from "./OrderPage";
 import { RichText, ShopBar, Thumb, sellerPage, slotLabel, when, type SellerPage } from "./parts";
 import s from "./buyer.module.css";
+import { failureText } from "@/lib/failure";
 
 export function ReceiptPage({ orderRef }: { orderRef: string }) {
   const [load, setLoad] = useState<
@@ -54,7 +55,7 @@ export function ReceiptPage({ orderRef }: { orderRef: string }) {
         setLoad(
           e instanceof ApiFailure && e.status === 404
             ? { state: "missing" }
-            : { state: "error", message: (e as Error).message || "The receipt could not be loaded." },
+            : { state: "error", message: failureText(e, "The receipt could not be loaded.") },
         ),
     );
   }, [orderRef]);

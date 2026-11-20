@@ -13,6 +13,7 @@ import type { RoomState } from "../useRoom";
 import { adminCheck, dayLabel, permissionsCheck, removeCheck, verifyState, type Check } from "./model";
 import { InlineError, StepList, changeFailure, useSteps } from "./Progress";
 import s from "./info.module.css";
+import { failureText } from "@/lib/failure";
 
 type View = "menu" | "admin" | "perms" | "verify" | "remove";
 
@@ -108,7 +109,7 @@ export function MemberSheet({
     try {
       setWords(await safetyWords(member.address));
     } catch (e) {
-      setWordsErr((e as Error).message);
+      setWordsErr(failureText(e, "The safety words could not be shown. Try again."));
     }
   };
 
@@ -127,7 +128,7 @@ export function MemberSheet({
       await room.reload();
       onClose();
     } catch (e) {
-      setErr(`Nothing changed. ${(e as Error).message}`);
+      setErr(`Nothing changed. ${failureText(e, "Try again.")}`);
     } finally {
       setBusy(false);
     }
@@ -165,7 +166,7 @@ export function MemberSheet({
       toast.show(`${who} is marked as verified on this device.`);
       setView("menu");
     } catch (e) {
-      setWordsErr(`Not saved. ${(e as Error).message}`);
+      setWordsErr(`Not saved. ${failureText(e, "Try again.")}`);
     }
   };
 

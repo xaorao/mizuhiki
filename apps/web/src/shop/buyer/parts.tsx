@@ -15,6 +15,7 @@ import { buyerKeys, loadShop, type BuyerKey, type OrderView, type PublicProduct 
 import { paragraphs, parseInline, ratingLabel, type Inline } from "./model";
 import { getCart, onStoreChange } from "./store";
 import s from "./buyer.module.css";
+import { failureText } from "@/lib/failure";
 
 // ---- stars and ribbon --------------------------------------------------------------------------
 
@@ -244,8 +245,7 @@ export function useShop(
     const life = { alive: true };
     cachedShop(name).then(
       (items) => life.alive && setSt({ state: "ok", items }),
-      (e: unknown) =>
-        life.alive && setSt({ state: "error", message: (e as Error).message || "The shop could not be loaded." }),
+      (e: unknown) => life.alive && setSt({ state: "error", message: failureText(e, "The shop could not be loaded.") }),
     );
     return () => {
       life.alive = false;

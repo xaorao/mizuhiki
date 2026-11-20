@@ -63,6 +63,7 @@ import { PayPanel } from "./PayPanel";
 import { RichText, ShopBar, Stars, Thumb, keysForOrder, slotLabel } from "./parts";
 import { localOrder, onStoreChange, rememberOrder, rememberReview } from "./store";
 import s from "./buyer.module.css";
+import { failureText } from "@/lib/failure";
 
 type Load =
   | { state: "loading" }
@@ -115,8 +116,7 @@ export function OrderPage({ orderRef, manual }: { orderRef: string; manual: bool
     } catch (e) {
       if (e instanceof ApiFailure && e.status === 404) setLoad({ state: "missing" });
       else if (e instanceof ApiFailure) setLoad((l) => (l.state === "ok" ? l : { state: "error", message: e.message }));
-      else
-        setLoad({ state: "bad", message: (e as Error).message || "A product record in this order did not check out." });
+      else setLoad({ state: "bad", message: failureText(e, "A product record in this order did not check out.") });
       return null;
     }
   }, [orderRef, load, sent]);
@@ -466,7 +466,7 @@ function Purchase({ o, defs }: { o: OrderView; defs: Map<string, ProductDef> }) 
         const p = await openPurchase(o, keys, defs);
         if (live()) setOpen({ state: "open", p, keys });
       } catch (e) {
-        if (live()) setOpen({ state: "failed", why: (e as Error).message || "It did not open with this key." });
+        if (live()) setOpen({ state: "failed", why: failureText(e, "It did not open with this key.") });
       }
     })();
     return () => {

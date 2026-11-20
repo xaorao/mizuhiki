@@ -9,7 +9,7 @@ import { useState } from "react";
 import { Button, EmptyState, Kicker, LockLine, Musubi, Oops, Sheet, TextField, Wordmark } from "@mizuhiki/ui";
 import { Purpose, fromUtf8, openItem } from "@mizuhiki/core";
 import type { InvoiceDoc } from "@/invoices/model";
-import { ApiFailure, api } from "@/lib/api";
+import { api } from "@/lib/api";
 import { openRowWith, parseOpened, purposeFor } from "@/inbox/model";
 import { ItemBody, ItemRow, titleOf } from "@/passes/PassDetail";
 import type { PassItem } from "@/passes/engine";
@@ -17,6 +17,7 @@ import { personProblem } from "@/passes/model";
 import { offlineItems } from "./engine";
 import p from "@/passes/passes.module.css";
 import s from "./recovery.module.css";
+import { failureText } from "@/lib/failure";
 
 export function OfflineReader() {
   const [who, setWho] = useState("");
@@ -83,7 +84,7 @@ export function OfflineReader() {
       setOwner(list.owner);
       setItems(out.sort((a, b) => Date.parse(b.at) - Date.parse(a.at)));
     } catch (e) {
-      setErr(e instanceof ApiFailure || e instanceof Error ? e.message : "Nothing could be opened.");
+      setErr(failureText(e, "Nothing could be opened."));
     } finally {
       setBusy(false);
     }

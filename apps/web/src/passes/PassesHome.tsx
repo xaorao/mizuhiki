@@ -10,13 +10,13 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Avatar, Button, Chip, EmptyState, Icon, Kicker, Oops, Skeleton, StatusChip, Tabs } from "@mizuhiki/ui";
 import { useOwnerSession } from "@/owner/OwnerProvider";
-import { ApiFailure } from "@/lib/api";
 import { nameOf } from "@/rooms/engine";
 import { heldPasses, ownedPasses, type PassView } from "./engine";
 import { chipOf, scopeLine } from "./model";
 import { NewPassSheet } from "./NewPassSheet";
 import { usePassEvents } from "./usePassEvents";
 import s from "./passes.module.css";
+import { failureText } from "@/lib/failure";
 
 type Tab = "given" | "mine";
 
@@ -45,7 +45,7 @@ export function PassesHome() {
       const found = await Promise.all(who.map(async (a) => [a, await nameOf(a).catch(() => null)] as const));
       setNames(Object.fromEntries(found));
     } catch (e) {
-      setError(e instanceof ApiFailure ? e.message : "Your passes could not be loaded. Nothing changed.");
+      setError(failureText(e, "Your passes could not be loaded. Nothing changed."));
     }
   }, [owner]);
   useEffect(() => {

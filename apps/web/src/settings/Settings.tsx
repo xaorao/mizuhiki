@@ -34,7 +34,7 @@ import {
 } from "@mizuhiki/core";
 import { useAccount } from "@/account/AccountProvider";
 import { useOwner } from "@/owner/OwnerProvider";
-import { ApiFailure, api } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useContrast, type ContrastChoice } from "@/lib/contrast";
 import { SITE_URL, pageUrl } from "@/lib/site";
 import { buildSpareKeySheet, downloadBytes } from "@/lib/sparekey";
@@ -68,6 +68,7 @@ import {
 } from "./engine";
 import p from "@/passes/passes.module.css";
 import s from "./settings.module.css";
+import { failureText } from "@/lib/failure";
 
 const SECTIONS = [
   { id: "profile", label: "Profile" },
@@ -146,6 +147,17 @@ function ProfileSection() {
             </small>
           </div>
         </div>
+      ) : owner.loadError ? (
+        <Oops
+          title="Not loaded"
+          action={
+            <Button variant="line" size="sm" icon="refresh" onClick={owner.reload}>
+              Try again
+            </Button>
+          }
+        >
+          {owner.loadError}
+        </Oops>
       ) : (
         <Skeleton lines={2} />
       )}
@@ -173,7 +185,7 @@ function NamesSection({ tokened }: { tokened: () => Promise<Tokened> }) {
       setData(await myNames(await tokened()));
       setError(null);
     } catch (e) {
-      setError(e instanceof ApiFailure ? e.message : "Your names could not be loaded.");
+      setError(failureText(e, "Your names could not be loaded."));
     }
   }, [tokened]);
   useEffect(() => {
@@ -194,7 +206,7 @@ function NamesSection({ tokened }: { tokened: () => Promise<Tokened> }) {
       toast.show(`Your page now lives at @${name}. The old address says it moved.`);
       await load();
     } catch (e) {
-      toast.show(e instanceof Error ? e.message : "The name was not changed.", { tone: "error" });
+      toast.show(failureText(e, "The name was not changed."), { tone: "error" });
     } finally {
       setBusy(null);
     }
@@ -209,7 +221,7 @@ function NamesSection({ tokened }: { tokened: () => Promise<Tokened> }) {
       setReleasing(null);
       await load();
     } catch (e) {
-      toast.show(e instanceof Error ? e.message : "It was not released.", { tone: "error" });
+      toast.show(failureText(e, "It was not released."), { tone: "error" });
     } finally {
       setBusy(null);
     }
@@ -219,7 +231,16 @@ function NamesSection({ tokened }: { tokened: () => Promise<Tokened> }) {
     <Section id="names" title="Names">
       <p>Names are recorded on QoreChain and belong to your key. Your page uses one of them as its address.</p>
       {error ? (
-        <Oops title="Not loaded">{error}</Oops>
+        <Oops
+          title="Not loaded"
+          action={
+            <Button variant="line" size="sm" icon="refresh" onClick={() => void load()}>
+              Try again
+            </Button>
+          }
+        >
+          {error}
+        </Oops>
       ) : !data ? (
         <Skeleton lines={2} />
       ) : (
@@ -317,11 +338,7 @@ function ClaimSheet({
       onClose();
       await onDone();
     } catch (e) {
-      setErr(
-        e instanceof Error
-          ? e.message
-          : "The name was not claimed. Nothing was charged beyond network fees already shown.",
-      );
+      setErr(failureText(e, "The name was not claimed. Nothing was charged beyond network fees already shown."));
     } finally {
       setStage(null);
     }
@@ -416,7 +433,7 @@ function SecuritySection() {
         reset();
       }
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "That did not work.");
+      setErr(failureText(e, "That did not work."));
     } finally {
       setBusy(false);
     }
@@ -454,9 +471,7 @@ function SecuritySection() {
                 void acct
                   .addPasskey("Mizuhiki")
                   .then(() => toast.show("Passkey added on this device."))
-                  .catch((e: unknown) =>
-                    toast.show(e instanceof Error ? e.message : "No passkey was added.", { tone: "error" }),
-                  )
+                  .catch((e: unknown) => toast.show(failureText(e, "No passkey was added."), { tone: "error" }))
                   .finally(() => setBusy(false));
               }}
             >
@@ -700,7 +715,7 @@ function NotificationsSection({ tokened }: { tokened: () => Promise<Tokened> }) 
                         await load();
                       })
                       .catch((e: unknown) =>
-                        toast.show(e instanceof Error ? e.message : "Notifications were not turned on.", {
+                        toast.show(failureText(e, "Notifications were not turned on."), {
                           tone: "error",
                         }),
                       )
@@ -788,7 +803,7 @@ function ReadersSection({ tokened }: { tokened: () => Promise<Tokened> }) {
       setWho("");
       router.push(`/app/passes/${pass.id}`);
     } catch (e) {
-      setErr(e instanceof ApiFailure || e instanceof Error ? e.message : "They were not invited.");
+      setErr(failureText(e, "They were not invited."));
     } finally {
       setBusy(false);
     }
@@ -921,7 +936,7 @@ function DataSection({ tokened }: { tokened: () => Promise<Tokened> }) {
           : "Saved. Everything was opened on this device.",
       );
     } catch (e) {
-      toast.show(e instanceof Error ? e.message : "The export did not finish.", { tone: "error" });
+      toast.show(failureText(e, "The export did not finish."), { tone: "error" });
     } finally {
       setStep(null);
     }
@@ -942,7 +957,7 @@ function DataSection({ tokened }: { tokened: () => Promise<Tokened> }) {
       .then(deletePage)
       // A full load to the landing page: nothing in memory survives, and it says what happened there.
       .then(() => acct.forgetDevice("/?left=deleted"))
-      .catch((e: unknown) => toast.show(e instanceof Error ? e.message : "It was not deleted.", { tone: "error" }));
+      .catch((e: unknown) => toast.show(failureText(e, "It was not deleted."), { tone: "error" }));
   }, [countdown, tokened, acct, toast]);
   const undo = () => {
     if (timer.current) clearInterval(timer.current);
@@ -1072,9 +1087,7 @@ function WindowSection() {
                   toast.show("The access window is closed.");
                   await load();
                 })
-                .catch((e: unknown) =>
-                  toast.show(e instanceof Error ? e.message : "It was not closed.", { tone: "error" }),
-                )
+                .catch((e: unknown) => toast.show(failureText(e, "It was not closed."), { tone: "error" }))
                 .finally(() => setBusy(false));
             }}
           >

@@ -23,7 +23,6 @@ import {
 import { formatAmount, type ShopToken } from "@mizuhiki/core";
 import { denomBySymbol, explorerTx, fromBaseUnits } from "@mizuhiki/chain";
 import { useAccount } from "@/account/AccountProvider";
-import { ApiFailure } from "@/lib/api";
 import {
   PayFailure,
   payWithMizuhiki,
@@ -37,6 +36,7 @@ import { orderPayment, reportTx, type OrderView } from "../engine";
 import { rememberOrder, rememberTx } from "./store";
 import s from "./buyer.module.css";
 import { useHere } from "@/lib/useClient";
+import { failureText, PAY_UNKNOWN_TEXT } from "@/lib/failure";
 
 export type BuyMethod = "qorex" | "mizuhiki" | "manual";
 
@@ -133,8 +133,7 @@ export function PayPanel({
     reviewMizuhiki(acct.account, seller, estimate).then(
       (r) => life.alive && setFee(r),
       (e: unknown) =>
-        life.alive &&
-        setFee({ fee: null, problem: (e as Error).message || "The network fee could not be worked out." }),
+        life.alive && setFee({ fee: null, problem: failureText(e, "The network fee could not be worked out.") }),
     );
     return () => {
       life.alive = false;
@@ -179,7 +178,7 @@ export function PayPanel({
     } catch (e) {
       setFailure({
         title: "Not paid. Nothing was charged.",
-        detail: e instanceof ApiFailure || e instanceof Error ? e.message : "The order could not be placed.",
+        detail: failureText(e, "The order could not be placed."),
       });
       setPhase("failed");
       return;
@@ -192,7 +191,11 @@ export function PayPanel({
     try {
       p = orderPayment(placed, part);
     } catch (e) {
-      setFailure({ title: "Not paid. No money moved.", detail: (e as Error).message, ref: placed.ref });
+      setFailure({
+        title: "Not paid. No money moved.",
+        detail: failureText(e, "The payment was not started."),
+        ref: placed.ref,
+      });
       setPhase("failed");
       return;
     }
@@ -223,10 +226,7 @@ export function PayPanel({
       await reportTx(placed.ref, r.txHash).catch(() => undefined);
       if (alive.current) onPaid(placed, r.txHash);
     } catch (e) {
-      const f =
-        e instanceof PayFailure
-          ? e
-          : new PayFailure("The payment could not be sent. No money moved.", "unknown", sentHash);
+      const f = e instanceof PayFailure ? e : new PayFailure(PAY_UNKNOWN_TEXT, "unknown", sentHash);
       setFailure({
         title:
           f.moved === "no"
@@ -253,7 +253,7 @@ export function PayPanel({
       setPass("");
       setMethod("mizuhiki");
     } catch (e) {
-      setUnlockErr((e as Error).message || "That passphrase did not unlock this device.");
+      setUnlockErr(failureText(e, "That passphrase did not unlock this device."));
     } finally {
       setUnlocking(false);
     }

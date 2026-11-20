@@ -13,6 +13,7 @@ import type { RoomState } from "../useRoom";
 import { transferGate } from "./model";
 import { InlineError } from "./Progress";
 import s from "./info.module.css";
+import { failureText } from "@/lib/failure";
 
 const UNDO_MS = 5000;
 
@@ -57,7 +58,7 @@ export function BottomActions({ room, names }: { room: RoomState; names: Record<
       setSheet(null);
       router.push("/app/rooms");
     } catch (e) {
-      setErr(`You are still in the room. ${(e as Error).message}`);
+      setErr(`You are still in the room. ${failureText(e, "Try again.")}`);
     } finally {
       setBusy(null);
     }
@@ -73,7 +74,7 @@ export function BottomActions({ room, names }: { room: RoomState; names: Record<
       setSheet(null);
       void room.reload();
     } catch (e) {
-      setErr(`You still own the room. ${(e as Error).message}`);
+      setErr(`You still own the room. ${failureText(e, "Try again.")}`);
     } finally {
       setBusy(null);
     }
@@ -87,7 +88,7 @@ export function BottomActions({ room, names }: { room: RoomState; names: Record<
       router.push("/app/rooms");
     } catch (e) {
       setPending(false);
-      toast.show(`The room was not deleted. ${(e as Error).message}`, { tone: "error", ms: 8000 });
+      toast.show(`The room was not deleted. ${failureText(e, "Try again.")}`, { tone: "error", ms: 8000 });
     } finally {
       setBusy(null);
     }

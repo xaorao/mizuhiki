@@ -13,6 +13,7 @@ import { ROOM_TEMPLATES } from "@mizuhiki/core";
 import { RoomAvatar, label, useNames } from "./people";
 import type { ListState } from "./useRoomList";
 import s from "./rooms.module.css";
+import { failureText } from "@/lib/failure";
 
 export function when(iso: string): string {
   const d = new Date(iso);
@@ -47,7 +48,7 @@ export function RoomList({ list, activeId }: { list: ListState; activeId?: strin
       toast.show("Request cancelled.");
       void list.reload();
     } catch (e) {
-      toast.show((e as Error).message, { tone: "error" });
+      toast.show(failureText(e, "That did not work. Try again."), { tone: "error" });
     }
   };
 

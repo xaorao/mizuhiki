@@ -41,6 +41,7 @@ import { toneOf, useSealedPhoto } from "../people";
 import { useRoomEvents } from "../useRoom";
 import { fmtWhen, isInviteId, keyFromFragment } from "./limits";
 import s from "./invite.module.css";
+import { failureText } from "@/lib/failure";
 
 type Load =
   | { s: "loading" }
@@ -159,7 +160,7 @@ export function JoinPage({ id }: { id: string }) {
       else
         setActionError({
           title: "You have not joined",
-          detail: e instanceof Error ? e.message : "Something went wrong. Nothing changed.",
+          detail: failureText(e, "Something went wrong. Nothing changed."),
         });
       if (e instanceof ApiFailure && (e.status === 410 || e.status === 403)) void refresh();
     } finally {
@@ -178,7 +179,7 @@ export function JoinPage({ id }: { id: string }) {
     } catch (e) {
       setActionError({
         title: "Not cancelled",
-        detail: `${e instanceof Error ? e.message : "Something went wrong."} Your request is still waiting.`,
+        detail: `${failureText(e, "Something went wrong.")} Your request is still waiting.`,
       });
     } finally {
       setBusy(null);

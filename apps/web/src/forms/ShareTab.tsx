@@ -31,6 +31,7 @@ import { SITE_URL } from "@/lib/site";
 import { contrast } from "@/page/theme";
 import type { TabProps } from "./tabTypes";
 import s from "./settings.module.css";
+import { failureText } from "@/lib/failure";
 
 type EmbedMode = "standard" | "popup" | "slider" | "sidetab";
 
@@ -107,7 +108,7 @@ export function ShareTab(props: TabProps) {
       const r = await props.publish();
       if (r) toast.show("Published. The link is live.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "The form was not published. Nothing changed.");
+      setError(failureText(e, "The form was not published. Nothing changed."));
     } finally {
       setBusy(false);
     }
@@ -276,9 +277,7 @@ function PageButton({ def, published }: { def: FormDef; published: FormDef }) {
     o.publish().then(
       () => toast.show(done),
       (e: unknown) =>
-        setError(
-          `${e instanceof Error ? e.message : "Your page was not published."} The button is saved in your page draft.`,
-        ),
+        setError(`${failureText(e, "Your page was not published.")} The button is saved in your page draft.`),
     );
   }, [queued, o, toast]);
 
@@ -496,7 +495,7 @@ function EmbedPanel({ ownerName, slug }: { ownerName: string; slug: string }) {
         }
       } else if (!api.open(testUrl(), { mode })) throw new Error("The embed script refused this link.");
     } catch (e) {
-      setTestError(e instanceof Error ? e.message : "The test did not start.");
+      setTestError(failureText(e, "The test did not start."));
     } finally {
       setTesting(false);
     }

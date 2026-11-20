@@ -5,13 +5,14 @@ import Link from "next/link";
 import { Chip, EmptyState, Icon, Oops, Panel, Skeleton } from "@mizuhiki/ui";
 import { useAccount } from "@/account/AccountProvider";
 import { useOwner } from "@/owner/OwnerProvider";
-import { api, ApiFailure } from "@/lib/api";
+import { api } from "@/lib/api";
 import { HashDrop, type Hashed } from "./HashDrop";
 import { ProveSheet } from "./ProveSheet";
 import { certificatePath, readLabels, type ProofLabel } from "./proof";
 import type { AnchorRecord } from "@mizuhiki/chain";
 import { fmtBytes } from "@/public/MessageSheet";
 import s from "./proof.module.css";
+import { failureText } from "@/lib/failure";
 
 interface ProofRow {
   contentHash: string;
@@ -46,7 +47,7 @@ export function MyProofs() {
       setError(null);
       return r.proofs;
     } catch (e) {
-      setError(e instanceof ApiFailure ? e.message : "Your proofs could not be loaded. Nothing changed.");
+      setError(failureText(e, "Your proofs could not be loaded. Nothing changed."));
       return [];
     }
   }, [account, owner]);

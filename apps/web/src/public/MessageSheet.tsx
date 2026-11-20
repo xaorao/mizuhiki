@@ -41,6 +41,7 @@ import { useAccount } from "@/account/AccountProvider";
 import { api, mediaUrl } from "@/lib/api";
 import { SEND_STEP_LABEL, SendFailure, sendSealed, type SendResult, type SendStep } from "@/lib/send";
 import s from "./public.module.css";
+import { failureText } from "@/lib/failure";
 
 export interface OwnerRef {
   name: string;
@@ -135,7 +136,7 @@ export function MessageSheet({
       setPass("");
       setSigned(true);
     } catch (e) {
-      setUnlockErr((e as Error).message || "That passphrase did not unlock this device.");
+      setUnlockErr(failureText(e, "That passphrase did not unlock this device."));
     } finally {
       setUnlocking(false);
     }
@@ -227,7 +228,7 @@ export function MessageSheet({
       setPhase("done");
       onSent?.();
     } catch (e) {
-      setFailure(e instanceof SendFailure ? e : new SendFailure("Not sent. Nothing left your device.", "nothing"));
+      setFailure(e instanceof SendFailure ? e : new SendFailure("Something went wrong on this device.", "nothing"));
       setPhase("failed");
     }
   };

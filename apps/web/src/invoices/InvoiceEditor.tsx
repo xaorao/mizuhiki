@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation";
 import { Button, Chip, Icon, IconButton, LockLine, Oops, Segmented, TextArea, TextField, useToast } from "@mizuhiki/ui";
 import { normalizeNameInput } from "@mizuhiki/core";
 import type { Account } from "@/account/AccountProvider";
-import { ApiFailure } from "@/lib/api";
 import { fmtBytes } from "@/public/MessageSheet";
 import {
   DUE_LABEL,
@@ -30,6 +29,7 @@ import { InvoiceView } from "./InvoiceView";
 import { ShareSheet } from "./ShareSheet";
 import s from "./invoices.module.css";
 import { ownerOfName } from "@mizuhiki/chain";
+import { failureText } from "@/lib/failure";
 
 type Save = "idle" | "saving" | "saved" | "error";
 
@@ -146,7 +146,7 @@ export function InvoiceEditor({
       setShared(r);
       dirty.current = false;
     } catch (e) {
-      setProblems([e instanceof ApiFailure ? e.message : "The invoice could not be sent. Nothing was shared."]);
+      setProblems([failureText(e, "The invoice could not be sent. Nothing was shared.")]);
     } finally {
       setSending(false);
     }

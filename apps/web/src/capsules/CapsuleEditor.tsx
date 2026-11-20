@@ -36,7 +36,6 @@ import {
   type CapsuleMode,
 } from "@mizuhiki/core";
 import { useOwnerSession } from "@/owner/OwnerProvider";
-import { ApiFailure } from "@/lib/api";
 import { cardOf } from "@/lib/send";
 import { lookupPerson, nameOf, safetyWords } from "@/rooms/engine";
 import { personProblem } from "@/passes/model";
@@ -70,6 +69,7 @@ import { PHASE_CHIP, countdown, when, type Live } from "./CapsulesHome";
 import { useCapsuleEvents } from "./useCapsuleEvents";
 import p from "@/passes/passes.module.css";
 import s from "./capsules.module.css";
+import { failureText } from "@/lib/failure";
 
 const MODES: { value: CapsuleMode; label: string }[] = [
   { value: "at-time", label: "At a set time" },
@@ -114,7 +114,7 @@ export function CapsuleEditor({ id: given }: { id: string | null }) {
       );
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "This capsule could not be opened.");
+      setError(failureText(e, "This capsule could not be opened."));
     }
   }, [id, tokened, owner.account]);
   useEffect(() => {
@@ -263,7 +263,7 @@ function StatusPanel({
       toast.show(ok);
       await reload();
     } catch (e) {
-      toast.show(e instanceof ApiFailure || e instanceof Error ? e.message : "That did not work. Nothing changed.", {
+      toast.show(failureText(e, "That did not work. Nothing changed."), {
         tone: "error",
       });
     } finally {
@@ -585,7 +585,7 @@ function WhatWho({
       }));
       setWho("");
     } catch (e) {
-      setErr(e instanceof ApiFailure || e instanceof Error ? e.message : "They were not added.");
+      setErr(failureText(e, "They were not added."));
     } finally {
       setBusy(false);
     }
@@ -601,7 +601,7 @@ function WhatWho({
           recipients: d.recipients.map((r) => ({ ...r, files: [...r.files, facts.fileId] })),
         }));
       } catch (e) {
-        setErr(e instanceof Error ? e.message : `${f.name} was not added.`);
+        setErr(failureText(e, `${f.name} was not added.`));
       }
     }
     setUp(null);
@@ -922,7 +922,7 @@ function Guardians({
       setWho("");
       await reload();
     } catch (e) {
-      setErr(e instanceof ApiFailure || e instanceof Error ? e.message : "They were not invited.");
+      setErr(failureText(e, "They were not invited."));
     } finally {
       setBusy(null);
     }
@@ -1054,9 +1054,7 @@ function Guardians({
                     setChecking(null);
                     await reload();
                   })
-                  .catch((e: unknown) =>
-                    toast.show(e instanceof Error ? e.message : "Not confirmed.", { tone: "error" }),
-                  )
+                  .catch((e: unknown) => toast.show(failureText(e, "Not confirmed."), { tone: "error" }))
                   .finally(() => setBusy(null));
               }}
             >
@@ -1138,7 +1136,7 @@ function ConfirmPlan({
       await reload();
     } catch (e) {
       setStep(cur.at);
-      setErr(e instanceof ApiFailure || e instanceof Error ? e.message : "It was not armed. Nothing was recorded.");
+      setErr(failureText(e, "It was not armed. Nothing was recorded."));
     }
   };
   const i = step ? ARM_ORDER.indexOf(step) : -1;

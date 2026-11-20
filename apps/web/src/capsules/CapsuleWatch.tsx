@@ -13,6 +13,7 @@ import { useOwnerSession } from "@/owner/OwnerProvider";
 import { chainNow, chainState, checkIn, guardedCapsules, guardianPass, ownedCapsules } from "./engine";
 import { useCapsuleEvents } from "./useCapsuleEvents";
 import s from "./capsules.module.css";
+import { failureText } from "@/lib/failure";
 
 export function CapsuleWatch() {
   const owner = useOwnerSession();
@@ -81,7 +82,7 @@ export function CapsuleWatch() {
               toast.show("Checked in. The quiet clock starts again.");
               setQuiet(null);
             })
-            .catch((e: unknown) => toast.show(e instanceof Error ? e.message : "Not checked in.", { tone: "error" }))
+            .catch((e: unknown) => toast.show(failureText(e, "Not checked in."), { tone: "error" }))
             .finally(() => setBusy(false));
         }}
       >

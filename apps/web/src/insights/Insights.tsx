@@ -9,11 +9,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Button, EmptyState, Kicker, LockLine, Oops, Segmented, Skeleton, StatTile, useToast } from "@mizuhiki/ui";
 import { useOwner } from "@/owner/OwnerProvider";
-import { api, ApiFailure } from "@/lib/api";
+import { api } from "@/lib/api";
 import { pageUrl } from "@/lib/site";
 import { PaidTile } from "@/editor/MyPage";
 import p from "@/passes/passes.module.css";
 import s from "./insights.module.css";
+import { failureText } from "@/lib/failure";
 
 type Range = "7" | "28" | "all";
 interface Data {
@@ -69,7 +70,7 @@ export function Insights() {
       setData(await api.get<Data>(`/owner/insights?range=${range}`, { token: await token() }));
       setError(null);
     } catch (e) {
-      setError(e instanceof ApiFailure ? e.message : "Insights could not be loaded. Nothing changed.");
+      setError(failureText(e, "Insights could not be loaded. Nothing changed."));
     }
   }, [token, range]);
   useEffect(() => {

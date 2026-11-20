@@ -39,6 +39,7 @@ import { RoomInfoPanel } from "./info/RoomInfoPanel";
 import { InviteLinks } from "./invite/InviteLinks";
 import { DirectMessage } from "./DirectMessage";
 import s from "./rooms.module.css";
+import { failureText } from "@/lib/failure";
 
 const REACTIONS = ["❤️", "👍", "😂", "😮", "🙏", "🎉"];
 const BANNER_KEY = "mzk:room-banner-seen";
@@ -236,7 +237,7 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
         try {
           await j.run();
         } catch (e) {
-          toast.show(`Not sent: ${(e as Error).message}`, { tone: "error" });
+          toast.show(`Not sent: ${failureText(e, "Try again.")}`, { tone: "error" });
         } finally {
           setSending((x) => x.filter((p) => p.id !== j.id));
         }
@@ -253,7 +254,7 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
       await postMessage(await room.acct(), roomId, { kind: "reaction", target: it.key, emoji, on });
       await room.reload();
     } catch (e) {
-      toast.show((e as Error).message, { tone: "error" });
+      toast.show(failureText(e, "That did not work. Try again."), { tone: "error" });
     }
   };
   const pin = async (it: MessageItem) => {
@@ -263,7 +264,7 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
       await room.reload();
       toast.show(it.pinned ? "Unpinned." : "Pinned for everyone.");
     } catch (e) {
-      toast.show((e as Error).message, { tone: "error" });
+      toast.show(failureText(e, "That did not work. Try again."), { tone: "error" });
     }
   };
   const remove = async (it: MessageItem) => {
@@ -273,7 +274,7 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
       await room.reload();
       toast.show("Deleted for everyone. The sealed copy was removed from storage.");
     } catch (e) {
-      toast.show((e as Error).message, { tone: "error" });
+      toast.show(failureText(e, "That did not work. Try again."), { tone: "error" });
     }
   };
   const copy = async (it: MessageItem) => {
@@ -294,7 +295,7 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
       await room.reload();
       toast.show(detail.me.muted ? "Notifications on." : "Muted. You will not be told about new messages.");
     } catch (e) {
-      toast.show((e as Error).message, { tone: "error" });
+      toast.show(failureText(e, "That did not work. Try again."), { tone: "error" });
     }
   };
   const leave = async () => {
@@ -304,7 +305,7 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
       toast.show("You left the room. The key changes as soon as an admin's device is open.");
       router.push("/app/rooms");
     } catch (e) {
-      toast.show((e as Error).message, { tone: "error" });
+      toast.show(failureText(e, "That did not work. Try again."), { tone: "error" });
     }
   };
   const forget = async () => {
@@ -312,7 +313,7 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
       await forgetRoom(await room.acct(), roomId);
       router.push("/app/rooms");
     } catch (e) {
-      toast.show((e as Error).message, { tone: "error" });
+      toast.show(failureText(e, "That did not work. Try again."), { tone: "error" });
     }
   };
 

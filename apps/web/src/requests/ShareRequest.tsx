@@ -13,6 +13,7 @@ import { updateBlock } from "@/editor/blocks";
 import { markChecklist } from "@/editor/checklist";
 import { requestLink } from "./engine";
 import s from "./requests.module.css";
+import { failureText } from "@/lib/failure";
 
 export function ShareRequest({
   open,
@@ -110,9 +111,7 @@ function AddToPage({ request }: { request: FileRequest }) {
     o.publish().then(
       () => toast.show(done),
       (e: unknown) =>
-        setError(
-          `${e instanceof Error ? e.message : "Your page was not published."} The button is saved in your page draft.`,
-        ),
+        setError(`${failureText(e, "Your page was not published.")} The button is saved in your page draft.`),
     );
   }, [queued, o, toast]);
 

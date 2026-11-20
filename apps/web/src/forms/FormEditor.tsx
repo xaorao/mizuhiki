@@ -22,6 +22,7 @@ import { ShareTab } from "./ShareTab";
 import { ResultsTab } from "./ResultsTab";
 import type { TabProps } from "./tabTypes";
 import s from "./forms.module.css";
+import { failureText } from "@/lib/failure";
 
 type Tab = "build" | "logic" | "settings" | "share" | "results";
 const TABS: { value: Tab; label: string }[] = [
@@ -79,7 +80,7 @@ export function FormEditor({ id }: { id: string }) {
           setPublished(served?.record.body ?? null);
         }
       } catch (e) {
-        setLoadErr(e instanceof ApiFailure ? e.message : (e as Error).message || "This form could not be opened.");
+        setLoadErr(e instanceof ApiFailure ? e.message : failureText(e, "This form could not be opened."));
       }
     })();
   }, [account, id, owner, ownerName]);
@@ -181,7 +182,7 @@ export function FormEditor({ id }: { id: string }) {
       toast.show("Published, signed with your key");
       return body;
     } catch (e) {
-      const msg = e instanceof ApiFailure ? e.message : "The form could not be published. Nothing changed.";
+      const msg = failureText(e, "The form could not be published. Nothing changed.");
       setProblems([msg]);
       throw new Error(msg, { cause: e });
     } finally {

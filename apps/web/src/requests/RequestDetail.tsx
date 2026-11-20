@@ -32,6 +32,7 @@ import { deadlineText, STATE_LABEL, type UploadRow } from "./model";
 import { RequestSheet } from "./RequestSheet";
 import { ShareRequest } from "./ShareRequest";
 import s from "./requests.module.css";
+import { failureText } from "@/lib/failure";
 
 type Opened = { s: "opening" } | { s: "ok"; m: OpenedMessage } | { s: "failed"; why: string };
 const when = (iso: string) =>
@@ -70,7 +71,7 @@ export function RequestDetail({ id }: { id: string }) {
       setError(null);
     } catch (e) {
       if (e instanceof ApiFailure && e.status === 404) setMissing(true);
-      else setError(e instanceof ApiFailure ? e.message : "This request could not be loaded. Nothing changed.");
+      else setError(failureText(e, "This request could not be loaded. Nothing changed."));
     }
   }, [id, tokened]);
   useEffect(() => {
@@ -108,10 +109,7 @@ export function RequestDetail({ id }: { id: string }) {
       toast.show(done);
       if (reload) await load();
     } catch (e) {
-      toast.show(
-        `${e instanceof ApiFailure || e instanceof Error ? e.message : "That did not work."} Nothing changed.`,
-        { tone: "error" },
-      );
+      toast.show(`${failureText(e, "That did not work.")} Nothing changed.`, { tone: "error" });
     } finally {
       setBusy(null);
     }

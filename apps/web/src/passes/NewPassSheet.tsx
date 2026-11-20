@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Avatar, Button, ChoiceCard, Icon, Segmented, Sheet, Skeleton, TextArea, TextField } from "@mizuhiki/ui";
 import { PERIOD_KINDS, boundaryText, passKeyIndex, quarterPeriod, type PeriodKind } from "@mizuhiki/core";
 import { useOwner } from "@/owner/OwnerProvider";
-import { api, ApiFailure } from "@/lib/api";
+import { api } from "@/lib/api";
 import { cardOf } from "@/lib/send";
 import { listRooms, lookupPerson, readSummaries, withToken } from "@/rooms/engine";
 import { listMyProducts } from "@/shop/engine";
@@ -17,6 +17,7 @@ import type { FormRow } from "@/forms/model";
 import { createPass, scopeOf, type NewPass, type PassView } from "./engine";
 import { LASTS, expiryOf, personProblem, recentQuarters, type Lasts } from "./model";
 import s from "./passes.module.css";
+import { failureText } from "@/lib/failure";
 
 type What = "period" | "room" | "form" | "product";
 const KIND_WORDS: Record<PeriodKind, string> = {
@@ -181,7 +182,7 @@ export function NewPassSheet({
       setWhoError(null);
       return found;
     } catch (e) {
-      setWhoError(e instanceof Error ? e.message : "That account could not be checked. Try again.");
+      setWhoError(failureText(e, "That account could not be checked. Try again."));
       return null;
     } finally {
       setChecking(false);
@@ -204,9 +205,7 @@ export function NewPassSheet({
         ),
       );
     } catch (e) {
-      setError(
-        e instanceof ApiFailure || e instanceof Error ? e.message : "The pass was not made. Nothing was shared.",
-      );
+      setError(failureText(e, "The pass was not made. Nothing was shared."));
     } finally {
       setBusy(false);
     }

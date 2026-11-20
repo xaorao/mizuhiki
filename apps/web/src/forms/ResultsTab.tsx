@@ -20,7 +20,6 @@ import {
   Sheet,
   Skeleton,
 } from "@mizuhiki/ui";
-import { ApiFailure } from "@/lib/api";
 import { pageUrl } from "@/lib/site";
 import type { TabProps } from "./tabTypes";
 import {
@@ -53,6 +52,7 @@ import {
   type SnapshotRow,
 } from "./results/snapshot";
 import s from "./results.module.css";
+import { failureText } from "@/lib/failure";
 
 type Phase =
   { s: "loading" } | { s: "failed"; why: string } | { s: "opening"; done: number; total: number } | { s: "ready" };
@@ -169,7 +169,7 @@ export function ResultsTab(props: TabProps) {
         if (!live()) return;
         setPhase({
           s: "failed",
-          why: e instanceof ApiFailure ? e.message : "Your results could not be loaded. Nothing was changed.",
+          why: failureText(e, "Your results could not be loaded. Nothing was changed."),
         });
       }
     })();

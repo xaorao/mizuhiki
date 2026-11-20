@@ -27,6 +27,7 @@ import { SITE_URL } from "@/lib/site";
 import { productPath } from "./model";
 import type { EditorProps } from "./editorTypes";
 import s from "./seller.module.css";
+import { failureText } from "@/lib/failure";
 
 export function ShareTab({ draft, row, name, publish, publishing }: EditorProps) {
   const toast = useToast();
@@ -148,9 +149,7 @@ function ShowOnPage({ productId, title }: { productId: string; title: string }) 
     o.publish().then(
       () => toast.show(done),
       (e: unknown) =>
-        setError(
-          `${e instanceof Error ? e.message : "Your page was not published."} The change is saved in your page draft.`,
-        ),
+        setError(`${failureText(e, "Your page was not published.")} The change is saved in your page draft.`),
     );
   }, [queued, o, toast]);
 

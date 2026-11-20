@@ -6,13 +6,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, IconButton, Panel, Skeleton, TextField } from "@mizuhiki/ui";
 import { formatAmount, type ProductDef } from "@mizuhiki/core";
-import { ApiFailure } from "@/lib/api";
 import { listMyProducts, openDraft } from "../engine";
 import { WEEKDAYS, fromTime, hoursProblems, sumByToken, toTime } from "./model";
 import { CountField } from "./fields";
 import { Thumb } from "./bits";
 import type { EditorProps } from "./editorTypes";
 import s from "./seller.module.css";
+import { failureText } from "@/lib/failure";
 
 export function KindPanel(props: EditorProps) {
   const k = props.draft.def.kind;
@@ -213,7 +213,7 @@ function BundlePanel({ draft, patch, tokened }: EditorProps) {
           ),
         );
       } catch (e) {
-        setErr(e instanceof ApiFailure ? e.message : "Your products could not be loaded.");
+        setErr(failureText(e, "Your products could not be loaded."));
       }
     })();
   }, [tokened, draft.def.id]);

@@ -18,7 +18,7 @@ import {
 } from "@mizuhiki/core";
 import type { SealKeyPair } from "@qorechain/qoreseal";
 import { useAccount } from "@/account/AccountProvider";
-import { api, ApiFailure } from "@/lib/api";
+import { api } from "@/lib/api";
 import { SITE_HOST } from "@/lib/site";
 import { downloadBytes } from "@/lib/sparekey";
 import {
@@ -34,6 +34,7 @@ import { buildBuyerKeySheet } from "./buyerKeySheet";
 import { fingerprint } from "./model";
 import s from "./buyer.module.css";
 import { ownerOfName } from "@mizuhiki/chain";
+import { failureText } from "@/lib/failure";
 
 export interface SealChoice {
   recipient: OrderRequest["recipient"];
@@ -529,7 +530,7 @@ function GiftChoice({
       const card = await cardOf(address);
       onChange({ address, name, card });
     } catch (e) {
-      setErr(e instanceof ApiFailure || e instanceof Error ? e.message : "That wallet could not be found.");
+      setErr(failureText(e, "That wallet could not be found."));
     } finally {
       setBusy(false);
     }

@@ -25,10 +25,11 @@ import {
 import { mediaUrl } from "@/lib/api";
 import { qorex } from "@/lib/pay";
 import { NETWORK } from "@mizuhiki/chain";
-import { SUBMIT_LABEL, SubmitFailure, formEvent, submitAnswers, type SubmitStep } from "./submit";
+import { SUBMIT_LABEL, formEvent, submitAnswers, type SubmitStep } from "./submit";
 import { SignaturePad } from "./SignaturePad";
 import s from "./runner.module.css";
 import { useSearch } from "@/lib/useClient";
+import { failureText } from "@/lib/failure";
 
 interface Step {
   ids: string[];
@@ -235,9 +236,7 @@ export function FormRunner({
       const e = def.endings.find((x) => x.id === endingId);
       if (e?.redirect) setTimeout(() => window.location.assign(e.redirect ?? "/"), 2200);
     } catch (e) {
-      setFailure(
-        e instanceof SubmitFailure ? e.message : "Your answers could not be sent. They are still here; try again.",
-      );
+      setFailure(failureText(e, "Your answers could not be sent. They are still here; try again."));
       setPhase("failed");
     }
   };

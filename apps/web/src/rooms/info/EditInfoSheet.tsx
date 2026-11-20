@@ -12,6 +12,7 @@ import { RoomAvatar, toneOf } from "../people";
 import type { RoomState } from "../useRoom";
 import { InlineError } from "./Progress";
 import s from "./info.module.css";
+import { failureText } from "@/lib/failure";
 
 const MAX_PHOTO = 8 * 1024 * 1024;
 
@@ -91,7 +92,7 @@ export function EditInfoSheet({ room, open, onClose }: { room: RoomState; open: 
       onClose();
       void room.reload();
     } catch (e) {
-      setErr(`Not saved. The room still shows its old info. ${(e as Error).message}`);
+      setErr(`Not saved. The room still shows its old info. ${failureText(e, "Try again.")}`);
       setBusy(null);
     }
   };

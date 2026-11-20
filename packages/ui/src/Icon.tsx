@@ -191,6 +191,14 @@ const PATHS = {
       <path d="M20 9H10a6 6 0 0 0 0 12h3" />
     </>
   ),
+  refresh: (
+    <>
+      <path d="M20 11a8 8 0 0 0-14.3-4.9L4 8" />
+      <path d="M4 3v5h5" />
+      <path d="M4 13a8 8 0 0 0 14.3 4.9L20 16" />
+      <path d="M20 21v-5h-5" />
+    </>
+  ),
   search: (
     <>
       <circle cx="11" cy="11" r="7" />

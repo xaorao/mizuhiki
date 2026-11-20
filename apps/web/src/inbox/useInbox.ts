@@ -11,6 +11,7 @@ import { pqKeyViaEvm } from "@mizuhiki/chain";
 import type { Account } from "@/account/AccountProvider";
 import { API_URL, api, ApiFailure } from "@/lib/api";
 import { openRow, readCache, writeCache, type InboxRow, type Opened } from "./model";
+import { failureText } from "@/lib/failure";
 
 export type Box = "inbox" | "archived" | "sent";
 export type OpenState =
@@ -46,7 +47,7 @@ export function useInbox(account: Account, token: () => Promise<string>, onChang
         setRows(r.rows);
         setError(null);
       } catch (e) {
-        setError(e instanceof ApiFailure ? e.message : "The inbox could not be loaded. Nothing was changed.");
+        setError(failureText(e, "The inbox could not be loaded. Nothing was changed."));
       }
     },
     [box, token],
@@ -148,8 +149,9 @@ export function useInbox(account: Account, token: () => Promise<string>, onChang
       }
       if (!row.read && box !== "sent") {
         setRows((rs) => rs?.map((r) => (r.id === row.id ? { ...r, read: true } : r)) ?? rs);
-        const t = await token();
-        await api.patch(`/owner/inbox/${hash}`, { read: true }, { token: t }).catch(() => undefined);
+        // Best effort: if Mizuhiki cannot be reached, the item stays unread on the server and is marked next time.
+        const t = await token().catch(() => null);
+        if (t) await api.patch(`/owner/inbox/${hash}`, { read: true }, { token: t }).catch(() => undefined);
         onChanged();
       }
     },
@@ -171,11 +173,14 @@ export function useInbox(account: Account, token: () => Promise<string>, onChang
   // Replies you sent, to show under the item they answer (they are sealed to you too).
   const [sent, setSent] = useState<InboxRow[]>([]);
   const loadSent = useCallback(async () => {
-    const t = await token();
-    const r = await api
-      .get<{ rows: InboxRow[] }>("/owner/inbox?box=sent&limit=200", { token: t })
-      .catch(() => ({ rows: [] }));
-    setSent(r.rows);
+    // Background fetch (started with void): a network failure leaves the list as it was rather than throwing.
+    try {
+      const t = await token();
+      const r = await api.get<{ rows: InboxRow[] }>("/owner/inbox?box=sent&limit=200", { token: t });
+      setSent(r.rows);
+    } catch {
+      // The inbox list shows its own error and retry; replies reappear on the next load.
+    }
   }, [token]);
   useEffect(() => {
     void loadSent();

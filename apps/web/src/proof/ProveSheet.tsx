@@ -4,10 +4,10 @@ import { useState } from "react";
 import { Button, ButtonLink, Hanko, Oops, Segmented, SealMoment, Sheet, TextField, type SealStep } from "@mizuhiki/ui";
 import { ChainError, type AnchorKind, type AnchorRecord } from "@mizuhiki/chain";
 import type { Account } from "@/account/AccountProvider";
-import { ApiFailure } from "@/lib/api";
 import { PROVE_STEP_LABEL, certificatePath, prove, type ProveStep } from "./proof";
 import type { Hashed } from "./HashDrop";
 import s from "./proof.module.css";
+import { failureText } from "@/lib/failure";
 
 export function ProveSheet({
   account,
@@ -57,7 +57,7 @@ export function ProveSheet({
       onDone?.({ record: r.record, txHash: r.txHash, note });
     } catch (e) {
       const moved = e instanceof ChainError ? e.moved : "unknown";
-      const base = e instanceof ChainError || e instanceof ApiFailure ? e.message : "The anchor could not be written.";
+      const base = failureText(e, "The anchor could not be written.");
       setFailure(
         moved === "no"
           ? `${base} Nothing was written to QoreChain.`

@@ -25,7 +25,6 @@ import {
 import { durationText, planSentences, type FileFacts } from "@mizuhiki/core";
 import type { CapsuleOnChain } from "@mizuhiki/chain";
 import { useOwnerSession } from "@/owner/OwnerProvider";
-import { ApiFailure } from "@/lib/api";
 import { nameOf, safetyWords } from "@/rooms/engine";
 import { FileItem } from "@/inbox/Detail";
 import {
@@ -50,6 +49,7 @@ import {
 import { useCapsuleEvents } from "./useCapsuleEvents";
 import p from "@/passes/passes.module.css";
 import s from "./capsules.module.css";
+import { failureText } from "@/lib/failure";
 
 type Tab = "mine" | "guard" | "for-me";
 export const PHASE_CHIP: Record<Phase | "draft", { status: Status; label: string }> = {
@@ -126,7 +126,7 @@ export function CapsulesHome() {
         Object.fromEntries(await Promise.all(who.map(async (a) => [a, await nameOf(a).catch(() => null)] as const))),
       );
     } catch (e) {
-      setError(e instanceof ApiFailure ? e.message : "Your capsules could not be loaded. Nothing changed.");
+      setError(failureText(e, "Your capsules could not be loaded. Nothing changed."));
     }
   }, [tokened]);
   useEffect(() => {
@@ -300,7 +300,7 @@ function GuardList({
       toast.show(ok);
       await reload();
     } catch (e) {
-      toast.show(e instanceof ApiFailure || e instanceof Error ? e.message : "That did not work. Nothing changed.", {
+      toast.show(failureText(e, "That did not work. Nothing changed."), {
         tone: "error",
       });
     } finally {
@@ -480,7 +480,7 @@ function ForMeList({
       if (l && phaseOf(l.chain, l.now) === "due") await finalize(owner.account, c.id);
       setOpened({ c, o: await openCapsule(await tokened(), c) });
     } catch (e) {
-      toast.show(e instanceof Error ? e.message : "It could not be opened yet.", { tone: "error" });
+      toast.show(failureText(e, "It could not be opened yet."), { tone: "error" });
       await reload();
     } finally {
       setBusy(null);

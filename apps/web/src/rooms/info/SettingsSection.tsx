@@ -20,6 +20,7 @@ import {
 } from "./model";
 import { InlineError } from "./Progress";
 import s from "./info.module.css";
+import { failureText } from "@/lib/failure";
 
 interface Draft {
   approval: boolean;
@@ -85,7 +86,7 @@ export function SettingsSection({ room }: { room: RoomState }) {
       setDraft(null);
       void room.reload();
     } catch (e) {
-      setErr(`Not saved. The room keeps its old settings. ${(e as Error).message}`);
+      setErr(`Not saved. The room keeps its old settings. ${failureText(e, "Try again.")}`);
     } finally {
       setBusy(false);
     }

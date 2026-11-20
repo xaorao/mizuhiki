@@ -1,3 +1,4 @@
+import { BaseError, HttpRequestError, TimeoutError } from "viem";
 /** A chain step that did not complete, with what happened to the person's money and data. */
 export type ChainErrorCode =
   | "NO_FUNDS"
@@ -36,6 +37,18 @@ export class ChainError extends Error {
 
 export const isChainError = (e: unknown, code?: ChainErrorCode): e is ChainError =>
   e instanceof ChainError && (code === undefined || e.code === code);
+
+/**
+ * True when a check failed because QoreChain could not be reached (connection refused, timeout, offline), not
+ * because the answer was wrong. Screens use it to say "could not be reached, try again" instead of calling a
+ * genuine page a mismatch.
+ */
+export function isUnreachable(e: unknown): boolean {
+  if (isChainError(e, "NETWORK")) return true;
+  if (e instanceof BaseError) return !!e.walk((x) => x instanceof HttpRequestError || x instanceof TimeoutError);
+  // fetch() itself: Chromium "Failed to fetch", Firefox "NetworkError when attempting…", Safari "Load failed".
+  return e instanceof TypeError && /failed to fetch|networkerror|load failed|network/i.test(e.message);
+}
 
 /** Map a Cosmos SDK refusal log to a plain sentence. */
 export function explainRefusal(

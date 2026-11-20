@@ -21,6 +21,7 @@ import {
 } from "./engine";
 import { derive, snippetOf, type Derived } from "./derive";
 import { publishSummary } from "./summaries";
+import { failureText } from "@/lib/failure";
 
 export type Tokened = ReturnType<typeof withToken>;
 
@@ -152,7 +153,7 @@ export function useRoom(roomId: string): RoomState {
         setError(null);
       } while (pendingReload());
     } catch (e) {
-      setError((e as Error).message);
+      setError(failureText(e, "This room could not be opened. Try again."));
     } finally {
       busy.current = false;
       setLoading(false);
@@ -213,7 +214,7 @@ export function useRoom(roomId: string): RoomState {
           await admitWaiting(a, roomId, derived.info.historyDefault);
         }
       } catch (e) {
-        setError((e as Error).message);
+        setError(failureText(e, "This room could not be opened. Try again."));
       } finally {
         setChore(null);
         choring.current = false;

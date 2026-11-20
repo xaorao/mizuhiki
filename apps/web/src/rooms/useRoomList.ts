@@ -21,6 +21,7 @@ import {
 import { derive, snippetOf } from "./derive";
 import { useDebounced, useRoomEvents } from "./useRoom";
 import { onSummary } from "./summaries";
+import { failureText } from "@/lib/failure";
 
 export interface ListState {
   rooms: RoomListItem[];
@@ -93,7 +94,7 @@ export function useRoomList(activeId?: string): ListState {
         setError(null);
       } while (isQueued());
     } catch (e) {
-      setError((e as Error).message);
+      setError(failureText(e, "Your rooms could not be loaded. Try again."));
     } finally {
       running.current = false;
       setLoading(false);

@@ -14,6 +14,7 @@ import { api, ApiFailure } from "@/lib/api";
 import { TEMPLATES, fromTemplate, newForm, saveFormDraft, type FormRow } from "./model";
 import { draftFromDescription } from "./ai";
 import s from "./forms.module.css";
+import { failureText } from "@/lib/failure";
 
 export function FormsList() {
   const acct = useAccount();
@@ -35,7 +36,7 @@ export function FormsList() {
       setRows(r.forms);
       setError(null);
     } catch (e) {
-      setError(e instanceof ApiFailure ? e.message : "Your forms could not be loaded.");
+      setError(failureText(e, "Your forms could not be loaded."));
     }
   }, [owner]);
   useEffect(() => {
@@ -53,7 +54,7 @@ export function FormsList() {
       await saveFormDraft(account, await owner.token(), def);
       router.push(`/app/forms/${def.id}`);
     } catch (e) {
-      toast.show(e instanceof ApiFailure ? e.message : (e as Error).message || "The form could not be created.", {
+      toast.show(e instanceof ApiFailure ? e.message : failureText(e, "The form could not be created."), {
         tone: "error",
       });
       setBusy(null);
@@ -158,7 +159,7 @@ export function FormsList() {
                     try {
                       return await draftFromDescription(account, name, ai.text, await owner.token());
                     } catch (e) {
-                      setAi((a) => ({ ...a, err: (e as Error).message }));
+                      setAi((a) => ({ ...a, err: failureText(e, "The draft could not be written. Try again.") }));
                       throw e;
                     }
                   })

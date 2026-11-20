@@ -8,10 +8,10 @@ import { useRouter } from "next/navigation";
 import { Button, ButtonLink, ChoiceCard, Icon, Kicker, Oops, Segmented, TextField } from "@mizuhiki/ui";
 import { KIND_INFO, PRODUCT_KINDS, TOKENS, parseAmount, type ProductKind, type ShopToken } from "@mizuhiki/core";
 import { useOwner } from "@/owner/OwnerProvider";
-import { ApiFailure } from "@/lib/api";
 import { newDraft, saveDraft, withToken } from "../engine";
 import { KIND_ICON, KIND_TONE } from "./model";
 import s from "./seller.module.css";
+import { failureText } from "@/lib/failure";
 
 export function NewProduct() {
   const owner = useOwner();
@@ -52,7 +52,7 @@ export function NewProduct() {
       router.push(`/app/shop/${d.def.id}`);
     } catch (e) {
       setBusy(false);
-      setErr(e instanceof ApiFailure ? e.message : "The product was not created. Nothing was saved.");
+      setErr(failureText(e, "The product was not created. Nothing was saved."));
     }
   };
 

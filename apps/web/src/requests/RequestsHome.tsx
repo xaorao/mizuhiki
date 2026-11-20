@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation";
 import { Button, Chip, EmptyState, Icon, Kicker, Oops, Skeleton, StatusChip } from "@mizuhiki/ui";
 import { requestState, type FileRequest } from "@mizuhiki/core";
 import { useOwner, useOwnerSession } from "@/owner/OwnerProvider";
-import { ApiFailure } from "@/lib/api";
 import { useRoomEvents } from "@/rooms/useRoom";
 import { fmtBytes } from "@/public/MessageSheet";
 import { createRequest, listRequests, type Tokened } from "./engine";
@@ -18,6 +17,7 @@ import { deadlineDay, STATE_LABEL, type RequestRow } from "./model";
 import { RequestSheet } from "./RequestSheet";
 import { ShareRequest } from "./ShareRequest";
 import s from "./requests.module.css";
+import { failureText } from "@/lib/failure";
 
 type Filter = "all" | "open" | "closed";
 const day = (iso: string) =>
@@ -39,7 +39,7 @@ export function RequestsHome() {
       setRows((await listRequests(await tokened())).requests);
       setError(null);
     } catch (e) {
-      setError(e instanceof ApiFailure ? e.message : "Your requests could not be loaded. Nothing changed.");
+      setError(failureText(e, "Your requests could not be loaded. Nothing changed."));
     }
   }, [tokened]);
   useEffect(() => {

@@ -5,12 +5,12 @@
  */
 import { useEffect, useState } from "react";
 import { Button, ChoiceCard, EmptyState, LockLine, Sheet, Skeleton, useToast } from "@mizuhiki/ui";
-import { ApiFailure } from "@/lib/api";
 import { nameOf } from "@/rooms/engine";
 import type { InboxRow } from "@/inbox/model";
 import { addItemToPass, ownedPasses, type PassView, type Tokened } from "./engine";
 import { covers, scopeLine } from "./model";
 import s from "./passes.module.css";
+import { failureText } from "@/lib/failure";
 
 export function AddReaderSheet({
   row,
@@ -45,7 +45,7 @@ export function AddReaderSheet({
         );
         if (life.alive) setPasses(list);
       } catch (e) {
-        if (life.alive) setError(e instanceof ApiFailure ? e.message : "Your passes could not be loaded.");
+        if (life.alive) setError(failureText(e, "Your passes could not be loaded."));
       }
     })();
     return () => {
@@ -69,7 +69,7 @@ export function AddReaderSheet({
       toast.show(`Sealed to ${chosen.who}. They keep it even if the pass ends.`);
       onClose();
     } catch (e) {
-      setError(e instanceof ApiFailure || e instanceof Error ? e.message : "It was not shared. Nothing changed.");
+      setError(failureText(e, "It was not shared. Nothing changed."));
     } finally {
       setBusy(false);
     }

@@ -27,6 +27,7 @@ import { resolveOwner } from "@mizuhiki/chain";
 import type { Account } from "@/account/AccountProvider";
 import { api, ApiFailure } from "@/lib/api";
 import { passRecipients } from "@/lib/passKeys";
+import { failureText } from "@/lib/failure";
 
 export interface MessagePayload {
   v: 1;
@@ -125,7 +126,8 @@ export async function sendSealed(args: {
           : "Cancelled. Nothing left your device.",
         uploaded.pieces ? "pieces" : "nothing",
       );
-    const msg = e instanceof ApiFailure || e instanceof SendFailure ? e.message : fallback;
+    // The title already says "Not sent"; the message says why. Network trouble is named as such, not as sealing.
+    const msg = failureText(e, fallback);
     throw new SendFailure(msg, uploaded.pieces ? "pieces" : "nothing");
   };
   try {
@@ -234,6 +236,6 @@ export async function sendSealed(args: {
       ...(r.late ? { late: true } : {}),
     };
   } catch (e) {
-    return fail(e, "Not sent. Something went wrong while sealing.");
+    return fail(e, "Something went wrong while sealing it on this device.");
   }
 }

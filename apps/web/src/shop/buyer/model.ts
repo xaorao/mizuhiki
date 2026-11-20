@@ -11,6 +11,7 @@ import {
   type ProductDef,
   type ShopToken,
 } from "@mizuhiki/core";
+import { failureText } from "@/lib/failure";
 
 // ---- description: **bold**, *italic*, [link](https://…), paragraphs ---------------------------
 
@@ -241,7 +242,7 @@ export function liveTotal(
   try {
     return { ok: true, total: orderTotal(req, defs, discount) };
   } catch (e) {
-    return { ok: false, problem: (e as Error).message };
+    return { ok: false, problem: failureText(e, "The fee could not be worked out. Try again.") };
   }
 }
 

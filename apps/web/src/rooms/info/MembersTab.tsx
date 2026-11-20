@@ -16,6 +16,7 @@ import { MemberSheet } from "./MemberSheet";
 import { dayLabel, isAdminRole, matchesQuery, requestOrigin, sortMembers, whenLabel } from "./model";
 import { InlineError, StepList, changeFailure, useSteps } from "./Progress";
 import s from "./info.module.css";
+import { failureText } from "@/lib/failure";
 
 function ApproveSheet({
   room,
@@ -163,7 +164,7 @@ export function MembersTab({
       toast.show(`Declined. ${label(r.address, names)} was not let in and got no key.`);
       await room.reload();
     } catch (e) {
-      setRowErr(`Not declined. ${(e as Error).message}`);
+      setRowErr(`Not declined. ${failureText(e, "Try again.")}`);
     } finally {
       setRowBusy(null);
     }
@@ -176,7 +177,7 @@ export function MembersTab({
       toast.show(`${label(m.address, names)} is unblocked. They can ask to join again.`);
       await room.reload();
     } catch (e) {
-      setRowErr(`Still blocked. ${(e as Error).message}`);
+      setRowErr(`Still blocked. ${failureText(e, "Try again.")}`);
     } finally {
       setRowBusy(null);
     }

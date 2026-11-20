@@ -30,6 +30,7 @@ import { ReceiptTab } from "./ReceiptTab";
 import { ShareTab } from "./ShareTab";
 import { ProductPreview, ReceiptPreview } from "./ProductPreview";
 import s from "./seller.module.css";
+import { failureText } from "@/lib/failure";
 
 type Tab = "product" | "content" | "receipt" | "share";
 const TABS: { value: Tab; label: string }[] = [
@@ -129,12 +130,7 @@ export function ProductEditor({ id }: { id: string }) {
       if (e instanceof ApiFailure && e.code === "SLUG_TAKEN") {
         setSlugError(e.message);
         setSaveErr(null);
-      } else
-        setSaveErr(
-          e instanceof ApiFailure
-            ? e.message
-            : "Your latest changes are not saved yet. They are still here; we keep trying.",
-        );
+      } else setSaveErr(failureText(e, "Your latest changes are not saved yet. They are still here; we keep trying."));
       return false;
     }
   }, [tokened]);
@@ -322,7 +318,7 @@ export function ProductEditor({ id }: { id: string }) {
           : "Published again. The link is live.",
       );
     } catch (e) {
-      toast.show(e instanceof ApiFailure ? e.message : "That did not work. Nothing changed.", { tone: "error" });
+      toast.show(failureText(e, "That did not work. Nothing changed."), { tone: "error" });
     } finally {
       setStatusBusy(false);
     }

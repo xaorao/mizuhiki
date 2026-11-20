@@ -25,6 +25,7 @@ import { contrast } from "@/page/theme";
 import { AvatarCrop } from "@/onboarding/AvatarCrop";
 import type { TabProps } from "./tabTypes";
 import s from "./settings.module.css";
+import { failureText } from "@/lib/failure";
 
 const SLUG_RE = /^[a-z0-9-]{1,48}$/;
 const HEX_RE = /^#[0-9a-f]{6}$/i;
@@ -334,7 +335,7 @@ function ReadersPanel({ def, update, ownerName }: TabProps) {
       setText("");
       toast.show(`@${name} can read new answers`);
     } catch (e) {
-      setError(e instanceof ApiFailure ? e.message : "Could not look up that name. Nothing changed.");
+      setError(failureText(e, "Could not look up that name. Nothing changed."));
     } finally {
       setBusy(false);
     }
@@ -472,7 +473,7 @@ function DesignPanel({ def, update, token }: TabProps) {
       update((d) => ({ ...d, design: { ...d.design, [slot]: { hash: m.hash, type: m.type } } }));
       toast.show(slot === "logo" ? "Logo added" : "Cover added");
     } catch (e) {
-      toast.show(e instanceof ApiFailure ? e.message : "The image was not uploaded. Nothing changed.", {
+      toast.show(failureText(e, "The image was not uploaded. Nothing changed."), {
         tone: "error",
       });
     } finally {
@@ -490,7 +491,7 @@ function DesignPanel({ def, update, token }: TabProps) {
       await upload(await shrinkImage(f, 1920, 1080), "cover");
     } catch (e) {
       setUploading(null);
-      toast.show(e instanceof Error ? e.message : "The image was not uploaded.", { tone: "error" });
+      toast.show(failureText(e, "The image was not uploaded."), { tone: "error" });
     }
   };
 

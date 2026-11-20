@@ -49,6 +49,7 @@ import {
   type PreparedPayment,
 } from "@/lib/pay";
 import s from "./public.module.css";
+import { failureText, PAY_UNKNOWN_TEXT } from "@/lib/failure";
 
 type PayBlock = Extract<Block, { type: "pay" }>;
 type Phase = "amount" | "method" | "review" | "sending" | "waiting" | "done" | "failed";
@@ -180,14 +181,14 @@ export function PaySheet({
         try {
           setReview(await reviewMizuhiki(acct.account, owner.address, p));
         } catch (e) {
-          setReview({ fee: null, problem: (e as Error).message });
+          setReview({ fee: null, problem: failureText(e, "The fee could not be worked out. Try again.") });
         }
       } else {
         setReview({ fee: null, problem: null });
         setPhase("review");
       }
     } catch (e) {
-      setError(`${(e as Error).message || "The note could not be sealed."} Nothing was sent.`);
+      setError(`${failureText(e, "The note could not be sealed.")} Nothing was sent.`);
       setPhase("method");
     }
   };
@@ -223,9 +224,7 @@ export function PaySheet({
       onPaid?.(r);
       setPhase("done");
     } catch (e) {
-      setFailure(
-        e instanceof PayFailure ? e : new PayFailure("The payment could not be sent. No money moved.", "unknown"),
-      );
+      setFailure(e instanceof PayFailure ? e : new PayFailure(PAY_UNKNOWN_TEXT, "unknown"));
       setPhase("failed");
     }
   };
@@ -258,7 +257,7 @@ export function PaySheet({
       await acct.unlock(pass);
       setPass("");
     } catch (e) {
-      setUnlockErr((e as Error).message || "That passphrase did not unlock this device.");
+      setUnlockErr(failureText(e, "That passphrase did not unlock this device."));
     }
   };
 

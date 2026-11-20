@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ProductDef } from "@mizuhiki/core";
 import { useOwnerSession } from "@/owner/OwnerProvider";
-import { ApiFailure } from "@/lib/api";
 import { listMyProducts, openDraft, withToken, type OwnerProduct, type Tokened } from "../engine";
 import { fingerprint, type EditorDraft } from "./model";
+import { failureText } from "@/lib/failure";
 
 export interface ProductRow {
   p: OwnerProduct;
@@ -42,7 +42,7 @@ export function useProducts() {
       );
       setRows(opened);
     } catch (e) {
-      setError(e instanceof ApiFailure ? e.message : "Your products could not be loaded. Nothing changed.");
+      setError(failureText(e, "Your products could not be loaded. Nothing changed."));
     }
   }, [tokened]);
 

@@ -30,7 +30,6 @@ import {
 } from "@mizuhiki/ui";
 import type { Content, FileFacts } from "@mizuhiki/core";
 import { useOwnerSession } from "@/owner/OwnerProvider";
-import { ApiFailure } from "@/lib/api";
 import { SITE_URL } from "@/lib/site";
 import { nameOf, safetyWords } from "@/rooms/engine";
 import { FileItem, FormAnswer } from "@/inbox/Detail";
@@ -55,6 +54,7 @@ import { chipOf, periodLabel, scopeLine } from "./model";
 import { usePassHooks } from "./usePassHooks";
 import { usePassEvents } from "./usePassEvents";
 import s from "./passes.module.css";
+import { failureText } from "@/lib/failure";
 
 const when = (iso: string) =>
   new Date(iso).toLocaleString("en-GB", {
@@ -89,7 +89,7 @@ export function PassDetail({ id }: { id: string }) {
       );
       setNames(Object.fromEntries(both));
     } catch (e) {
-      setError(e instanceof ApiFailure ? e.message : "This pass could not be loaded. Nothing changed.");
+      setError(failureText(e, "This pass could not be loaded. Nothing changed."));
     }
   }, [owner, id]);
   useEffect(() => {
@@ -296,8 +296,7 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
     safetyWords(pass.holder)
       .then((w) => life.alive && setWords(w))
       .catch(
-        (e: unknown) =>
-          life.alive && setWordsError(e instanceof Error ? e.message : "Their key could not be read from QoreChain."),
+        (e: unknown) => life.alive && setWordsError(failureText(e, "Their key could not be read from QoreChain.")),
       );
     return () => {
       life.alive = false;
@@ -319,9 +318,7 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
       await onChanged();
     } catch (e) {
       setStep(cur.at ?? "keys");
-      setConfirmError(
-        e instanceof ApiFailure || e instanceof Error ? e.message : "The pass was not confirmed. Nothing was shared.",
-      );
+      setConfirmError(failureText(e, "The pass was not confirmed. Nothing was shared."));
     }
   };
 
@@ -339,7 +336,7 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
       await onChanged();
     } catch (e) {
       setRevoking("ask");
-      toast.show(e instanceof ApiFailure || e instanceof Error ? e.message : "It was not revoked. Nothing changed.", {
+      toast.show(failureText(e, "It was not revoked. Nothing changed."), {
         tone: "error",
       });
     }
@@ -356,7 +353,7 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
       );
       await onChanged();
     } catch (e) {
-      toast.show(e instanceof ApiFailure || e instanceof Error ? e.message : "Nothing new was sealed. Try again.", {
+      toast.show(failureText(e, "Nothing new was sealed. Try again."), {
         tone: "error",
       });
     } finally {
@@ -568,7 +565,7 @@ function HolderSide({ pass, from, onChanged }: { pass: PassView; from: string; o
       );
       await onChanged();
     } catch (e) {
-      toast.show(e instanceof ApiFailure || e instanceof Error ? e.message : "That did not work. Nothing changed.", {
+      toast.show(failureText(e, "That did not work. Nothing changed."), {
         tone: "error",
       });
     } finally {
@@ -655,10 +652,7 @@ function HolderContent({ pass, from }: { pass: PassView; from: string }) {
           if (life.alive) setItems(list);
         }
       } catch (e) {
-        if (life.alive)
-          setError(
-            e instanceof ApiFailure || e instanceof Error ? e.message : "What this pass covers could not be opened.",
-          );
+        if (life.alive) setError(failureText(e, "What this pass covers could not be opened."));
       }
     })();
     return () => {
