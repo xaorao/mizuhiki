@@ -307,7 +307,7 @@ test("setup checklist: photo, design, spare-key sheet, share and a block, each t
     row("Create your spare-key sheet").getByRole("button", { name: "Save sheet" }).click(),
   ]);
   expect(download.suggestedFilename()).toBe("mizuhiki-spare-key-mzk-e2e-checklist.pdf");
-  const sheet = await readFile((await download.path()) ?? "");
+  const sheet = await readFile(await download.path());
   expect(sheet.subarray(0, 5).toString()).toBe("%PDF-");
   // Share copies the page link.
   await row("Share your page").getByRole("button", { name: "Share" }).click();
