@@ -126,7 +126,7 @@ async function attacks(phase: string): Promise<void> {
       functionName: "approve",
       args: [sinkEvm, 2n ** 255n],
       gas: 80_000n,
-    } as never),
+    }),
   );
   const forged = await signAction(
     attacker,
@@ -141,7 +141,7 @@ async function attacks(phase: string): Promise<void> {
       functionName: "releaseName",
       args: [owner.evm, name, forged],
       gas: 600_000n,
-    } as never),
+    }),
   );
   await attack(phase, "drain call: AnchorBook.anchor in the owner's name", async () =>
     walletFor(attacker).writeContract({
@@ -150,7 +150,7 @@ async function attacks(phase: string): Promise<void> {
       functionName: "anchor",
       args: [owner.evm, `0x${sha256Hex(utf8(phase))}`, `0x${"00".repeat(32)}`, forged],
       gas: 600_000n,
-    } as never),
+    }),
   );
   await attack(phase, "drain call: CapsuleVault.checkIn in the owner's name", async () =>
     walletFor(attacker).writeContract({
@@ -159,7 +159,7 @@ async function attacks(phase: string): Promise<void> {
       functionName: "checkIn",
       args: [owner.evm, forged],
       gas: 600_000n,
-    } as never),
+    }),
   );
 }
 
