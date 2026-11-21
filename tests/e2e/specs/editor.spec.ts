@@ -3,6 +3,7 @@
  * against the local API and QoreChain testnet. The published page is read back
  * from the API (and its signature checked) after Publish.
  */
+import type { Page } from "@playwright/test";
 import { test, expect } from "./fixtures";
 import { verifyRecord, type Manifest, type Signed } from "@mizuhiki/core";
 import { pqKeyViaEvm } from "@mizuhiki/chain";
@@ -170,6 +171,63 @@ test("editor: add, edit, reorder, hide, archive, restore, undo, design, publish"
   await page.getByRole("button", { name: "Unlock" }).click();
   await expect(page.getByText("Published", { exact: true })).toBeVisible();
   await expect(blocks).toHaveCount(5);
+});
+
+test("two tabs of one account: a page published in one tab is not lost when the other publishes", async ({
+  browser,
+}, info) => {
+  test.skip(info.project.name !== "desktop", "once");
+  test.setTimeout(300_000);
+  const owner = await ensureOwner("e2e-two-tabs", "mzk-e2e-two-tabs");
+  const tab = async () => {
+    const ctx = await browser.newContext();
+    const p = await ctx.newPage();
+    await restoreInBrowser(p, owner.phrase);
+    await expect(p.getByRole("heading", { name: "My page" })).toBeVisible();
+    return { ctx, p };
+  };
+  const addLink = async (p: Page, host: string) => {
+    await p.getByRole("button", { name: "Add", exact: true }).first().click();
+    const sheet = p.getByRole("dialog", { name: "Add" });
+    await sheet.getByLabel("Paste a link or search").fill(`${host}/work`);
+    await sheet.getByRole("button", { name: new RegExp(`Add a link to ${host.replace(".", "\\.")}`) }).click();
+  };
+  // Both tabs open the same published page; A publishes first, then B, which loaded before A's change.
+  const A = await tab();
+  const B = await tab();
+  await addLink(A.p, "alpha.example");
+  await A.p.getByRole("button", { name: "Publish" }).click();
+  await expect(A.p.getByText(/Published to/)).toBeVisible({ timeout: 60_000 });
+  await addLink(B.p, "beta.example");
+  await B.p.getByRole("button", { name: "Publish" }).click();
+  await expect(B.p.getByText(/Published to/)).toBeVisible({ timeout: 60_000 });
+  await expect(B.p.getByText(/was not published/)).toHaveCount(0);
+
+  // Source of truth: the published page, signature checked, carries both tabs' links.
+  const res = (await (await fetch(`${API}/pages/mzk-e2e-two-tabs`)).json()) as { record: Signed<Manifest> };
+  const pq = await pqKeyViaEvm(owner.address);
+  const body = verifyRecord(res.record, {
+    kind: "manifest",
+    signer: owner.address,
+    pqPublicKey: pq.publicKey ?? new Uint8Array(),
+  });
+  const urls = body.blocks.flatMap((b) => ("url" in b ? [b.url] : []));
+  expect(urls.some((u) => u.includes("alpha.example"))).toBe(true);
+  expect(urls.some((u) => u.includes("beta.example"))).toBe(true);
+  // B's own screen shows A's link too, after the publish.
+  await expect
+    .poll(async () =>
+      (
+        await B.p
+          .locator("ol li[data-block]")
+          .getByLabel("Title", { exact: true })
+          .evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value))
+      ).join(" | "),
+    )
+    .toMatch(/Alpha/i);
+  await B.p.screenshot({ path: info.outputPath("two-tabs.png"), fullPage: true });
+  await A.ctx.close();
+  await B.ctx.close();
 });
 
 test("editor on a phone: layout, preview sheet, no sideways scroll", async ({ page }, info) => {

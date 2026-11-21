@@ -100,7 +100,7 @@ export function ProductsTab({ onCount }: { onCount?: (n: number | null) => void 
     return (
       <div className={s.emptyWrap}>
         <EmptyState
-          title="We've never met an idea we didn't like."
+          title="Your first product goes here"
           face="normal"
           jp="がんばって"
           action={

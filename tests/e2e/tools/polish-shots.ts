@@ -8,12 +8,12 @@ import { chromium, devices, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { personaPhrase } from "@mizuhiki/testnet";
-import { API, apiToken, ensureOwner, restoreInBrowser } from "../specs/owner";
+import { ensurePersona } from "@mizuhiki/testnet";
+import { API, apiToken, restoreInBrowser } from "../specs/owner";
 
 const out = process.argv[2] ?? "polish";
 mkdirSync(out, { recursive: true });
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
-const OWNER = "mzk-e2e-editor";
 // The owner app is shot as the demo account, which has real activity in most areas.
 const OWNER_LABEL = process.env.OWNER_LABEL ?? "demo-aria";
 const OWNER_NAME = process.env.OWNER_NAME ?? "aria";
@@ -30,10 +30,10 @@ const VISITOR = [
   ["legal-privacy", "/legal/privacy"],
   ["legal-terms", "/legal/terms"],
   ["legal-report", "/legal/report"],
-  ["public-page", `/@${OWNER}`],
-  ["public-message", `/@${OWNER}/message`],
-  ["public-pay", `/@${OWNER}/pay`],
-  ["public-shop", "/@mzk-shop-e2e?tab=shop"],
+  ["public-page", `/@${OWNER_NAME}`],
+  ["public-message", `/@${OWNER_NAME}/message`],
+  ["public-pay", `/@${OWNER_NAME}/pay`],
+  ["public-shop", `/@${OWNER_NAME}?tab=shop`],
   ["public-missing", "/@zz-nobody-here"],
   ["not-found", "/no-such-page"],
 ] as const;
@@ -62,7 +62,8 @@ const OWNER_LISTS = [
 const problems: string[] = [];
 const seen = new Map<string, string>();
 // The first item of each list, from the API (lists open items with buttons, not links).
-const owner = await ensureOwner(OWNER_LABEL, OWNER_NAME);
+// Read-only: never re-publish the account's page (ensureOwner would replace a designed demo page).
+const owner = { ...(await ensurePersona(OWNER_LABEL, { name: OWNER_NAME })), name: OWNER_NAME };
 const token = await apiToken(owner);
 async function firstId(endpoint: string): Promise<string | null> {
   const j = (await (

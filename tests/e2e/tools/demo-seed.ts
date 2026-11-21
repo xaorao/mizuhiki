@@ -49,15 +49,6 @@ const invoice = (title: string, subtitle: string): Block => ({
   title,
   subtitle,
 });
-const link = (title: string, subtitle: string, url: string): Block => ({
-  id: newId(),
-  type: "link",
-  on: true,
-  archived: false,
-  title,
-  subtitle,
-  url,
-});
 
 interface Demo {
   label: string;
@@ -85,7 +76,6 @@ export const DEMOS: Demo[] = [
         "Hi, I'm Aria. Briefs, contracts, anything private.",
       ),
       invoice("Ask for an invoice", "Line items sealed to you and me"),
-      link("See my portfolio", "Selected brand work", "https://example.com/aria"),
     ],
   },
   {
@@ -102,7 +92,6 @@ export const DEMOS: Demo[] = [
         "Sealed before upload, up to 500 MB",
         "Send the documents and a short note on what you need.",
       ),
-      link("Book a consultation", "Thirty minutes, by video", "https://example.com/rohan-law"),
     ],
   },
   {
@@ -123,7 +112,6 @@ export const DEMOS: Demo[] = [
         "Lab PDFs and photos, sealed on your phone",
         "Attach your results. Only the clinic can open them.",
       ),
-      link("New patient intake", "Takes five minutes", "https://example.com/sunrise-intake"),
     ],
   },
   {
@@ -134,7 +122,6 @@ export const DEMOS: Demo[] = [
     goal: "creator",
     theme: theme("fuji", "#e8dcff", "#dccbff"),
     blocks: [
-      link("Shop presets", "Twelve film looks", "https://example.com/maya-shop"),
       message("Commission request", "Send your photos and what you have in mind", "Tell me about the edit you want."),
       pay("Tip the studio", "Thank you, truly"),
     ],

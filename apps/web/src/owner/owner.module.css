@@ -24,15 +24,33 @@
   padding: 20px 14px 16px;
   background: var(--sakura-soft);
   border-right: var(--line-strong) solid var(--ink);
-  overflow-y: auto;
+  overflow: hidden;
 }
-/* Never squeeze: when the sections and the checklist do not fit, the sidebar scrolls instead. */
-.nav > * {
+.nav > .brand,
+.nav > .foot {
+  flex-shrink: 0;
+}
+/* The sections scroll on their own when the window is short; the checklist card and Lock stay in full view. */
+.list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-inline: -14px;
+  padding: 0 14px 24px;
+  scrollbar-width: thin;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
+}
+.list > * {
   flex-shrink: 0;
 }
 /* Room above the checklist card for Musubi, who sits on its top edge. */
-.nav > .group:last-of-type {
-  margin-bottom: 44px;
+.foot {
+  display: flex;
+  flex-direction: column;
+  padding-top: 40px;
 }
 .brand {
   padding: 2px 10px 10px;
@@ -93,7 +111,6 @@
 }
 .check {
   position: relative;
-  margin-top: auto;
   display: flex;
   gap: 12px;
   align-items: center;

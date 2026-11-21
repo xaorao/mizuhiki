@@ -185,7 +185,7 @@ export function CapsuleEditor({ id: given }: { id: string | null }) {
           <Icon name="hour" size={22} />
         </span>
         <div className={p.titleBlock}>
-          <Kicker>たいむかぷせる</Kicker>
+          <Kicker>タイムカプセル</Kicker>
           {/* The state sits beside the name it describes, as on forms and products. */}
           <div className={p.titleWithChip}>
             <h1>{draft.label.trim() || "New capsule"}</h1>
@@ -295,7 +295,7 @@ function StatusPanel({
               icon="x"
               busy={busy === "reject"}
               onClick={() =>
-                void act("reject", () => reject(owner.account, row.id), "Rejected. It stays sealed and armed.")
+                void act("reject", () => reject(owner.account, row.id), "Rejected. It stays sealed and set.")
               }
             >
               Reject
@@ -318,7 +318,7 @@ function StatusPanel({
         </>
       ) : ph === "armed" || ph === "due" ? (
         <>
-          <h2>{ph === "due" ? "The time has come" : "Armed"}</h2>
+          <h2>{ph === "due" ? "The time has come" : "Set and waiting"}</h2>
           {live.chain.opensAt ? (
             <p className={s.big}>
               <Icon name="clock" size={22} /> Opens {countdown(live.chain.opensAt, live.now)}
@@ -337,7 +337,7 @@ function StatusPanel({
             <div className={quietWarn ? s.bar : p.covered}>
               <span>
                 {quietWarn ? <b>Check in soon. </b> : null}
-                Last check-in: {live.chain.lastCheckIn ? when(live.chain.lastCheckIn) : "when you armed it"}.
+                Last check-in: {live.chain.lastCheckIn ? when(live.chain.lastCheckIn) : "when you set it"}.
               </span>
               <Button
                 size="sm"
@@ -483,7 +483,7 @@ function Stepper({
     {
       title: "Confirm your plan",
       done: armed,
-      summary: armed ? "Armed on QoreChain" : "Read it in plain words, then arm it",
+      summary: armed ? "Set on QoreChain" : "Read it in plain words, then set it",
     },
   ];
   const go = (i: number) => {
@@ -1132,12 +1132,12 @@ function ConfirmPlan({
         cur.at = x;
         setStep(x);
       });
-      toast.show(prior ? "Updated. Old key pieces no longer fit." : "Armed on QoreChain.");
+      toast.show(prior ? "Updated. Old key pieces no longer fit." : "Set on QoreChain.");
       setStep(null);
       await reload();
     } catch (e) {
       setStep(cur.at);
-      setErr(failureText(e, "It was not armed. Nothing was recorded."));
+      setErr(failureText(e, "It was not set. Nothing was recorded."));
     }
   };
   const i = step ? ARM_ORDER.indexOf(step) : -1;
@@ -1172,13 +1172,13 @@ function ConfirmPlan({
           </Button>
         ) : null}
         <Button variant="cord" icon="lock" disabled={problems.length > 0} onClick={() => void go()}>
-          {prior ? "Update the plan" : "Confirm and arm"}
+          {prior ? "Update the plan" : "Confirm and set"}
         </Button>
       </div>
       <Sheet
         open={step !== null}
         onClose={() => setStep(null)}
-        title={prior ? "Updating the plan" : "Arming your capsule"}
+        title={prior ? "Updating the plan" : "Setting your capsule"}
         dismissable={err !== null}
       >
         <SealMoment
@@ -1213,7 +1213,7 @@ function ConfirmPlan({
             .then(() => router.push("/app/capsules"))
         }
       >
-        <p>Nothing was armed, so nothing is recorded on QoreChain. Invited guardians see it disappear.</p>
+        <p>Nothing was set, so nothing is recorded on QoreChain. Invited guardians see it disappear.</p>
       </Confirm>
     </>
   );

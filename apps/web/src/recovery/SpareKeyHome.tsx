@@ -132,7 +132,7 @@ export function SpareKeyHome() {
           <Kicker>あいかぎ</Kicker>
           <h1>Spare key</h1>
           <p className={p.lede}>
-            So a lost phrase is survivable. Mizuhiki cannot reset it for you, so these are the ways back in.
+            Ways back in if you lose your phrase. Mizuhiki cannot reset it for you, so set these up now.
           </p>
         </div>
       </header>

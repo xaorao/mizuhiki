@@ -106,38 +106,42 @@ function Frame({ children }: { children: ReactNode }) {
         <div className={s.brand}>
           <Wordmark size={22} href="/app" />
         </div>
-        {groups.map((g, i) => (
-          <div key={i} className={s.group}>
-            {g.title ? <h4>{g.title}</h4> : null}
-            {g.items.map((it) => (
-              <Link
-                key={it.href}
-                href={it.href}
-                className={s.navItem}
-                aria-current={active(it.href) ? "page" : undefined}
-              >
-                <Icon name={it.icon} />
-                <span>{it.label}</span>
-                {it.href === "/app/inbox" && unread > 0 ? <span className={s.badge}>{unread}</span> : null}
-              </Link>
-            ))}
-          </div>
-        ))}
-        {checklist ? (
-          <Link href="/app#checklist" className={s.check}>
-            <span className={s.checkMm}>
-              <Musubi face={checklist.done === checklist.total ? "happy" : "normal"} size={64} />
-            </span>
-            <ProgressRing done={checklist.done} total={checklist.total} />
-            <span>
-              <b>Setup checklist</b>
-              <small>{next ? `Next: ${next.title.toLowerCase()}` : "All done. おつかれさま"}</small>
-            </span>
-          </Link>
-        ) : null}
-        <Button variant="ghost" icon="lock" size="sm" onClick={acct.lock} className={s.lockBtn}>
-          Lock now
-        </Button>
+        <div className={s.list}>
+          {groups.map((g, i) => (
+            <div key={i} className={s.group}>
+              {g.title ? <h4>{g.title}</h4> : null}
+              {g.items.map((it) => (
+                <Link
+                  key={it.href}
+                  href={it.href}
+                  className={s.navItem}
+                  aria-current={active(it.href) ? "page" : undefined}
+                >
+                  <Icon name={it.icon} />
+                  <span>{it.label}</span>
+                  {it.href === "/app/inbox" && unread > 0 ? <span className={s.badge}>{unread}</span> : null}
+                </Link>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className={s.foot}>
+          {checklist ? (
+            <Link href="/app#checklist" className={s.check}>
+              <span className={s.checkMm}>
+                <Musubi face={checklist.done === checklist.total ? "happy" : "normal"} size={64} />
+              </span>
+              <ProgressRing done={checklist.done} total={checklist.total} />
+              <span>
+                <b>Setup checklist</b>
+                <small>{next ? `Next: ${next.title.toLowerCase()}` : "All done. おつかれさま"}</small>
+              </span>
+            </Link>
+          ) : null}
+          <Button variant="ghost" icon="lock" size="sm" onClick={acct.lock} className={s.lockBtn}>
+            Lock now
+          </Button>
+        </div>
       </nav>
       <div className={s.content}>
         <RecoveryAlarm />

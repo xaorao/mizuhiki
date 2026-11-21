@@ -630,8 +630,9 @@ function NeedKey({ o, onKey }: { o: OrderView; onKey: (k: BuyerKey) => void }) {
       <Kicker>封</Kicker>
       <h1 className={s.pageTitle}>Open with my 12 words</h1>
       <p className={s.fine}>
-        This purchase is sealed to buyer key <code className={s.mono}>{fingerprint(keyHashOf(r), 16)}</code>. Type its
-        words; they are checked on this device and never sent.
+        This purchase is sealed to buyer key <code className={s.mono}>{fingerprint(keyHashOf(r), 16)}</code>: the 12
+        words you saved when you bought it without an account (a Mizuhiki account uses 24). Type them; they are checked
+        on this device and never sent.
       </p>
       <TextArea
         label="Your 12 words, in order"

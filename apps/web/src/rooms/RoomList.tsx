@@ -6,7 +6,7 @@
  */
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Button, ButtonLink, EmptyState, Icon, Oops, Skeleton, TextField, useToast } from "@mizuhiki/ui";
+import { Button, ButtonLink, EmptyState, Icon, Kicker, Oops, Skeleton, TextField, useToast } from "@mizuhiki/ui";
 import { useAccount } from "@/account/AccountProvider";
 import { cancelRequest, withToken } from "./engine";
 import { ROOM_TEMPLATES } from "@mizuhiki/core";
@@ -56,10 +56,10 @@ export function RoomList({ list, activeId }: { list: ListState; activeId?: strin
     <section className={s.list} aria-label="Rooms">
       <header className={s.listHead}>
         <div>
-          <p className={s.kicker}>へや · Rooms</p>
+          <Kicker>へや</Kicker>
           <h1>Rooms</h1>
         </div>
-        <ButtonLink href="/app/rooms/new" icon="plus" size="sm">
+        <ButtonLink href="/app/rooms/new" icon="plus" size="sm" variant="cord">
           New room
         </ButtonLink>
       </header>

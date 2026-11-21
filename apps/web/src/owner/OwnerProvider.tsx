@@ -234,12 +234,8 @@ export function OwnerProvider({ account, children }: { account: Account; childre
     [account],
   );
 
-  const publishOnce = useCallback(async () => {
-    const d = latest.current;
-    if (!d) return;
-    setPublishing(true);
-    try {
-      const t = await token();
+  const publishDraft = useCallback(
+    async (t: string, d: Draft) => {
       const body: Manifest = publishable(
         {
           ...d.manifest,
@@ -268,10 +264,53 @@ export function OwnerProvider({ account, children }: { account: Account; childre
       latest.current = next;
       await saveDraft(account, t, next);
       setSave("saved");
+    },
+    [account, setPublished, livePeriodKeys],
+  );
+
+  /**
+   * The page was published elsewhere (another tab or device) since this tab loaded it. Take the newer page as the
+   * base and keep this tab's draft, adding any block this tab has never seen (one added from the other tab), so a
+   * publish from here never silently drops work done there.
+   */
+  const rebaseOnLive = useCallback(
+    async (t: string, d: Draft): Promise<Draft | null> => {
+      const own = await api.get<{ page: { record: { body: Manifest } } | null }>("/owner/page", { token: t });
+      const live = own.page?.record.body ?? null;
+      if (!live) return null;
+      const known = new Set([...d.manifest.blocks, ...(publishedRef.current?.blocks ?? [])].map((b) => b.id));
+      const arrived = live.blocks.filter((b) => !known.has(b.id));
+      setPublished(live);
+      const next = { ...d, manifest: { ...d.manifest, blocks: [...d.manifest.blocks, ...arrived] } };
+      setDraft(next);
+      latest.current = next;
+      return next;
+    },
+    [setPublished],
+  );
+
+  const publishOnce = useCallback(async () => {
+    const first = latest.current;
+    if (!first) return;
+    setPublishing(true);
+    try {
+      const t = await token();
+      let d = first;
+      for (let attempt = 0; ; attempt++) {
+        try {
+          await publishDraft(t, d);
+          return;
+        } catch (e) {
+          if (attempt > 0 || !(e instanceof ApiFailure) || e.code !== "STALE_VERSION") throw e;
+          const rebased = await rebaseOnLive(t, d);
+          if (!rebased) throw e;
+          d = rebased;
+        }
+      }
     } finally {
       setPublishing(false);
     }
-  }, [account, token, setPublished, livePeriodKeys]);
+  }, [token, rebaseOnLive, publishDraft]);
 
   /** Re-sign the live page with the current pass keys only; unpublished page edits stay in the draft. */
   /** Re-sign the live page with the current pass keys (and, from Settings › Names, a new name) only. */

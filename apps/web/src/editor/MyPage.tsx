@@ -217,8 +217,9 @@ export function MyPage() {
               busy={o.publishing}
               disabled={!o.dirty}
               onClick={doPublish}
+              icon={o.dirty ? undefined : "check"}
             >
-              Publish
+              {o.dirty ? "Publish" : "Up to date"}
             </Button>
           </div>
         </header>

@@ -97,7 +97,7 @@ test("landing: app tour by mouse and keyboard, proof read from QoreChain, FAQ", 
   await page.keyboard.press("ArrowDown");
   await expect(tabs.getByRole("tab", { name: /Capsules/ })).toHaveAttribute("aria-selected", "true");
   await expect(tabs.getByRole("tab", { name: /Capsules/ })).toBeFocused();
-  await expect(page.getByRole("tabpanel").getByRole("img")).toHaveAttribute("alt", /armed capsule/);
+  await expect(page.getByRole("tabpanel").getByRole("img")).toHaveAttribute("alt", /capsule set to open/);
 
   // Each proof card says "Confirmed in block N"; the chain agrees.
   const cards = page.locator('a[href*="/tx/"]');

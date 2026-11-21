@@ -111,8 +111,8 @@ async function arm(o: Page, info: { outputPath: (n: string) => string }, shot?: 
   await o.getByRole("button", { name: /Confirm your plan/ }).click();
   await expect(o.getByRole("list", { name: "Your plan" })).toBeVisible();
   if (shot) await o.screenshot({ path: info.outputPath(shot), fullPage: true });
-  await o.getByRole("button", { name: "Confirm and arm" }).click();
-  await expect(o.getByText("Armed on QoreChain.")).toBeVisible({ timeout: 240_000 });
+  await o.getByRole("button", { name: "Confirm and set" }).click();
+  await expect(o.getByText("Set on QoreChain.")).toBeVisible({ timeout: 240_000 });
 }
 
 /** The signed plan the API serves matches the hash CapsuleVault keeps. */
@@ -179,7 +179,7 @@ test("capsules: arm with a confirmed guardian; request, reject, request, cancel;
   await expect(o.getByRole("heading", { name: "A guardian asked to open it" })).toBeVisible({ timeout: 60_000 });
   await o.screenshot({ path: info.outputPath("04-request-pending.png"), fullPage: true });
   await o.getByRole("button", { name: "Reject" }).click();
-  await expect(o.getByText("Rejected. It stays sealed and armed.")).toBeVisible({ timeout: 180_000 });
+  await expect(o.getByText("Rejected. It stays sealed and set.")).toBeVisible({ timeout: 180_000 });
   const rejected = await chain(a);
   expect(rejected.status).toBe("armed");
   expect(rejected.guardians.map((x) => x.toLowerCase())).toContain(guard.evm.toLowerCase());

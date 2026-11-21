@@ -207,7 +207,7 @@ const TOUR: { key: string; icon: IconName; title: string; sub: string; img: Stat
     title: "Capsules",
     sub: "Open later, or if you go quiet",
     img: appCapsule,
-    alt: "An armed capsule that opens for the family after 12 months without a check-in",
+    alt: "A capsule set to open for the family after 12 months without a check-in",
   },
   {
     key: "passes",

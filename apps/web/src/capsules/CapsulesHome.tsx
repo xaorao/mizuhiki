@@ -55,7 +55,7 @@ type Tab = "mine" | "guard" | "for-me";
 export const PHASE_CHIP: Record<Phase | "draft", { status: Status; label: string }> = {
   draft: { status: "neutral", label: "Draft" },
   none: { status: "neutral", label: "Not on chain" },
-  armed: { status: "ok", label: "Armed" },
+  armed: { status: "ok", label: "Set" },
   requested: { status: "wait", label: "Request pending" },
   due: { status: "info", label: "Opens now" },
   released: { status: "info", label: "Released" },
@@ -149,7 +149,7 @@ export function CapsulesHome() {
     <div className={p.page}>
       <header className={p.top}>
         <div className={p.titleBlock}>
-          <Kicker>たいむかぷせる</Kicker>
+          <Kicker>タイムカプセル</Kicker>
           <h1>Capsules</h1>
           <p className={p.lede}>
             Sealed files and words that open for the right people at the right time: on a date, for family after a wait
@@ -249,7 +249,7 @@ function MineList({ list, live }: { list: OwnedCapsule[]; live: Record<string, L
                   {c.state === "draft"
                     ? waiting
                       ? `${waiting} ${waiting === 1 ? "guardian is" : "guardians are"} waiting for you to compare safety words`
-                      : `${c.guardians.length} ${c.guardians.length === 1 ? "guardian" : "guardians"} · not armed yet`
+                      : `${c.guardians.length} ${c.guardians.length === 1 ? "guardian" : "guardians"} · not set yet`
                     : phaseLine(l, c.plan?.body.mode) || `${c.plan?.body.recipients.length ?? 0} recipients`}
                 </small>
               </span>

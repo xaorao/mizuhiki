@@ -149,7 +149,9 @@ export function CreateRoom() {
           }
         />
         <div>
-          <p className={s.kicker}>あたらしいへや · New room</p>
+          <p className={s.kicker} lang="ja">
+            あたらしいへや
+          </p>
           <h1>
             {phase === "kind"
               ? "What is this room for?"
