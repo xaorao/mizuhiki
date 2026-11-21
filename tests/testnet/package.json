@@ -6,7 +6,8 @@
   "scripts": {
     "deploy": "tsx src/deploy.ts",
     "test": "tsx src/contracts.live.ts",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "drill": "tsx src/qday-drill.live.ts"
   },
   "dependencies": {
     "@mizuhiki/chain": "workspace:*",
