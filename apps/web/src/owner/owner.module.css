@@ -39,9 +39,10 @@
   flex-direction: column;
   gap: 2px;
   margin-inline: -14px;
-  padding: 0 14px 24px;
+  padding: 12px 14px 24px;
+  margin-top: -12px;
   scrollbar-width: thin;
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 12px, #000 calc(100% - 24px), transparent);
 }
 .list > * {
   flex-shrink: 0;

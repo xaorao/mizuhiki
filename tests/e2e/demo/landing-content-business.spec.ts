@@ -2,15 +2,25 @@
  * Demo content for @aria, made through the real app the way Aria and her clients would make it: a product in the
  * shop, a client intake form, a file request, a proof, a paid page payment from a client, an invoice to that
  * client, a form answer and an upload. Everything is real: sealed in the browser, signed with Aria's keys, paid
- * on the QoreChain test network. Run after `tsx tools/demo-seed.ts`, against a running stack:
- *
- *   npx playwright test -c tools/demo.config.ts
+ * on the QoreChain test network. Each step runs once; its result is kept in var/demo-content.json, beside the
+ * steps of landing-content.spec.ts. Run: pnpm --filter @mizuhiki/e2e demo:content (after demo:seed).
  */
 import { randomBytes } from "node:crypto";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { DENOMS } from "@mizuhiki/chain";
 import { ensurePersona, personaPhrase, topUp } from "@mizuhiki/testnet";
 import { API, apiToken, restoreInBrowser } from "../specs/owner";
+
+const STATE = resolve(import.meta.dirname, "../../../var/demo-content.json");
+type Step = "product" | "form" | "proof" | "deposit" | "invoice";
+const done = (k: Step): boolean =>
+  existsSync(STATE) && (JSON.parse(readFileSync(STATE, "utf8")) as Record<string, unknown>)[k] === true;
+const mark = (k: Step): void => {
+  const cur = existsSync(STATE) ? (JSON.parse(readFileSync(STATE, "utf8")) as Record<string, unknown>) : {};
+  writeFileSync(STATE, JSON.stringify({ ...cur, [k]: true }, null, 2));
+};
 
 const ARIA = "aria";
 const CLIENT_LABEL = "demo-client-leaf";
@@ -51,6 +61,7 @@ test.beforeAll(async () => {
 });
 
 test("aria: a product in the shop, on her page", async ({ browser }) => {
+  test.skip(done("product"), "already made");
   const a = await as(browser, personaPhrase("demo-aria"));
   await nav(a, "Shop");
   await a.getByRole("link", { name: "New product" }).first().click();
@@ -80,9 +91,11 @@ test("aria: a product in the shop, on her page", async ({ browser }) => {
   await a.getByRole("tab", { name: "Share" }).click();
   await a.getByRole("button", { name: "Add button" }).click();
   await expect(a.getByText(/Added|on your page/i).first()).toBeVisible({ timeout: 120_000 });
+  mark("product");
 });
 
 test("aria: a client intake form and a file request, both on her page", async ({ browser }) => {
+  test.skip(done("form"), "already made");
   const a = await as(browser, personaPhrase("demo-aria"));
   await nav(a, "Forms");
   await a.getByRole("button", { name: "New form" }).first().click();
@@ -107,9 +120,11 @@ test("aria: a client intake form and a file request, both on her page", async ({
   await share.getByRole("button", { name: "Add to my page" }).click();
   await expect(a.getByText("Added to your page and published")).toBeVisible({ timeout: 120_000 });
   await share.getByRole("button", { name: "Done" }).click();
+  mark("form");
 });
 
 test("aria: proves a signed contract existed", async ({ browser }) => {
+  test.skip(done("proof"), "already made");
   const a = await as(browser, personaPhrase("demo-aria"));
   await nav(a, "Proofs");
   await a.waitForURL("**/app/proof");
@@ -123,9 +138,11 @@ test("aria: proves a signed contract existed", async ({ browser }) => {
   await sheet.getByRole("button", { name: "Anchor on QoreChain" }).click();
   await expect(sheet.getByText("Anchored. It is on QoreChain now.")).toBeVisible({ timeout: 240_000 });
   await sheet.getByRole("button", { name: "Done" }).click();
+  mark("proof");
 });
 
 test("a client pays a deposit from Aria's page, with a sealed note", async ({ browser }) => {
+  test.skip(done("deposit"), "already made");
   const v = await as(browser, personaPhrase(CLIENT_LABEL));
   await v.goto(`/@${ARIA}/pay/48`);
   const sheet = v.getByRole("dialog", { name: "Pay Aria" });
@@ -140,9 +157,11 @@ test("a client pays a deposit from Aria's page, with a sealed note", async ({ br
   await expect(v.getByRole("dialog", { name: "Paid Aria" }).getByText("Paid Aria 48 fUSD.")).toBeVisible({
     timeout: 180_000,
   });
+  mark("deposit");
 });
 
 test("aria: invoices the client for the remaining work", async ({ browser }) => {
+  test.skip(done("invoice"), "already made");
   const a = await as(browser, personaPhrase("demo-aria"));
   await nav(a, "Invoices");
   await a.waitForURL("**/app/invoices");
@@ -166,4 +185,5 @@ test("aria: invoices the client for the remaining work", async ({ browser }) => 
   const share = a.getByRole("dialog", { name: /Invoice #\d{4} is ready/ });
   await share.getByRole("button", { name: `Send to @${CLIENT}` }).click();
   await expect(share.getByRole("button", { name: "Sent" })).toBeVisible({ timeout: 120_000 });
+  mark("invoice");
 });

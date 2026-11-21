@@ -230,8 +230,8 @@ test("demo content on @aria", async ({ browser }) => {
     await aria.getByRole("button", { name: "They match, confirm" }).click();
     await expect(aria.getByText("@rohan.law is confirmed.")).toBeVisible({ timeout: 30_000 });
     await aria.getByRole("button", { name: /Confirm your plan/ }).click();
-    await aria.getByRole("button", { name: "Confirm and arm" }).click();
-    await expect(aria.getByText("Armed on QoreChain.")).toBeVisible({ timeout: 240_000 });
+    await aria.getByRole("button", { name: "Confirm and set" }).click();
+    await expect(aria.getByText("Set on QoreChain.")).toBeVisible({ timeout: 240_000 });
     s.capsule = s.capsuleDraft;
     delete s.capsuleDraft;
     save(s);

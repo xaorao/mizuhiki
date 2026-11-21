@@ -87,7 +87,7 @@ test("@aria's owner app", async ({ browser }) => {
     .first()
     .click();
   await page.waitForURL(`**/app/capsules/${s.capsule}`);
-  await expect(page.getByText(/Armed/).first()).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText(/Set and waiting/).first()).toBeVisible({ timeout: 60_000 });
   await expect(page.getByRole("button", { name: "I’m here, check in" })).toBeVisible({ timeout: 90_000 });
   await shot("app-capsule");
 
