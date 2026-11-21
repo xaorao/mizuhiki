@@ -496,8 +496,13 @@
   .item {
     grid-template-columns: auto minmax(0, 1fr);
   }
+  /* Under the text column, with the chevron pushed to the card's right edge. */
   .itemEnd {
     grid-column: 2;
+    width: 100%;
+  }
+  .itemEnd > :last-child {
+    margin-left: auto;
   }
   .grid2 {
     grid-template-columns: minmax(0, 1fr);

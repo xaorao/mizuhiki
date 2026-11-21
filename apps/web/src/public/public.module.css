@@ -39,23 +39,22 @@
   width: 100%;
   padding: 0 12px;
 }
+/* One centred line of text with the shield set inline at its start, so the icon never drifts away from it. */
 .verify {
-  display: flex;
-  gap: 6px;
-  align-items: flex-start;
-  justify-content: center;
-  text-wrap: balance;
+  display: block;
   font-size: 12.5px;
   font-family: var(--font-round);
   font-weight: 700;
   color: var(--ink-muted);
   text-align: center;
+  text-wrap: balance;
   padding: 0 16px;
 }
 .verify > :global(svg),
 .verify > .spin {
-  flex: none;
-  margin-top: 2px;
+  display: inline-block;
+  vertical-align: -2px;
+  margin-right: 6px;
 }
 .nowrap {
   white-space: nowrap;

@@ -510,7 +510,12 @@ function ContactsPanel({
         </div>
       ) : null}
       <div className={p.actions}>
-        <Button variant={list.length ? "line" : "cord"} icon="plus" onClick={() => setAdding(true)}>
+        {/* Red only for the next unfinished step: the sheet comes first, then the first contact. */}
+        <Button
+          variant={list.length || !m.settings.sheetSavedAt ? "line" : "cord"}
+          icon="plus"
+          onClick={() => setAdding(true)}
+        >
           Add a contact
         </Button>
       </div>

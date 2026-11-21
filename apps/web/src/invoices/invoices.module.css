@@ -660,3 +660,13 @@
   font-size: 18px;
   white-space: nowrap;
 }
+/* On a phone the actions take their own row under the title: the total on the left, the buttons on the right. */
+@media (max-width: 640px) {
+  .edActions {
+    width: 100%;
+    margin-left: 0;
+  }
+  .edTotal {
+    margin-right: auto;
+  }
+}

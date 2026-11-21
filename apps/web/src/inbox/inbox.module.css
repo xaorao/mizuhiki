@@ -17,6 +17,10 @@
   flex-wrap: wrap;
   padding: 28px 22px 14px;
 }
+/* The kicker takes its own line inside the header's padding, like every other page. */
+.topKicker {
+  flex-basis: 100%;
+}
 .top h1 {
   font-size: 34px;
   margin-right: 4px;

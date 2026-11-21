@@ -240,7 +240,9 @@ export function FormEditor({ id }: { id: string }) {
         <div className={s.edActions}>
           <IconButton icon="undo" label="Undo" onClick={undo} disabled={past.current.length === 0} />
           <IconButton icon="redo" label="Redo" onClick={redo} disabled={future.current.length === 0} />
-          <Button variant="line" icon="eye" onClick={() => setPreview("desktop")}>
+          {/* On a phone the actions share one row: Preview as an icon, the shorter Publish label. */}
+          <IconButton icon="eye" label="Preview" className={s.phoneOnly} onClick={() => setPreview("desktop")} />
+          <Button variant="line" icon="eye" className={s.wideOnly} onClick={() => setPreview("desktop")}>
             Preview
           </Button>
           <Button
@@ -250,7 +252,14 @@ export function FormEditor({ id }: { id: string }) {
             disabled={published !== null && !changed}
             onClick={() => void publish().catch(() => undefined)}
           >
-            {published ? "Publish changes" : "Publish"}
+            {published ? (
+              <>
+                <span className={s.wideOnly}>Publish changes</span>
+                <span className={s.phoneOnly}>Publish</span>
+              </>
+            ) : (
+              "Publish"
+            )}
           </Button>
         </div>
       </header>

@@ -25,6 +25,7 @@ export function ShopHome() {
   const q = params.get("tab");
   const [tab, setTabState] = useState<Tab>(isTab(q) ? q : "products");
   const [waiting, setWaiting] = useState(0);
+  const [productCount, setProductCount] = useState<number | null>(null);
   const owner = useOwnerSession();
   const outcomes = useOutcomes();
   // The Sales badge: paid orders not sealed yet (refreshed after every delivery pass).
@@ -53,9 +54,11 @@ export function ShopHome() {
         <Chip icon="lock" tone="white">
           Each buyer gets their own sealed copy
         </Chip>
-        <ButtonLink href="/app/shop/new" variant="cord" icon="plus" className={s.newBtn}>
-          New product
-        </ButtonLink>
+        {tab !== "products" || (productCount ?? 0) > 0 ? (
+          <ButtonLink href="/app/shop/new" variant="cord" icon="plus" className={s.newBtn}>
+            New product
+          </ButtonLink>
+        ) : null}
       </header>
       <Tabs
         label="Shop sections"
@@ -68,7 +71,7 @@ export function ShopHome() {
         ]}
       />
       <div className={s.tabBody}>
-        {tab === "products" ? <ProductsTab /> : null}
+        {tab === "products" ? <ProductsTab onCount={setProductCount} /> : null}
         {tab === "sales" ? <SalesTab onWaiting={setWaiting} /> : null}
         {tab === "discounts" ? <DiscountsTab /> : null}
       </div>

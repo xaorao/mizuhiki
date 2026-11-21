@@ -427,7 +427,14 @@ export function ProductEditor({ id }: { id: string }) {
             </>
           ) : null}
           {published && live ? (
-            <Button variant="ghost" busy={statusBusy} onClick={() => void setStatus("unpublished")}>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon="eye"
+              className={s.unpublish}
+              busy={statusBusy}
+              onClick={() => void setStatus("unpublished")}
+            >
               Unpublish
             </Button>
           ) : null}

@@ -4,7 +4,7 @@
  * Revenue, Price, Status, a totals row and a row menu. Names come from the
  * working copy sealed to the owner, so drafts read right too.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, ButtonLink, EmptyState, Oops, Skeleton, StatusChip, useToast } from "@mizuhiki/ui";
@@ -21,8 +21,10 @@ import { failureText } from "@/lib/failure";
 /** Products shown at first, and added each time "Show more" is pressed. */
 const PAGE = 25;
 
-export function ProductsTab() {
+export function ProductsTab({ onCount }: { onCount?: (n: number | null) => void } = {}) {
   const { rows, error, reload, tokened } = useProducts();
+  // The shop header shows its New button only when the list has products (an empty list carries its own).
+  useEffect(() => onCount?.(rows ? rows.length : null), [rows, onCount]);
   const owner = useOwner();
   const router = useRouter();
   const toast = useToast();

@@ -236,14 +236,28 @@
   background: var(--ink);
   color: var(--white);
 }
+/* Long labels on a phone: the options become a list of choice rows, the chosen one in ink. */
 @media (max-width: 560px) {
   .segStack {
     display: grid;
     width: 100%;
+    gap: 8px;
+    padding: 0;
+    background: none;
+    border: 0;
   }
   .segStack button {
     white-space: normal;
     text-align: left;
+    padding: 12px 16px;
+    background: var(--white);
+    color: var(--ink);
+    border: var(--line) solid var(--ink);
+    box-shadow: 0 3px 0 var(--ink);
+  }
+  .segStack button[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--white);
   }
 }
 /* choice cards */

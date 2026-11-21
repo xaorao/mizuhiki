@@ -136,8 +136,10 @@ export function Inbox() {
   return (
     <div className={[s.page, selected ? s.hasSel : ""].join(" ")}>
       <section className={s.listCol} aria-label="Inbox list">
-        <Kicker>とどいた</Kicker>
         <header className={s.top}>
+          <span className={s.topKicker}>
+            <Kicker>とどいた</Kicker>
+          </span>
           <h1>Inbox</h1>
           <span className={s.topChip}>
             <Chip icon="lock" tone="white">

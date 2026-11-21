@@ -1172,6 +1172,10 @@
   .screenEmpty {
     display: none;
   }
+  .screen:not([data-open]) .list {
+    border-right: 0;
+    min-height: calc(100dvh - 96px);
+  }
   .chatWrap {
     position: fixed;
     inset: 0;

@@ -481,8 +481,8 @@ button.startCard {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 6px;
-  max-width: 460px;
+  gap: 8px;
+  max-width: 560px;
 }
 .choices li {
   display: flex;
@@ -493,18 +493,23 @@ button.startCard {
   font-family: var(--font-round);
   font-weight: 800;
   font-size: 12px;
-  border: 1.5px solid var(--ink-subtle);
+  border: 1.5px solid var(--ink);
   border-radius: 6px;
   padding: 0 6px;
 }
+/* Options are fields like every other one on the screen: ink outline, pill shape. */
 .choices input {
   flex: 1;
   min-width: 0;
-  border: 2px solid var(--rule-rose-mid);
-  border-radius: 12px;
-  padding: 6px 10px;
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-pill);
+  padding: 8px 16px;
   font: inherit;
   background: var(--white);
+}
+.choices input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--sora);
 }
 .addChoice {
   border: 0;
@@ -838,4 +843,17 @@ button.startCard {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Scoped to the header so they outrank the button's own display rule whatever order the CSS loads in. */
+.edActions .phoneOnly {
+  display: none;
+}
+@media (max-width: 640px) {
+  .edActions .phoneOnly {
+    display: inline-flex;
+  }
+  .edActions .wideOnly {
+    display: none;
+  }
 }
