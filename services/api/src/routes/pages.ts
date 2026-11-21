@@ -1,5 +1,5 @@
 import type { FastifyPluginCallback } from "fastify";
-import { and, eq, isNotNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, notInArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { verifyRecipientCard, type RecipientCard } from "@qorechain/qoreseal";
 import { NETWORK } from "@mizuhiki/chain";
@@ -15,6 +15,7 @@ import {
 } from "@mizuhiki/core";
 import type { Ctx } from "../server";
 import { cards, counters, drafts, envelopes, pages, payments, reports } from "@mizuhiki/db";
+import { SELF_KINDS } from "./drop";
 import { sessionAddress } from "../lib/auth";
 import { kemKeyOf, pqKeyOf, resolveName } from "../lib/chainreads";
 import { fail, isAddress, isHash } from "../lib/http";
@@ -220,7 +221,10 @@ export const pageRoutes =
           unread: sql<number>`count(*) filter (where ${envelopes.readAt} is null)::int`,
         })
         .from(envelopes)
-        .where(sql`${envelopes.owner} = ${address} and not ${envelopes.archived} and ${envelopes.kind} <> 'proof'`)
+        // Received items only, as Insights counts them: never what the owner files for themselves.
+        .where(
+          and(eq(envelopes.owner, address), eq(envelopes.archived, false), notInArray(envelopes.kind, [...SELF_KINDS])),
+        )
         .groupBy(envelopes.kind);
       const paid = await db
         .select({

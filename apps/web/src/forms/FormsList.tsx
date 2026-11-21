@@ -95,17 +95,20 @@ export function FormsList() {
       ) : rows === null ? (
         <Skeleton lines={4} />
       ) : rows.filter((r) => !r.archived).length === 0 ? (
-        <EmptyState
-          title="Create a new form to get started"
-          face="sleepy"
-          action={
-            <Button variant="cord" icon="plus" onClick={() => setStart(true)}>
-              New form
-            </Button>
-          }
-        >
-          Intake, applications, feedback. Answers are sealed in the respondent&apos;s browser; only you can read them.
-        </EmptyState>
+        <div className={s.emptyWrap}>
+          <EmptyState
+            title="Create a new form to get started"
+            face="sleepy"
+            jp="はじめよう"
+            action={
+              <Button variant="cord" icon="plus" onClick={() => setStart(true)}>
+                New form
+              </Button>
+            }
+          >
+            Intake, applications, feedback. Answers are sealed in the respondent&apos;s browser; only you can read them.
+          </EmptyState>
+        </div>
       ) : (
         <ul className={s.list}>
           {rows

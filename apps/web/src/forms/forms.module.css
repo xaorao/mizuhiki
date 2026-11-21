@@ -857,3 +857,11 @@ button.startCard {
     display: none;
   }
 }
+
+/* The empty list sits in the same card as the other sections' empty lists. */
+.emptyWrap {
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--white);
+  box-shadow: var(--drop);
+}

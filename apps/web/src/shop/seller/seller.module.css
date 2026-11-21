@@ -95,9 +95,8 @@
 .emptyWrap {
   border: var(--line) solid var(--ink);
   border-radius: var(--r-md);
-  background: var(--paper);
+  background: var(--white);
   box-shadow: var(--drop);
-  padding: 28px 18px;
 }
 .barEnd {
   display: flex;

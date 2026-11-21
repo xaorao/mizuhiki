@@ -61,6 +61,9 @@ beforeAll(async () => {
   await env("a4", "form", 9, "form:frm1");
   await env("a5", "proof", 1);
   await env("a6", "filedrop", 1, "freq:req1");
+  // the owner's own filed notes: form tags and shared-snapshot keys (excluded everywhere, as proofs are)
+  await env("a7", "formtags", 1, "form:frm1");
+  await env("a8", "formsnaps", 1, "form:frm1");
   // money: 2.5 fUSD this week, 1 QOR thirty days ago, through the page; a plain 5 QOR top-up does not count
   await sql`insert into payments (tx_hash, msg_index, from_addr, to_addr, denom, amount, memo, kind, ref, height, time) values
     ('t1', 0, 'qor1x', ${o}, 'ufusd', '2000000', 'mzk:pay:r1', 'pay', 'r1', 1, ${at(1)}),
@@ -141,5 +144,22 @@ describe("insights", () => {
     ]);
     expect(all.series.every((s) => /^\d{4}-\d{2}$/.test(s.at))).toBe(true);
     expect(all.series.reduce((n, s) => n + s.views, 0)).toBe(10);
+  });
+
+  it("My page's numbers count the same received items and page payments as Insights", async () => {
+    const r = (await app.inject({ url: "/owner/stats", headers: { authorization: `Bearer ${token}` } })).json<{
+      items: Record<string, { count: number; unread: number }>;
+      paid: { denom: string; total: string; count: number }[];
+    }>();
+    expect(Object.fromEntries(Object.entries(r.items).map(([k, v]) => [k, v.count]))).toEqual({
+      message: 2,
+      paynote: 1,
+      form: 1,
+      filedrop: 1,
+    });
+    expect(r.paid.sort((a, b) => a.denom.localeCompare(b.denom))).toEqual([
+      { denom: "ufusd", total: "2500000", count: 2 },
+      { denom: "uqor", total: "1000000", count: 1 },
+    ]);
   });
 });
