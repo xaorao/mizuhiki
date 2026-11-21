@@ -294,7 +294,7 @@ test("passes: invite, accept, safety words, confirm, a visitor's message sealed 
   await h.keyboard.press("Escape");
 
   // ---- owner: bring up to date is idempotent; revoke with the honest words
-  await o.getByRole("button", { name: "Bring up to date" }).click();
+  await o.getByRole("button", { name: "Seal older items too" }).click();
   await expect(o.getByText(/^Up to date\. The pass covers \d+ items?\.$|sealed to @/)).toBeVisible({
     timeout: 120_000,
   });

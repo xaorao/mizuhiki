@@ -1061,8 +1061,9 @@ function WindowSection() {
   return (
     <Section id="window" title="QoreChain access">
       <p>
-        Actions on Mizuhiki&rsquo;s contracts (names, rooms, capsules, proofs) need a short access window on your
-        account, opened with your post-quantum key. It limits how many actions and how much they can spend.
+        Before Mizuhiki records anything on QoreChain for you (a name, a room change, a capsule, a proof), you give it
+        permission with your post-quantum key: for a short time, a set number of actions and a fee limit. Nothing else
+        can use it.
       </p>
       {w === null ? (
         <Skeleton lines={1} />
@@ -1073,7 +1074,7 @@ function WindowSection() {
             <small>
               {w.remainingTxs.toString()} {w.remainingTxs === 1n ? "action" : "actions"} left · up to{" "}
               {fromBaseUnits(w.remainingValue, DENOMS.QOR.decimals)} QOR · closes on its own in{" "}
-              {w.remainingBlocks.toString()} blocks (block {w.expiryHeight.toString()})
+              {w.remainingBlocks.toString()} blocks
             </small>
           </span>
           <Button

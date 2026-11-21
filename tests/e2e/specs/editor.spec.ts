@@ -3,6 +3,8 @@
  * against the local API and QoreChain testnet. The published page is read back
  * from the API (and its signature checked) after Publish.
  */
+import { readFile } from "node:fs/promises";
+import { deflateSync } from "node:zlib";
 import type { Page } from "@playwright/test";
 import { test, expect } from "./fixtures";
 import { verifyRecord, type Manifest, type Signed } from "@mizuhiki/core";
@@ -228,6 +230,112 @@ test("two tabs of one account: a page published in one tab is not lost when the 
   await B.p.screenshot({ path: info.outputPath("two-tabs.png"), fullPage: true });
   await A.ctx.close();
   await B.ctx.close();
+});
+
+/** A small solid-colour PNG, made here (no image files in the repo). */
+function png(w: number, h: number, rgb: [number, number, number]): Buffer {
+  const crcTable = Array.from({ length: 256 }, (_, n) => {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    return c >>> 0;
+  });
+  const crc = (b: Buffer) => {
+    let c = 0xffffffff;
+    for (const x of b) c = (crcTable[(c ^ x) & 0xff] ?? 0) ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  };
+  const chunk = (type: string, data: Buffer) => {
+    const len = Buffer.alloc(4);
+    len.writeUInt32BE(data.length);
+    const td = Buffer.concat([Buffer.from(type), data]);
+    const c = Buffer.alloc(4);
+    c.writeUInt32BE(crc(td));
+    return Buffer.concat([len, td, c]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0);
+  ihdr.writeUInt32BE(h, 4);
+  ihdr.set([8, 2, 0, 0, 0], 8);
+  const row = Buffer.concat([Buffer.from([0]), Buffer.from(Array.from({ length: w }, () => rgb).flat())]);
+  const raw = Buffer.concat(Array.from({ length: h }, () => row));
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk("IHDR", ihdr),
+    chunk("IDAT", deflateSync(raw)),
+    chunk("IEND", Buffer.alloc(0)),
+  ]);
+}
+
+test("setup checklist: photo, design, spare-key sheet, share and a block, each through its own action", async ({
+  browser,
+}, info) => {
+  test.skip(info.project.name !== "desktop", "once");
+  test.setTimeout(300_000);
+  const owner = await ensureOwner("e2e-checklist", "mzk-e2e-checklist");
+  const ctx = await browser.newContext({ acceptDownloads: true });
+  await ctx.grantPermissions(["clipboard-read", "clipboard-write"]);
+  const page = await ctx.newPage();
+  await restoreInBrowser(page, owner.phrase);
+  const list = page.locator("#checklist");
+  const row = (title: string) => list.getByRole("listitem").filter({ hasText: title });
+
+  // Name and photo: the checklist's Add opens Design at the profile; the photo is cropped, uploaded, saved.
+  await row("Add your name and photo").getByRole("link", { name: "Add" }).click();
+  await page.waitForURL("**/app/design#profile");
+  await page
+    .locator('input[type="file"][accept="image/png,image/jpeg,image/webp"]')
+    .first()
+    .setInputFiles({
+      name: "aria.png",
+      mimeType: "image/png",
+      buffer: png(256, 256, [255, 196, 208]),
+    });
+  await page.getByRole("button", { name: "Use this photo" }).click();
+  await expect(page.getByRole("button", { name: "Change profile photo" }).locator("img")).toBeVisible({
+    timeout: 30_000,
+  });
+  // Customise the design: pick a curated theme, then Save.
+  await page.getByRole("radiogroup", { name: "Curated themes" }).getByRole("radio").nth(2).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByText("Design saved. Publish when you are ready.")).toBeVisible();
+
+  // Back on My page: the spare-key sheet is a real PDF, saved on this device.
+  await page.getByRole("link", { name: "Blocks" }).filter({ visible: true }).first().click();
+  await page.waitForURL("**/app");
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    row("Create your spare-key sheet").getByRole("button", { name: "Save sheet" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe("mizuhiki-spare-key-mzk-e2e-checklist.pdf");
+  const sheet = await readFile((await download.path()) ?? "");
+  expect(sheet.subarray(0, 5).toString()).toBe("%PDF-");
+  // Share copies the page link.
+  await row("Share your page").getByRole("button", { name: "Share" }).click();
+  await expect(page.getByText("Link copied")).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/\/@mzk-e2e-checklist$/);
+  // Add a block from the checklist.
+  await row("Add a block").getByRole("button", { name: "Add" }).click();
+  const add = page.getByRole("dialog", { name: "Add" });
+  await add.getByLabel("Paste a link or search").fill("example.org/studio");
+  await add.getByRole("button", { name: /Add a link to example\.org/ }).click();
+
+  // Five of six done; the sixth is the first sealed item, which only a visitor can bring.
+  for (const t of [
+    "Add your name and photo",
+    "Create your spare-key sheet",
+    "Add a block",
+    "Customise your design",
+    "Share your page",
+  ])
+    await expect(row(t).getByRole("button", { name: "Skip" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Publish" }).click();
+  await expect(page.getByText(/Published to/)).toBeVisible({ timeout: 60_000 });
+  // Source of truth: the published page carries the photo and the chosen theme.
+  const res = (await (await fetch(`${API}/pages/mzk-e2e-checklist`)).json()) as { record: Signed<Manifest> };
+  expect(res.record.body.avatar?.hash).toMatch(/^[0-9a-f]{64}$/);
+  expect(res.record.body.theme.preset).not.toBe("washi");
+  await page.screenshot({ path: info.outputPath("checklist.png"), fullPage: true });
+  await ctx.close();
 });
 
 test("editor on a phone: layout, preview sheet, no sideways scroll", async ({ page }, info) => {

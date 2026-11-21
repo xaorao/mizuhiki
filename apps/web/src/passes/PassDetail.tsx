@@ -220,7 +220,7 @@ function Facts({ pass, label }: { pass: PassView; label: (a: string) => string }
           </div>
         ) : null}
         <div>
-          <dt>Pass id</dt>
+          <dt>Reference</dt>
           <dd className={s.mono}>{pass.id}</dd>
         </div>
       </dl>
@@ -420,10 +420,10 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
               </p>
               <div className={s.covered}>
                 <Chip tone="matcha" icon="lock">
-                  {pass.resealed ?? 0} sealed from your device
+                  {pass.resealed ?? 0} older {(pass.resealed ?? 0) === 1 ? "item" : "items"} sealed to them
                 </Chip>
                 <Button variant="line" icon="undo" busy={catching} onClick={() => void catchUp()}>
-                  {catching ? "Sealing" : "Bring up to date"}
+                  {catching ? "Sealing" : "Seal older items too"}
                 </Button>
               </div>
             </>

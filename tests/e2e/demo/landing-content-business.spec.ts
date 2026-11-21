@@ -14,7 +14,7 @@ import { ensurePersona, personaPhrase, topUp } from "@mizuhiki/testnet";
 import { API, apiToken, restoreInBrowser } from "../specs/owner";
 
 const STATE = resolve(import.meta.dirname, "../../../var/demo-content.json");
-type Step = "product" | "form" | "proof" | "deposit" | "invoice";
+type Step = "product" | "form" | "proof" | "deposit" | "invoice" | "checklist";
 const done = (k: Step): boolean =>
   existsSync(STATE) && (JSON.parse(readFileSync(STATE, "utf8")) as Record<string, unknown>)[k] === true;
 const mark = (k: Step): void => {
@@ -186,4 +186,33 @@ test("aria: invoices the client for the remaining work", async ({ browser }) => 
   await share.getByRole("button", { name: `Send to @${CLIENT}` }).click();
   await expect(share.getByRole("button", { name: "Sent" })).toBeVisible({ timeout: 120_000 });
   mark("invoice");
+});
+
+test("aria: finishes her setup checklist", async ({ browser }) => {
+  test.skip(done("checklist"), "already made");
+  const a = await as(browser, personaPhrase("demo-aria"));
+  await a.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  const row = (title: string) => a.locator("#checklist").getByRole("listitem").filter({ hasText: title });
+  // No photo of Aria exists, so her initials stay: she skips that step, as anyone may.
+  await row("Add your name and photo").getByRole("button", { name: "Skip" }).click();
+  await row("Customise your design").getByRole("link", { name: "Open" }).click();
+  await a.waitForURL("**/app/design");
+  // Her washi theme stays; saving it is the step.
+  const font = a.getByRole("radio", { name: /Maru/ });
+  await font.click();
+  await a.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(a.getByText("Design saved. Publish when you are ready.")).toBeVisible();
+  await nav(a, "Blocks");
+  await a.waitForURL("**/app");
+  const [download] = await Promise.all([
+    a.waitForEvent("download"),
+    row("Create your spare-key sheet").getByRole("button", { name: "Save sheet" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe("mizuhiki-spare-key-aria.pdf");
+  await download.delete();
+  await row("Share your page").getByRole("button", { name: "Share" }).click();
+  await expect(a.getByText("Link copied")).toBeVisible();
+  await a.getByRole("button", { name: "Publish" }).click();
+  await expect(a.getByText(/Published to/)).toBeVisible({ timeout: 60_000 });
+  mark("checklist");
 });
