@@ -131,12 +131,12 @@ export function PassDetail({ id }: { id: string }) {
         <Avatar name={names[other] ?? other.slice(4, 6)} size={56} tone={side === "owner" ? "matcha" : "sora"} />
         <div className={s.titleBlock}>
           <Kicker>{side === "owner" ? "あいかぎ" : "おまかせ"}</Kicker>
-          <h1>{side === "owner" ? `Pass for ${label(other)}` : `Pass from ${label(other)}`}</h1>
+          <div className={s.titleWithChip}>
+            <h1>{side === "owner" ? `Pass for ${label(other)}` : `Pass from ${label(other)}`}</h1>
+            <StatusChip status={chip.status}>{chip.label}</StatusChip>
+          </div>
           <p className={s.lede}>{scopeLine(pass.invite.body.scope)}</p>
         </div>
-        <span className={s.newBtn}>
-          <StatusChip status={chip.status}>{chip.label}</StatusChip>
-        </span>
       </header>
       <div className={s.detail}>
         <div className={s.body}>

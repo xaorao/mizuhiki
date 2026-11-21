@@ -92,4 +92,6 @@
   color: var(--cord-text);
   padding: 8px;
   justify-self: center;
+  text-align: center;
+  text-wrap: balance;
 }

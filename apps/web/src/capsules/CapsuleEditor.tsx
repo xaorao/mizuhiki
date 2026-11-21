@@ -186,7 +186,11 @@ export function CapsuleEditor({ id: given }: { id: string | null }) {
         </span>
         <div className={p.titleBlock}>
           <Kicker>たいむかぷせる</Kicker>
-          <h1>{draft.label.trim() || "New capsule"}</h1>
+          {/* The state sits beside the name it describes, as on forms and products. */}
+          <div className={p.titleWithChip}>
+            <h1>{draft.label.trim() || "New capsule"}</h1>
+            <StatusChip status={chip.status}>{chip.label}</StatusChip>
+          </div>
           <p className={p.lede}>
             {save === "saving"
               ? "Saving, sealed…"
@@ -197,9 +201,6 @@ export function CapsuleEditor({ id: given }: { id: string | null }) {
                   : "Only you can read this working copy."}
           </p>
         </div>
-        <span className={p.newBtn}>
-          <StatusChip status={chip.status}>{chip.label}</StatusChip>
-        </span>
       </header>
       {row && row.state !== "draft" ? (
         live ? (
@@ -387,7 +388,7 @@ function StatusPanel({
       ) : null}
       {ph === "armed" || ph === "requested" || ph === "due" ? (
         <div className={p.actions}>
-          <Button variant="danger" icon="x" onClick={() => setCancelling(true)}>
+          <Button variant="ghost" size="sm" icon="x" className={p.quietDanger} onClick={() => setCancelling(true)}>
             Cancel capsule
           </Button>
         </div>

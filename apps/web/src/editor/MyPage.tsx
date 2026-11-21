@@ -227,7 +227,7 @@ export function MyPage() {
           <StatTile
             label="Page visits · 7 days"
             value={views.week}
-            detail={change === null ? "No visits the week before" : `${change >= 0 ? "+" : ""}${change}% on last week`}
+            detail={change === null ? "None last week" : `${change >= 0 ? "+" : ""}${change}% on last week`}
             tone="sakura"
           />
           <StatTile

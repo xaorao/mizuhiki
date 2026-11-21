@@ -1479,6 +1479,8 @@
   font-size: 13px;
   font-weight: 700;
   font-family: var(--font-round);
+  /* Two lines kept for every label, so the big titles line up across the cards. */
+  min-height: 2.8em;
 }
 .pf2 b {
   font-family: var(--font-round);
@@ -2027,9 +2029,11 @@
   }
 }
 @media (max-width: 400px) {
-  /* The wordmark's kanji gives way so the bar never wraps. */
-  .bar [lang="ja"] {
-    display: none;
+  /* The wordmark keeps its kanji; the sign-up pill gets smaller so the bar still fits on one line. */
+  .navCta {
+    min-height: 44px;
+    padding: 0 14px;
+    font-size: 14px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

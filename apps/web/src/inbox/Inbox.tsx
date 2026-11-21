@@ -139,9 +139,11 @@ export function Inbox() {
         <Kicker>とどいた</Kicker>
         <header className={s.top}>
           <h1>Inbox</h1>
-          <Chip icon="lock" tone="white">
-            Opens on this device only
-          </Chip>
+          <span className={s.topChip}>
+            <Chip icon="lock" tone="white">
+              Opens on this device only
+            </Chip>
+          </span>
           <span
             className={[s.live, ib.live ? s.liveOn : ""].join(" ")}
             title={ib.live ? "New items appear here as they arrive" : "Reconnecting"}

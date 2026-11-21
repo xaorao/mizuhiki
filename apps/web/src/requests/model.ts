@@ -36,7 +36,9 @@ export function deadlineText(r: Pick<FileRequest, "deadline" | "timeZone">, view
   if (Number.isNaN(d.getTime())) return null;
   const owner = knownZone(r.timeZone);
   const mine = knownZone(viewerZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone);
-  const main = `Due ${fmt(d, owner, true)} ${owner === "UTC" ? "UTC" : `${cityOf(owner)} time`}`;
+  // The place stays on one line ("Los Angeles time", not "Los / Angeles time").
+  const place = owner === "UTC" ? "UTC" : `${cityOf(owner)} time`.replace(/ /g, "\u00a0");
+  const main = `Due ${fmt(d, owner, true)} ${place}`;
   if (mine === owner) return main;
   const dayIn = (tz: string) =>
     d.toLocaleDateString("en-GB", { timeZone: tz, day: "numeric", month: "long", year: "numeric" });

@@ -36,6 +36,9 @@
   gap: 12px;
   max-width: 680px;
 }
+.heroMm {
+  justify-self: start;
+}
 .hero h1 {
   margin: 0;
   font-family: var(--font-round);

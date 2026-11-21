@@ -538,3 +538,11 @@
   font-family: var(--font-round);
   font-weight: 800;
 }
+
+/* Narrow list column: "Live" stays on the title row and the chip takes its own line under it. */
+@media (max-width: 860px) {
+  .topChip {
+    order: 3;
+    flex-basis: 100%;
+  }
+}

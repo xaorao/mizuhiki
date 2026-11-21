@@ -521,3 +521,23 @@
 .panel > span {
   justify-self: start;
 }
+/* A page title with its state chip beside it, wrapping under it on narrow screens. */
+.titleWithChip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+.titleWithChip > :last-child {
+  font-size: 13px;
+}
+/* A destructive action that is not the point of the screen: quiet until hovered. */
+.quietDanger {
+  color: var(--text-error);
+}
+@media (max-width: 520px) {
+  /* On a phone the avatar would sit above the kicker; the title already names the person. */
+  .top > span:first-child {
+    display: none;
+  }
+}

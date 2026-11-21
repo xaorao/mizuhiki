@@ -1,0 +1,32 @@
+.foot {
+  max-width: 1040px;
+  margin: 56px auto 0;
+  padding: 20px 16px 0;
+  border-top: 2px dashed var(--rule);
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+}
+.foot nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 18px;
+}
+.foot a {
+  color: var(--ink-muted);
+  font-weight: 700;
+  text-decoration: none;
+}
+.foot a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+.foot p {
+  margin: 0;
+  font-family: var(--font-round);
+  font-weight: 800;
+}

@@ -32,6 +32,8 @@ import { AvatarCrop } from "@/onboarding/AvatarCrop";
 import { TEMPLATES } from "@/onboarding/model";
 import { markChecklist } from "./checklist";
 import s from "./design.module.css";
+import e from "./editor.module.css";
+import { pageUrl } from "@/lib/site";
 import { failureText } from "@/lib/failure";
 
 type Look = Pick<Manifest, "theme" | "displayName" | "bio" | "avatar">;
@@ -459,7 +461,12 @@ export function Design() {
           </Button>
         </section>
       </div>
-      <aside className={s.preview} aria-label="Live preview">
+      {/* The same preview as Blocks: wave field, label and the page's address. */}
+      <aside className={e.preview} aria-label="Live preview">
+        <p className={e.previewLabel}>
+          <Icon name="eye" size={14} />
+          <span>Live preview · {pageUrl(d.manifest.name).replace(/^https?:\/\//, "")}</span>
+        </p>
         <PhoneFrame width={320}>
           <PageView manifest={{ ...d.manifest, ...look }} compact />
         </PhoneFrame>

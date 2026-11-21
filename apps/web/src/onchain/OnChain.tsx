@@ -21,7 +21,8 @@ import {
   type ContractFacts,
   type TxCheck,
 } from "@mizuhiki/chain";
-import { Button, Icon, Kicker, LockLine, Skeleton, StatusChip, Wordmark } from "@mizuhiki/ui";
+import { Button, Icon, Kicker, LockLine, Musubi, Skeleton, StatusChip, Wordmark } from "@mizuhiki/ui";
+import { SiteFooter } from "@/site/SiteFooter";
 import { API_URL } from "@/lib/api";
 import { PROOFS } from "@/landing/ProofCards";
 import s from "./onchain.module.css";
@@ -314,6 +315,9 @@ export function OnChain() {
       </header>
       <main className={s.main}>
         <div className={s.hero}>
+          <span className={s.heroMm}>
+            <Musubi face="normal" size={96} bob />
+          </span>
           <Kicker>あかし</Kicker>
           <h1>Proof on QoreChain</h1>
           <p className={s.lead}>
@@ -387,6 +391,7 @@ export function OnChain() {
           </ul>
         </Section>
       </main>
+      <SiteFooter />
     </div>
   );
 }

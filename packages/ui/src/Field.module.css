@@ -76,6 +76,10 @@
 .area:focus {
   box-shadow: 0 0 0 4px var(--sora);
 }
+/* One focus mark, the soft halo, like text inputs (the global outline on top of it read as a double border). */
+.area:focus-visible {
+  outline: none;
+}
 .bad,
 .bad.area {
   border-color: var(--danger);
@@ -88,6 +92,10 @@
   justify-content: space-between;
   gap: 12px;
   min-height: 20px;
+}
+/* No hint, error or counter: no empty line under the field, so forms keep an even rhythm. */
+.msgs:not(:has(p, span)) {
+  min-height: 0;
 }
 .hint,
 .error,
@@ -349,4 +357,9 @@
 }
 .toggleRowTap {
   cursor: pointer;
+}
+/* High contrast: the soft halo is white there, so focus shows as the theme's black ring. */
+:global([data-theme="contrast"]) .box:focus-within,
+:global([data-theme="contrast"]) .area:focus {
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }

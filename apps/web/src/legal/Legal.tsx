@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Kicker, LockLine, TextField, Wordmark } from "@mizuhiki/ui";
 import { normalizeNameInput } from "@mizuhiki/core";
 import { ReportBody } from "@/public/ReportBody";
+import { SiteFooter } from "@/site/SiteFooter";
 import s from "./legal.module.css";
 
 export type LegalDoc = "privacy" | "terms" | "report";
@@ -30,6 +31,7 @@ export function Legal({ doc }: { doc: LegalDoc }) {
         </nav>
       </header>
       <main className={s.card}>{doc === "privacy" ? <Privacy /> : doc === "terms" ? <Terms /> : <Report />}</main>
+      <SiteFooter />
     </div>
   );
 }

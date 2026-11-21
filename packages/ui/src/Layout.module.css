@@ -72,6 +72,18 @@
   gap: 6px;
   flex-wrap: wrap;
 }
+/* On a phone the tabs stay one row and scroll sideways instead of wrapping under each other. */
+@media (max-width: 640px) {
+  .tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 5px;
+  }
+  .tabs button {
+    flex: none;
+  }
+}
 .tabs button {
   border: 2px solid var(--ink);
   background: var(--white);
