@@ -22,6 +22,7 @@ import {
   Sakura,
   Sheet,
   useToast,
+  Kicker,
 } from "@mizuhiki/ui";
 import { verifyRecord, type Block, type Manifest, type RecipientCard, type Signed } from "@mizuhiki/core";
 import { assertOwnsName, isUnreachable, pqKeyViaEvm } from "@mizuhiki/chain";
@@ -165,11 +166,11 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
       ? {
           id: "allshop",
           type: "shopSection",
-          title: "Shop",
+          title: "",
           subtitle: "",
           on: true,
           archived: false,
-          productIds: shop.items.map((x) => x.def.id).slice(0, 48),
+          productIds: shop.items.map((x) => x.def.id),
         }
       : null;
   const [tab, setTab] = useState<"links" | "shop">("links");
@@ -305,7 +306,10 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
           {ready ? (
             <>
               <Icon name="shield" size={14} />
-              <span>This page really is @{name}&apos;s, checked on QoreChain just now</span>
+              <span>
+                This page really is <span className={s.nowrap}>@{name}&apos;s</span>,{" "}
+                <span className={s.nowrap}>checked on QoreChain just now</span>
+              </span>
             </>
           ) : (
             <>
@@ -441,13 +445,19 @@ export function PageUnavailable({
     <div className={s.stage}>
       <div className={s.failed}>
         <Musubi face={state === "error" ? "worried" : "sleepy"} size={120} bob />
+        <Kicker>{state === "error" ? "あれ？" : "おやすみ中"}</Kicker>
         <h1>{message}</h1>
         <p>
-          {state === "error"
-            ? "Nothing was sent. Reload the page to try again."
-            : `If you were sent here, ask the person for their new link. You can also claim @${name} if it is free.`}
+          {state === "error" ? (
+            "Nothing was sent. Reload the page to try again."
+          ) : (
+            <>
+              If you were sent here, ask the person for their new link. You can also claim{" "}
+              <span className={s.nowrap}>@{name}</span> if it is free.
+            </>
+          )}
         </p>
-        <div className={s.row}>
+        <div className={[s.row, s.rowEven].join(" ")}>
           <ButtonLink href="/" variant="line">
             Go to Mizuhiki
           </ButtonLink>

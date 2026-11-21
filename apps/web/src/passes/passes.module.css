@@ -215,8 +215,8 @@
 }
 .pick[aria-checked="true"],
 .pick[aria-pressed="true"] {
-  background: var(--cord-fill);
-  color: var(--on-cord);
+  background: var(--ink);
+  color: var(--white);
 }
 .pick:focus-visible {
   outline: 3px solid var(--focus);

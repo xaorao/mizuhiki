@@ -8,8 +8,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 18px 24px;
-  max-width: 920px;
+  padding: 18px 16px;
+  max-width: 720px;
   margin: 0 auto;
 }
 .checkLink {
@@ -180,14 +180,20 @@
 .share:hover {
   color: var(--ink);
 }
+/* The button goes under the field: side by side it never lined up with the input once a hint or error showed. */
 .pasteRow {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: end;
+  gap: 12px;
+  justify-items: start;
+}
+.pasteRow > :first-child {
+  justify-self: stretch;
 }
 /* hash drop */
+.dropWrap {
+  width: 100%;
+}
 .drop {
   position: relative;
   overflow: hidden;

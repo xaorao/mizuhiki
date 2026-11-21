@@ -85,7 +85,7 @@ function Start({ onStarted }: { onStarted: (p: Pending) => void }) {
           .finally(() => setBusy(false));
       }}
     >
-      <Musubi face="worried" size={96} />
+      <Musubi face="normal" size={96} />
       <Kicker>ふっかつ</Kicker>
       <h1>Recover with your contacts</h1>
       <p>

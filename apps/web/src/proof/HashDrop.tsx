@@ -39,7 +39,7 @@ export function HashDrop({
   };
 
   return (
-    <div>
+    <div className={s.dropWrap}>
       <button
         type="button"
         className={[s.drop, compact ? s.dropCompact : "", drag ? s.dropOn : ""].join(" ")}

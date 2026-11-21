@@ -592,6 +592,21 @@ describe("shop: Instant delivery by the helper", () => {
     await app.inject({ method: "POST", url: `/orders/${o.ref}/tx`, payload: { txHash: tx } });
     const agent = new DeliveryAgent({ api: base, phrase: helper.phrase, log: () => undefined });
     expect(await agent.pass()).toContain(o.ref);
+    // With nothing left to deliver, later passes download no envelopes at all (they used to fetch and unseal every
+    // product's helper envelope every four seconds).
+    const seen: string[] = [];
+    const real = globalThis.fetch;
+    globalThis.fetch = (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+      seen.push(String(input instanceof Request ? input.url : input));
+      return real(input, init);
+    };
+    try {
+      expect(await agent.pass()).toEqual([]);
+      expect(await agent.pass()).toEqual([]);
+    } finally {
+      globalThis.fetch = real;
+    }
+    expect(seen.filter((u) => u.includes("/blobs/"))).toEqual([]);
     const keyHash = sha256Hex(
       utf8(
         canonicalJson({

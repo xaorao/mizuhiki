@@ -159,13 +159,15 @@ export function Onboarding({ initialName, next: after }: { initialName: string; 
   return (
     <div className={s.shell}>
       <header className={s.bar}>
-        {step !== "name" && step !== "ready" && step !== "done" ? (
-          <button type="button" className={s.back} onClick={back} aria-label="Back">
-            <Icon name="back" />
-          </button>
-        ) : (
-          <span className={s.backSpacer} />
-        )}
+        {/* Logo on the left like every other screen; the progress bar stays centred on the page. */}
+        <span className={s.barStart}>
+          {step !== "name" && step !== "ready" && step !== "done" ? (
+            <button type="button" className={s.back} onClick={back} aria-label="Back">
+              <Icon name="back" />
+            </button>
+          ) : null}
+          <Wordmark size={18} href="/" />
+        </span>
         <div
           className={s.progress}
           role="progressbar"
@@ -176,7 +178,7 @@ export function Onboarding({ initialName, next: after }: { initialName: string; 
         >
           <i style={{ width: `${progress * 100}%` }} />
         </div>
-        <Wordmark size={18} href="/" />
+        <span aria-hidden="true" />
       </header>
       <div className={s.grid}>
         <main className={s.main}>
@@ -252,7 +254,7 @@ export function Onboarding({ initialName, next: after }: { initialName: string; 
             <Icon name="eye" size={14} />
             <span>Live preview · {draft.name ? `@${draft.name}` : "your page"}</span>
           </p>
-          <PhoneFrame width={320}>
+          <PhoneFrame width={348}>
             <PageView
               manifest={{
                 ...manifest,
@@ -261,6 +263,7 @@ export function Onboarding({ initialName, next: after }: { initialName: string; 
               }}
               compact
               pending={pending}
+              previewOwner={!draft.displayName && !draft.name}
             />
           </PhoneFrame>
           <span className={s.previewMm}>

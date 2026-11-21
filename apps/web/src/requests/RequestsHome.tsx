@@ -70,9 +70,12 @@ export function RequestsHome() {
             sealed on their device to you. Uploaders never see each other&rsquo;s files.
           </p>
         </div>
-        <Button variant="cord" icon="plus" className={s.newBtn} onClick={() => setCreating(true)}>
-          New request
-        </Button>
+        {/* One main action: an empty list carries its own button. */}
+        {rows !== null && rows.length > 0 ? (
+          <Button variant="cord" icon="plus" className={s.newBtn} onClick={() => setCreating(true)}>
+            New request
+          </Button>
+        ) : null}
       </header>
 
       <div className={s.pills} role="group" aria-label="Show">

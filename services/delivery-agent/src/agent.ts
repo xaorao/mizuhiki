@@ -49,6 +49,11 @@ export class DeliveryAgent {
   private readonly log: (line: string) => void;
   /** Orders this helper refused, with why, so the same refusal is not retried every pass. */
   private readonly refused = new Map<string, string>();
+  /**
+   * Opened agent keys by envelope hash. An envelope is named by its own content, so once opened (or found sealed to
+   * another helper, kept as null) it never needs fetching or unsealing again.
+   */
+  private readonly agentKeys = new Map<string, { key: Uint8Array; content: string | null } | null>();
 
   constructor(cfg: AgentConfig) {
     this.keys = deriveAccount(cfg.phrase);
@@ -143,14 +148,24 @@ export class DeliveryAgent {
       orders: AgentOrder[];
       products: { id: string; record: Signed<ProductDef>; agentEnvelope: string | null }[];
     }>("/agent/orders");
+    // Only the products in this pass's orders, each envelope fetched and opened once for the helper's lifetime.
+    const wanted = new Set(r.orders.flatMap((o) => o.records.map((rec) => rec.body.id)));
     const keys = new Map<string, { key: Uint8Array; content: string | null }>();
     for (const p of r.products) {
-      if (!p.agentEnvelope) continue;
-      try {
-        keys.set(p.id, this.openAgentKey(p.id, await this.bytes(`/blobs/${p.agentEnvelope}`), this.keys.seal));
-      } catch {
-        // Sealed to another helper key, or damaged: that product cannot be delivered from here.
+      if (!p.agentEnvelope || !wanted.has(p.id)) continue;
+      if (!this.agentKeys.has(p.agentEnvelope)) {
+        // A failed download is not remembered: the next pass tries again.
+        const envelope = await this.bytes(`/blobs/${p.agentEnvelope}`).catch(() => null);
+        if (!envelope) continue;
+        try {
+          this.agentKeys.set(p.agentEnvelope, this.openAgentKey(p.id, envelope, this.keys.seal));
+        } catch {
+          // Sealed to another helper key, or damaged: that product cannot be delivered from here.
+          this.agentKeys.set(p.agentEnvelope, null);
+        }
       }
+      const opened = this.agentKeys.get(p.agentEnvelope);
+      if (opened) keys.set(p.id, opened);
     }
     const done: string[] = [];
     for (const o of r.orders) {

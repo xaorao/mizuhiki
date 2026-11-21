@@ -205,7 +205,7 @@ export function FileItem({ f, onProve }: { f: FileFacts; onProve?: (() => void) 
             Preview
           </Button>
         ) : null}
-        <Button variant="cord" size="sm" icon="download" onClick={() => void save()} disabled={state.s === "busy"}>
+        <Button variant="line" size="sm" icon="download" onClick={() => void save()} disabled={state.s === "busy"}>
           Save
         </Button>
       </span>

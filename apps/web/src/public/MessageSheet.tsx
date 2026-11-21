@@ -349,7 +349,7 @@ export function MessageSheet({
                 onClick={() => input.current?.click()}
               >
                 <Icon name="upload" size={18} />
-                Drop files here or tap to add · up to {fmtBytes(maxBytes)} each, sealed as they upload
+                <span>Drop or tap to add files · up to {fmtBytes(maxBytes)} each</span>
               </button>
               <input
                 ref={input}

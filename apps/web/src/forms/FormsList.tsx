@@ -7,7 +7,19 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button, Chip, EmptyState, Icon, Oops, Sheet, Skeleton, StatusChip, TextArea, useToast } from "@mizuhiki/ui";
+import {
+  Button,
+  Chip,
+  EmptyState,
+  Icon,
+  Oops,
+  Sheet,
+  Skeleton,
+  StatusChip,
+  TextArea,
+  useToast,
+  Kicker,
+} from "@mizuhiki/ui";
 import { useAccount } from "@/account/AccountProvider";
 import { useOwner } from "@/owner/OwnerProvider";
 import { api, ApiFailure } from "@/lib/api";
@@ -63,14 +75,18 @@ export function FormsList() {
 
   return (
     <div className={s.page}>
+      <Kicker>フォーム</Kicker>
       <header className={s.top}>
         <h1>Forms</h1>
         <Chip icon="lock" tone="white">
           Answers sealed to you
         </Chip>
-        <Button variant="cord" icon="plus" onClick={() => setStart(true)} className={s.newBtn}>
-          New form
-        </Button>
+        {/* One main action: an empty list carries its own button. */}
+        {rows !== null && rows.some((r) => !r.archived) ? (
+          <Button variant="cord" icon="plus" onClick={() => setStart(true)} className={s.newBtn}>
+            New form
+          </Button>
+        ) : null}
       </header>
       {error ? (
         <Oops title="Not loaded" action={<button onClick={() => void load()}>Try again</button>}>
@@ -88,8 +104,7 @@ export function FormsList() {
             </Button>
           }
         >
-          Intake, applications, feedback. Answers are encrypted in the respondent&apos;s browser; only you can read
-          them.
+          Intake, applications, feedback. Answers are sealed in the respondent&apos;s browser; only you can read them.
         </EmptyState>
       ) : (
         <ul className={s.list}>

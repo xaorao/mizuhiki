@@ -5,17 +5,21 @@
  * ribbon), a product button as a row. Both show only records that verify
  * against the seller's key on chain; a tap opens the full product page.
  */
+import { useState } from "react";
 import Link from "next/link";
-import { Icon, Skeleton } from "@mizuhiki/ui";
+import { Button, Icon, Skeleton } from "@mizuhiki/ui";
 import type { Block, ProductDef } from "@mizuhiki/core";
 import { ribbonLabel } from "./model";
 import { RatingLine, Ribbon, Thumb, useShop } from "./parts";
 import s from "./buyer.module.css";
 
 type ShopBlock = Extract<Block, { type: "product" | "shopSection" }>;
+/** A section shows this many products first; the rest behind "Show all". */
+const FIRST = 8;
 
 export function ShopBlockView({ block, name, onTap }: { block: ShopBlock; name: string; onTap?: (b: Block) => void }) {
   const shop = useShop(name);
+  const [all, setAll] = useState(false);
   const ids = block.type === "product" ? [block.productId] : block.productIds;
   if (shop.state === "loading")
     return block.type === "product" ? (
@@ -60,12 +64,14 @@ export function ShopBlockView({ block, name, onTap }: { block: ShopBlock; name: 
       </Link>
     );
   }
+  const shown = all ? items : items.slice(0, FIRST);
   return (
-    <section className={s.shopSection} aria-label={block.title}>
-      <h2 className={s.sectionTitle}>{block.title}</h2>
+    <section className={s.shopSection} aria-label={block.title || "Shop"}>
+      {/* The whole-shop tab passes no title: the tab already says "Shop". */}
+      {block.title ? <h2 className={s.sectionTitle}>{block.title}</h2> : null}
       {block.subtitle ? <p className={s.sectionSub}>{block.subtitle}</p> : null}
       <ul className={s.grid}>
-        {items.map((it, i) => (
+        {shown.map((it, i) => (
           <li key={it.def.id} style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}>
             <Link className={s.gridCard} href={href(it.def)} onClick={() => onTap?.(block)}>
               <span className={s.gridThumb}>
@@ -82,6 +88,13 @@ export function ShopBlockView({ block, name, onTap }: { block: ShopBlock; name: 
           </li>
         ))}
       </ul>
+      {items.length > shown.length ? (
+        <div className={s.showAll}>
+          <Button variant="line" onClick={() => setAll(true)}>
+            Show all {items.length}
+          </Button>
+        </div>
+      ) : null}
     </section>
   );
 }

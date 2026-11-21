@@ -1114,6 +1114,9 @@
 }
 .cipherEmpty {
   color: var(--on-ink-faint);
+  /* A sentence, not a sealed blob: wrap between words. */
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 .facts {
   display: grid;

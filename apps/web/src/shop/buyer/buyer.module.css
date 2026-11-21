@@ -1150,7 +1150,7 @@
   animation: mz-pop-in var(--t-toggle) var(--ease-out) both;
 }
 .times button[aria-checked="true"] {
-  background: var(--cord-fill);
+  background: var(--ink);
   color: var(--on-cord);
   box-shadow: 0 2px 0 var(--cord-deep);
 }
@@ -2180,4 +2180,10 @@ a.libCard:hover {
 
 .payPanel + .fine {
   margin-top: 14px;
+}
+
+.showAll {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
 }

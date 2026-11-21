@@ -23,7 +23,7 @@ export function ReportBody({ name, onDone }: { name: string; onDone: () => void 
       className={s.report}
       onSubmit={(e) => {
         e.preventDefault();
-        if (!reason) return;
+        if (!reason || !name) return;
         setBusy(true);
         api
           .post("/reports", { name, reason, detail })
@@ -36,8 +36,8 @@ export function ReportBody({ name, onDone }: { name: string; onDone: () => void 
       }}
     >
       <p>
-        Tell us what is wrong with @{name}. Sealed items cannot be read by anyone at Mizuhiki; we can only take down the
-        public page.
+        Tell us what is wrong with {name ? `@${name}` : "the page"}. Sealed items cannot be read by anyone at Mizuhiki;
+        we can only take down the public page.
       </p>
       <div role="radiogroup" aria-label="Reason" className={s.reasons}>
         {REASONS.map((r) => (
@@ -53,7 +53,7 @@ export function ReportBody({ name, onDone }: { name: string; onDone: () => void 
         counter
         onChange={(e) => setDetail(e.target.value)}
       />
-      <Button type="submit" variant="cord" full busy={busy} disabled={!reason}>
+      <Button type="submit" variant="cord" full busy={busy} disabled={!reason || !name}>
         Send report
       </Button>
     </form>

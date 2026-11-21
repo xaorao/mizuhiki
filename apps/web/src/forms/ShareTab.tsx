@@ -205,7 +205,7 @@ export function ShareTab(props: TabProps) {
       <EmbedPanel ownerName={ownerName} slug={published.slug} />
 
       <LockLine>
-        Answers are encrypted inside the form on the respondent&rsquo;s device, also when it is embedded. The website
+        Answers are sealed inside the form on the respondent&rsquo;s device, also when it is embedded. The website
         around it cannot read them.
       </LockLine>
     </div>

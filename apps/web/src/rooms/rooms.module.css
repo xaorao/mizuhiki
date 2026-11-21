@@ -40,11 +40,13 @@
 .screen[data-open] .list {
   border-right: var(--line-strong) solid var(--ink);
 }
+/* No room open: the same list-and-pane split as an open room (and the inbox), with "Pick a room" in the pane. */
 .screen:not([data-open]) {
-  grid-template-columns: minmax(0, 720px);
-  justify-content: start;
   height: auto;
   min-height: 100dvh;
+}
+.screen:not([data-open]) .list {
+  border-right: var(--line-strong) solid var(--ink);
 }
 .screenEmpty {
   display: grid;
@@ -1164,6 +1166,10 @@
     margin-bottom: 0;
   }
   .screen[data-open] .list {
+    display: none;
+  }
+  /* On a phone the list is its own page: no empty pane under it. */
+  .screenEmpty {
     display: none;
   }
   .chatWrap {

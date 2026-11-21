@@ -20,6 +20,7 @@ import {
   StatusChip,
   TextField,
   useToast,
+  Kicker,
 } from "@mizuhiki/ui";
 import { explorerTx } from "@mizuhiki/chain";
 import { useAccount } from "@/account/AccountProvider";
@@ -58,6 +59,9 @@ const customer = (c: PrivateCopy | null) =>
           ? `${c.doc.billTo.address.slice(0, 10)}…`
           : c.doc.billTo.label || "Anyone with the link");
 
+/** Invoices shown at first, and added each time "Show more" is pressed. */
+const PAGE = 25;
+
 export function InvoiceList() {
   const acct = useAccount();
   const owner = useOwner();
@@ -68,6 +72,7 @@ export function InvoiceList() {
   const inv = useInvoices(account, owner.token);
   const [filter, setFilter] = useState<Filter>("all");
   const [q, setQ] = useState("");
+  const [limit, setLimit] = useState(PAGE);
   const [open, setOpen] = useState<Loaded | null>(null);
   const [share, setShare] = useState<{ copy: PrivateCopy; link: string; reminder: boolean } | null>(null);
   const [prove, setProve] = useState<{ hash: string; name: string } | null>(null);
@@ -148,14 +153,18 @@ export function InvoiceList() {
 
   return (
     <div className={s.listPage}>
+      <Kicker>せいきゅうしょ</Kicker>
       <header className={s.listTop}>
         <h1>Invoices</h1>
         <Chip icon="lock" tone="white">
           Line items sealed to you and your client
         </Chip>
-        <ButtonLink href="/app/invoices/new" variant="cord" icon="plus" className={s.newBtn}>
-          New invoice
-        </ButtonLink>
+        {/* One main action: an empty list carries its own button. */}
+        {inv.items !== null && rows.length > 0 ? (
+          <ButtonLink href="/app/invoices/new" variant="cord" icon="plus" className={s.newBtn}>
+            New invoice
+          </ButtonLink>
+        ) : null}
       </header>
       <div className={s.tools}>
         <TextField
@@ -213,12 +222,12 @@ export function InvoiceList() {
               </tr>
             </thead>
             <tbody>
-              {shown.map(({ l, status }) => {
+              {shown.slice(0, limit).map(({ l, status }) => {
                 const c = l.copy;
                 const due = c ? dueDate(c.doc, l.rec.sentAt) : null;
                 return (
                   <tr key={l.rec.id}>
-                    <td>
+                    <td className={s.cCust}>
                       {l.rec.state === "draft" ? (
                         <Link href={`/app/invoices/${l.rec.id}`} className={s.rowLink}>
                           {customer(c)}
@@ -230,29 +239,41 @@ export function InvoiceList() {
                       )}
                       {l.rec.viewedAt ? <small className={s.viewed}>Viewed (reported by their browser)</small> : null}
                     </td>
-                    <td>{c ? numberLabel(c.doc.number) : "—"}</td>
-                    <td>
+                    <td className={s.cNo} data-label="No.">
+                      {c ? numberLabel(c.doc.number) : "—"}
+                    </td>
+                    <td className={s.cDate} data-label="Date">
                       {new Date(l.rec.sentAt ?? l.rec.createdAt).toLocaleDateString("en-GB", {
                         day: "numeric",
                         month: "short",
                       })}
                     </td>
-                    <td>
+                    <td className={s.cDue} data-label="Due">
                       {c
                         ? due
                           ? due.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
                           : "No due date"
                         : "—"}
                     </td>
-                    <td>
+                    <td className={s.cStatus}>
                       <StatusChip status={STATUS_CHIP[status]}>{STATUS_LABEL[status]}</StatusChip>
                     </td>
-                    <td className={s.num}>{c ? money(totals(c.doc).total, c.doc.token) : "—"}</td>
+                    <td className={[s.num, s.cAmt].join(" ")}>{c ? money(totals(c.doc).total, c.doc.token) : "—"}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+          {shown.length > limit ? (
+            <div className={s.more}>
+              <span>
+                Showing {limit} of {shown.length}
+              </span>
+              <Button variant="line" onClick={() => setLimit((n) => n + PAGE)}>
+                Show {Math.min(PAGE, shown.length - limit)} more
+              </Button>
+            </div>
+          ) : null}
         </div>
       )}
 

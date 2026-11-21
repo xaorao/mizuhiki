@@ -984,6 +984,9 @@ export function Landing() {
         {/* 13. Templates */}
         <section className={[s.grey, s.center].join(" ")} id="templates">
           <div className={[s.inner, s.reveal].join(" ")}>
+            <p className={s.jp} lang="ja">
+              ひながた
+            </p>
             <h2 className={s.h2}>A private page for every kind of work.</h2>
             <p className={s.lead}>Real pages on the QoreChain test network. Open one and send it something.</p>
             <ul className={s.gal} aria-label="Example pages">
@@ -1005,6 +1008,9 @@ export function Landing() {
         {/* 14. What stays public */}
         <section className={[s.grey, s.center].join(" ")} id="security">
           <div className={[s.inner, s.reveal].join(" ")}>
+            <p className={s.jp} lang="ja">
+              おおやけ
+            </p>
             <h2 className={s.h2}>We tell you what stays public first.</h2>
             <p className={s.lead}>
               Your page runs on QoreChain, a public blockchain built for post-quantum security. A few things are public
@@ -1056,6 +1062,9 @@ export function Landing() {
         {/* 15. FAQ, closing claim, footer */}
         <section className={[s.grey, s.center].join(" ")} id="faq">
           <div className={[s.inner, s.reveal].join(" ")}>
+            <p className={s.jp} lang="ja">
+              しつもん
+            </p>
             <h2 className={s.h2}>Questions? Answered.</h2>
             <div className={s.faq}>
               {FAQ.map(([q, a]) => (

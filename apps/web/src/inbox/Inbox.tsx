@@ -6,7 +6,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Chip, EmptyState, Icon, Oops, Skeleton, Tabs, TextField, TypeChip, type Tone } from "@mizuhiki/ui";
+import { Chip, EmptyState, Icon, Oops, Skeleton, Tabs, TextField, TypeChip, type Tone, Kicker } from "@mizuhiki/ui";
 import { denomByBase, fromBaseUnits } from "@mizuhiki/chain";
 import { useAccount } from "@/account/AccountProvider";
 import { useOwner } from "@/owner/OwnerProvider";
@@ -136,6 +136,7 @@ export function Inbox() {
   return (
     <div className={[s.page, selected ? s.hasSel : ""].join(" ")}>
       <section className={s.listCol} aria-label="Inbox list">
+        <Kicker>とどいた</Kicker>
         <header className={s.top}>
           <h1>Inbox</h1>
           <Chip icon="lock" tone="white">

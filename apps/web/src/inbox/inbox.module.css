@@ -64,7 +64,13 @@
 .filters {
   display: flex;
   gap: 6px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+.filters > * {
+  flex: none;
 }
 .filters button {
   border: 2px solid var(--ink);

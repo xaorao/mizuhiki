@@ -243,6 +243,7 @@ export function PricingPanel({ draft, patch, row }: EditorProps) {
             <b>Discount code field at checkout</b>
           </div>
           <Segmented<ProductDef["discountField"]>
+            stackOnPhone
             label="Discount code field at checkout"
             value={def.discountField}
             onChange={(discountField) => patch({ discountField })}

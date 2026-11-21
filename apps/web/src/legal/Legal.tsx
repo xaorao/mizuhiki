@@ -37,7 +37,7 @@ export function Legal({ doc }: { doc: LegalDoc }) {
 function Privacy() {
   return (
     <article className={s.doc}>
-      <Kicker>ぷらいばしー</Kicker>
+      <Kicker>プライバシー</Kicker>
       <h1>Privacy</h1>
       <p className={s.lead}>
         Mizuhiki is built so that we cannot read what people send you. Here is exactly what we can and cannot see.
@@ -145,11 +145,8 @@ function Report() {
             autoComplete="off"
             spellCheck={false}
           />
-          {name.length >= 3 ? (
-            <ReportBody name={name} onDone={() => setSent(true)} />
-          ) : (
-            <p className={s.hint}>Type the name to continue.</p>
-          )}
+          {/* The whole form shows from the start; Send stays off until a name and a reason are given. */}
+          <ReportBody name={name.length >= 3 ? name : ""} onDone={() => setSent(true)} />
         </>
       )}
     </article>

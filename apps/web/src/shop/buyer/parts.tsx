@@ -6,7 +6,7 @@
  */
 import { Fragment, useEffect, useId, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Icon, Knot } from "@mizuhiki/ui";
+import { Icon, Knot, Wordmark } from "@mizuhiki/ui";
 import type { Manifest, ProductDef, RecipientCard, Signed } from "@mizuhiki/core";
 import type { SealKeyPair } from "@qorechain/qoreseal";
 import type { Account } from "@/account/AccountProvider";
@@ -186,9 +186,14 @@ export function ShopBar({
 }) {
   return (
     <header className={s.bar}>
-      <Link className={s.home} href="/" aria-label="Mizuhiki home">
-        <Knot size={24} />
-      </Link>
+      {/* In a seller's shop their name leads, beside the knot; elsewhere (the library) the full wordmark. */}
+      {name ? (
+        <Link className={s.home} href="/" aria-label="Mizuhiki home">
+          <Knot size={24} />
+        </Link>
+      ) : (
+        <Wordmark size={20} href="/" />
+      )}
       {name ? (
         <Link className={s.barName} href={`/@${name}`}>
           @{name}

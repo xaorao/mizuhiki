@@ -93,8 +93,9 @@
   transform: translateY(2px);
   box-shadow: 0 1px 0 var(--ink);
 }
+/* Selected is ink, like the filter chips: cord red stays for the one main action on each screen. */
 .tabs button[aria-selected="true"] {
-  background: var(--cord-fill);
+  background: var(--ink);
   color: var(--white);
 }
 .badge {
@@ -111,7 +112,8 @@
 }
 .tabs button[aria-selected="true"] .badge {
   background: var(--white);
-  color: var(--cord-text);
+  color: var(--ink);
+  border-color: var(--white);
 }
 .phone {
   border-radius: 40px;

@@ -2,7 +2,7 @@
 /** The owner's proofs: anchor any document from this device, and every anchor you made, with its certificate. */
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Chip, EmptyState, Icon, Oops, Panel, Skeleton } from "@mizuhiki/ui";
+import { Chip, EmptyState, Icon, Oops, Panel, Skeleton, Kicker } from "@mizuhiki/ui";
 import { useAccount } from "@/account/AccountProvider";
 import { useOwner } from "@/owner/OwnerProvider";
 import { api } from "@/lib/api";
@@ -98,6 +98,7 @@ export function MyProofs() {
 
   return (
     <div className={s.page}>
+      <Kicker>あかし</Kicker>
       <header className={s.top}>
         <h1>Proofs</h1>
         <Chip icon="lock" tone="white">

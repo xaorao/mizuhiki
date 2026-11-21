@@ -1,6 +1,6 @@
 /** Indexer against the real testnet: registry logs into names, and a real tagged payment into payments. */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { eq } from "drizzle-orm";
+import { eq, lte } from "drizzle-orm";
 import { makeDb, names, pages, payments, runMigrations, chainEvents } from "@mizuhiki/db";
 import { buildMemo, sha256Hex, utf8 } from "@mizuhiki/core";
 import { CONTRACTS, DENOMS, msgSend, sendTx } from "@mizuhiki/chain";
@@ -22,13 +22,15 @@ afterAll(async () => sql.end());
 
 describe("indexer", () => {
   it("rebuilds names from registry logs, idempotently", async () => {
-    await indexLogs(db, { maxChunks: 200 });
+    const reached = await indexLogs(db, { maxChunks: 200 });
     const [row] = await db.select().from(names).where(eq(names.name, "mzk-api-owner"));
     expect(row?.address).toBe(owner.address);
-    const count1 = (await db.select().from(chainEvents)).length;
+    // Count only up to where the first pass reached: other suites may add events to the chain meanwhile.
+    const upTo = async () => (await db.select().from(chainEvents).where(lte(chainEvents.block, reached))).length;
+    const count1 = await upTo();
     await sql`delete from index_checkpoints`;
     await indexLogs(db, { maxChunks: 200 });
-    expect((await db.select().from(chainEvents)).length).toBe(count1);
+    expect(await upTo()).toBe(count1);
   }, 300_000);
 
   it("links a real tagged payment by the recipient event and the memo", async () => {

@@ -579,22 +579,35 @@ export const shopRoutes =
       const address = await ownerOfName(db, name);
       if (!address) return fail(reply, 404, "NOT_FOUND", "This page does not exist.");
       const owner = { address };
+      // Newest first, with every product's rating from one grouped query (not one query per product).
       const rows = await db
         .select()
         .from(products)
-        .where(and(eq(products.owner, owner.address), eq(products.status, "published")));
-      const out = [];
-      for (const p of rows) {
-        const [rating] = await db
-          .select({ avg: sql<number | null>`avg(${reviews.rating})::float`, n: sql<number>`count(*)::int` })
-          .from(reviews)
-          .where(eq(reviews.productId, p.id));
-        out.push({
+        .where(and(eq(products.owner, owner.address), eq(products.status, "published")))
+        .orderBy(desc(products.updatedAt));
+      const ratings = rows.length
+        ? await db
+            .select({
+              id: reviews.productId,
+              avg: sql<number | null>`avg(${reviews.rating})::float`,
+              n: sql<number>`count(*)::int`,
+            })
+            .from(reviews)
+            .where(
+              inArray(
+                reviews.productId,
+                rows.map((p) => p.id),
+              ),
+            )
+            .groupBy(reviews.productId)
+        : [];
+      const byId = new Map(ratings.map((r) => [r.id, r]));
+      return {
+        products: rows.map((p) => ({
           record: p.record as Signed<ProductDef>,
-          rating: { average: rating?.avg ?? null, count: rating?.n ?? 0 },
-        });
-      }
-      return { products: out };
+          rating: { average: byId.get(p.id)?.avg ?? null, count: byId.get(p.id)?.n ?? 0 },
+        })),
+      };
     });
 
     // ---- discounts -------------------------------------------------------------------------

@@ -227,6 +227,7 @@ export function InvoiceEditor({
               <h2>Bill to</h2>
               <Segmented<InvoiceDoc["billTo"]["kind"]>
                 label="Bill to"
+                stackOnPhone
                 value={doc.billTo.kind}
                 onChange={(kind) => setBillTo({ kind, ...(kind === "link" ? { address: "", name: "" } : {}) })}
                 options={[

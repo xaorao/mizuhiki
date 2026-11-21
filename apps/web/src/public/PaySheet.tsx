@@ -354,7 +354,7 @@ export function PaySheet({
           <div className={s.keypad} aria-hidden="true">
             {KEYS.map((k) => (
               <button key={k} type="button" tabIndex={-1} onClick={() => press(k)}>
-                {k === "back" ? <Icon name="back" size={18} /> : k}
+                {k === "back" ? <Icon name="backspace" size={20} /> : k}
               </button>
             ))}
           </div>
@@ -392,9 +392,12 @@ export function PaySheet({
             <Icon name="eye" size={14} /> The amount and addresses are public on chain.
           </p>
           {error ? <Oops title="Not yet">{error}</Oops> : null}
-          <Button type="submit" variant="cord" size="lg" full iconRight="arrow" disabled={!valid}>
-            {valid ? `Continue · ${total} ${token}` : "Enter an amount"}
-          </Button>
+          {/* Stays in reach on a phone, where the keypad and options push the sheet past the screen. */}
+          <div className={s.payBar}>
+            <Button type="submit" variant="cord" size="lg" full iconRight="arrow" disabled={!valid}>
+              {valid ? `Continue · ${total} ${token}` : "Enter an amount"}
+            </Button>
+          </div>
         </form>
       ) : null}
 

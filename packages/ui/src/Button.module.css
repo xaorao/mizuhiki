@@ -100,15 +100,31 @@
   border-color: var(--danger);
   box-shadow: 0 4px 0 var(--danger);
 }
+/* Not available yet: a pale sakura button with a dashed line and readable muted text (about 7:1), not a faded tint
+   of the red, which read as broken. */
 .btn:disabled {
   cursor: not-allowed;
-  filter: saturate(0.4);
-  opacity: 0.6;
+  background: var(--sakura-soft);
+  color: var(--ink-muted);
+  border-color: var(--ink-muted);
+  border-style: dashed;
+  box-shadow: none;
 }
+/* Busy keeps its own colours and solid line: the action is running, not unavailable. */
 .busy:disabled {
-  opacity: 1;
-  filter: none;
   cursor: progress;
+  border-style: solid;
+}
+.cord.busy:disabled {
+  background: var(--cord-fill);
+  color: var(--on-cord);
+  border-color: var(--ink);
+}
+.line.busy:disabled,
+.quiet.busy:disabled {
+  background: var(--white);
+  color: var(--ink);
+  border-color: var(--ink);
 }
 /* High contrast: a faded button is a muddy tint with weak text, so an unavailable one turns white with a dashed ink
    line and black text instead. */
@@ -152,4 +168,10 @@
     animation-duration: 2.4s !important;
     animation-iteration-count: infinite !important;
   }
+}
+/* A disabled ghost (icon) button stays borderless and simply dims. */
+.ghost:disabled {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-subtle);
 }

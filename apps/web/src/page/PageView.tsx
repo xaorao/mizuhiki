@@ -45,7 +45,10 @@ export function PageView({
   hasShop = false,
   renderBlock,
   shopFallback,
+  previewOwner = false,
 }: {
+  /** True in the sign-up preview before a name is typed. */
+  previewOwner?: boolean | undefined;
   manifest: Pick<Manifest, "name" | "displayName" | "bio" | "avatar" | "blocks" | "theme">;
   onBlock?: ((b: Block) => void) | undefined;
   onMessage?: (() => void) | undefined;
@@ -62,7 +65,8 @@ export function PageView({
   /** The Shop side when the page has no Shop section (the public page shows every published product). */
   shopFallback?: ReactNode;
 }) {
-  const firstName = (manifest.displayName || manifest.name).split(" ")[0] ?? manifest.name;
+  // The sign-up preview passes no name yet: speak to the person instead of printing a placeholder ("Sealed to Your").
+  const firstName = previewOwner ? "you" : ((manifest.displayName || manifest.name).split(" ")[0] ?? manifest.name);
   // Links | Shop (spec 5.4): Links holds the page's buttons (a product button included, where the owner put it);
   // Shop holds the store: the Shop sections, or every published product when there is no section.
   const isShop = (b: Block) => b.type === "shopSection";
@@ -105,6 +109,7 @@ export function PageView({
   const t = manifest.theme;
   const wp = t.wallpaper;
   const hero = t.header === "hero";
+  const showsShopFallback = hasShop && tab === "shop" && !live.some(isShop) && !!shopFallback;
   return (
     <article
       className={[s.page, compact ? s.compact : "", hero ? s.hero : ""].join(" ")}
@@ -176,7 +181,7 @@ export function PageView({
             }
             return visible.includes(b) ? rowFor(b) : null;
           })}
-          {hasShop && tab === "shop" && !live.some(isShop) ? shopFallback : null}
+          {showsShopFallback ? shopFallback : null}
           {pending.map((p) => (
             <div key={p.key} className={s.pending}>
               <Icon name="wrench" size={16} />
@@ -185,7 +190,9 @@ export function PageView({
               </span>
             </div>
           ))}
-          {live.length === 0 && pending.length === 0 ? <p className={s.none}>Nothing here yet.</p> : null}
+          {live.length === 0 && pending.length === 0 && !showsShopFallback ? (
+            <p className={s.none}>Nothing here yet.</p>
+          ) : null}
         </div>
       </div>
       {footer}

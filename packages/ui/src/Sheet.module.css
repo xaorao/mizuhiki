@@ -97,3 +97,7 @@
     transform: none;
   }
 }
+/* The sheet takes focus only so screen readers start at its title; it is not a control, so no ring. */
+.sheet:focus {
+  outline: none;
+}

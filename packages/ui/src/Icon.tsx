@@ -274,6 +274,12 @@ const PATHS = {
       <circle cx="19" cy="12" r="1.2" />
     </>
   ),
+  backspace: (
+    <>
+      <path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z" />
+      <path d="m12 9 6 6M18 9l-6 6" />
+    </>
+  ),
   back: (
     <>
       <path d="m15 6-6 6 6 6" />

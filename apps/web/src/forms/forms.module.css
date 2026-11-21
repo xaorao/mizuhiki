@@ -416,6 +416,7 @@ button.startCard {
   width: 100%;
   border: 0;
   background: transparent;
+  text-overflow: ellipsis;
   font-family: var(--font-round);
   font-weight: 800;
   font-size: 19px;

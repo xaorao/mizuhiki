@@ -33,8 +33,9 @@
   justify-items: stretch;
   animation: mz-rise var(--t-sheet) var(--ease-out);
 }
+/* Musubi sits on the same left edge as the kicker, heading and form below it. */
 .stack > :first-child {
-  justify-self: center;
+  justify-self: start;
 }
 .title {
   font-size: 34px;

@@ -81,6 +81,10 @@ export function Sheet({
     if (!d) return;
     if (open && !d.open) {
       d.showModal();
+      // The browser focuses the first control, which is Close, and draws a focus ring on it. Unless a field inside
+      // asked for focus, focus the sheet itself: screen readers start at its title and Tab still reaches Close.
+      if (document.activeElement instanceof HTMLElement && document.activeElement.dataset.sheetClose === "true")
+        d.focus();
       if (history) {
         pushed.current = true;
         markOpen(titleId);
@@ -118,6 +122,7 @@ export function Sheet({
       ref={ref}
       className={[s.sheet, wide ? s.wide : ""].join(" ")}
       aria-labelledby={titleId}
+      tabIndex={-1}
       onCancel={(e) => {
         e.preventDefault();
         if (dismissRef.current) onCloseRef.current();
@@ -130,7 +135,9 @@ export function Sheet({
         <div className={s.grab} aria-hidden="true" />
         <header className={s.head}>
           <h2 id={titleId}>{title}</h2>
-          {dismissable ? <IconButton icon="x" label="Close" size="sm" onClick={() => onCloseRef.current()} /> : null}
+          {dismissable ? (
+            <IconButton icon="x" label="Close" size="sm" data-sheet-close="true" onClick={() => onCloseRef.current()} />
+          ) : null}
         </header>
         <div className={s.body}>{children}</div>
       </div>

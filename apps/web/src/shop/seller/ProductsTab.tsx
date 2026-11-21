@@ -18,6 +18,9 @@ import { Confirm, RowMenu, Thumb } from "./bits";
 import s from "./seller.module.css";
 import { failureText } from "@/lib/failure";
 
+/** Products shown at first, and added each time "Show more" is pressed. */
+const PAGE = 25;
+
 export function ProductsTab() {
   const { rows, error, reload, tokened } = useProducts();
   const owner = useOwner();
@@ -25,6 +28,7 @@ export function ProductsTab() {
   const toast = useToast();
   const name = owner.published?.name ?? owner.draft?.manifest.name ?? "";
   const [busy, setBusy] = useState<string | null>(null);
+  const [limit, setLimit] = useState(PAGE);
   const [del, setDel] = useState<ProductRow | null>(null);
   const [delError, setDelError] = useState<string | null>(null);
 
@@ -139,7 +143,7 @@ export function ProductsTab() {
             </tr>
           </thead>
           <tbody className={s.stagger}>
-            {rows.map((r) => {
+            {rows.slice(0, limit).map((r) => {
               const def = r.def;
               const link = name && def ? `${SITE_URL}${productPath(name, r.p.slug)}` : null;
               const live = r.p.status === "published";
@@ -247,6 +251,16 @@ export function ProductsTab() {
             </tr>
           </tfoot>
         </table>
+        {rows.length > limit ? (
+          <div className={s.more}>
+            <span>
+              Showing {limit} of {rows.length}
+            </span>
+            <Button variant="line" onClick={() => setLimit((n) => n + PAGE)}>
+              Show {Math.min(PAGE, rows.length - limit)} more
+            </Button>
+          </div>
+        ) : null}
       </div>
       <p className={s.footNote}>
         Revenue counts paid and delivered orders, read from QoreChain. Money lands in your wallet straight away; there

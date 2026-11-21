@@ -236,7 +236,7 @@ export function RequestDetail({ id }: { id: string }) {
         </section>
 
         <aside className={s.side}>
-          <Panel title="This request" kicker="しらべ">
+          <Panel title="This request" kicker="くわしく">
             <dl className={s.facts}>
               <div>
                 <dt>Uploads</dt>

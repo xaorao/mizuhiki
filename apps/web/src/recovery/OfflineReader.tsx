@@ -135,7 +135,7 @@ export function OfflineReader() {
             </p>
             <TextField
               label="Their @name or address"
-              placeholder="@yourname"
+              placeholder="@theirname"
               value={who}
               autoComplete="off"
               spellCheck={false}

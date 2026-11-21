@@ -205,6 +205,8 @@
   border: 0;
   background: transparent;
   width: 100%;
+  /* Long titles end in "…" instead of being cut mid-letter; the whole text shows while editing. */
+  text-overflow: ellipsis;
   padding: 2px 6px;
   border-radius: 8px;
   outline: none;

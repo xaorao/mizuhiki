@@ -87,7 +87,7 @@ function FileRow({ f }: { f: FileFacts }) {
             Preview
           </Button>
         ) : null}
-        <Button variant="cord" size="sm" icon="download" onClick={() => void save()} disabled={state.s === "busy"}>
+        <Button variant="line" size="sm" icon="download" onClick={() => void save()} disabled={state.s === "busy"}>
           Save
         </Button>
       </span>

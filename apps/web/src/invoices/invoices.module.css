@@ -549,3 +549,81 @@
     opacity: 1;
   }
 }
+
+/* On a phone each invoice is a small card: customer and amount, number and status, then the dates. */
+@media (max-width: 640px) {
+  .table thead {
+    display: none;
+  }
+  .table,
+  .table tbody {
+    display: block;
+  }
+  .table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "cust amt"
+      "no status"
+      "date due";
+    gap: 6px 12px;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 2px dashed var(--rule);
+  }
+  .table tr:last-child {
+    border-bottom: 0;
+  }
+  .table td {
+    padding: 0;
+    border: 0;
+    white-space: normal;
+    min-width: 0;
+  }
+  .cCust {
+    grid-area: cust;
+  }
+  .cAmt {
+    grid-area: amt;
+    font-family: var(--font-round);
+    font-weight: 900;
+  }
+  .cNo {
+    grid-area: no;
+  }
+  .cStatus {
+    grid-area: status;
+    justify-self: end;
+  }
+  .cDate {
+    grid-area: date;
+  }
+  .cDue {
+    grid-area: due;
+    justify-self: end;
+  }
+  .cNo,
+  .cDate,
+  .cDue {
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .cNo::before,
+  .cDate::before,
+  .cDue::before {
+    content: attr(data-label) " ";
+    font-weight: 700;
+  }
+}
+
+.more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-top: 2px dashed var(--rule);
+  color: var(--ink-muted);
+  font-size: 14px;
+}

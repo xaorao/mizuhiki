@@ -228,6 +228,16 @@
   background: var(--ink);
   color: var(--white);
 }
+@media (max-width: 560px) {
+  .segStack {
+    display: grid;
+    width: 100%;
+  }
+  .segStack button {
+    white-space: normal;
+    text-align: left;
+  }
+}
 /* choice cards */
 .choice {
   position: relative;

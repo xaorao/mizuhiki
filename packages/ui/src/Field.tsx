@@ -215,14 +215,17 @@ export function Segmented<T extends string>({
   value,
   onChange,
   label,
+  stackOnPhone = false,
 }: {
   options: { value: T; label: string }[];
   value: T;
   onChange: (v: T) => void;
   label: string;
+  /** Long labels: on a phone the options stack as a list instead of wrapping inside the pill. */
+  stackOnPhone?: boolean | undefined;
 }) {
   return (
-    <div className={s.seg} role="group" aria-label={label}>
+    <div className={[s.seg, stackOnPhone ? s.segStack : ""].join(" ")} role="group" aria-label={label}>
       {options.map((o) => (
         <button key={o.value} type="button" aria-pressed={o.value === value} onClick={() => onChange(o.value)}>
           {o.label}

@@ -2,7 +2,7 @@
 /** Public "Check a document": hash a file here, or paste a fingerprint, then open its certificate. */
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Musubi, TextField, Wordmark } from "@mizuhiki/ui";
+import { Button, Musubi, TextField, Wordmark, Kicker } from "@mizuhiki/ui";
 import { HashDrop } from "./HashDrop";
 import { certificatePath } from "./proof";
 import s from "./proof.module.css";
@@ -19,7 +19,7 @@ export function CheckDocument() {
       <main className={s.cert}>
         <div className={s.card}>
           <Musubi face="normal" size={100} />
-          <p className={s.kicker}>しらべる · Check</p>
+          <Kicker>しらべる</Kicker>
           <h1>Was this document anchored on QoreChain?</h1>
           <p className={s.muted}>
             Drop the file and this page works out its fingerprint here, then reads the anchor straight from QoreChain.
