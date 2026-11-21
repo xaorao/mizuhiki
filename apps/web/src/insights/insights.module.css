@@ -160,9 +160,15 @@
 }
 
 @media (max-width: 860px) {
-  .tiles,
   .cols {
     grid-template-columns: minmax(0, 1fr);
+  }
+  /* Two by two like Blocks; the third tile (money) takes the full row. */
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .tiles > :nth-child(3):last-child {
+    grid-column: 1 / -1;
   }
 }
 @media (prefers-reduced-motion: reduce) {

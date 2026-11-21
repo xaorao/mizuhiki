@@ -272,7 +272,7 @@
   padding: 28px 32px 48px;
   display: grid;
   gap: 20px;
-  max-width: 900px;
+  max-width: 1080px;
 }
 .top {
   display: flex;

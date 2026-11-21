@@ -241,7 +241,7 @@ export function RequestDetail({ id }: { id: string }) {
               <div>
                 <dt>Uploads</dt>
                 <dd>
-                  {uploads.length}
+                  {uploads.length} {uploads.length === 1 ? "upload" : "uploads"}
                   {uploads.length ? ` · ${fmtBytes(total)}` : ""}
                 </dd>
               </div>

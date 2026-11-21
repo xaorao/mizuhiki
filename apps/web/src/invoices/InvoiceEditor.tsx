@@ -198,6 +198,10 @@ export function InvoiceEditor({
                 : ""}
         </span>
         <div className={s.edActions}>
+          {/* The total stays in sight beside Send while the line items are edited further down. */}
+          <span className={s.edTotal} aria-label={`Total ${money(t.total, doc.token)}`}>
+            {money(t.total, doc.token)}
+          </span>
           <Button variant="line" icon="eye" onClick={() => setPreview((p) => !p)} aria-pressed={preview}>
             {preview ? "Edit" : "Preview"}
           </Button>

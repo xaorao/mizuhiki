@@ -458,6 +458,9 @@
   width: 100%;
   margin-left: auto;
   border-radius: 40px;
+  /* The Level 3 frame: ink line and a solid drop, like every card. */
+  border: var(--line-strong) solid var(--ink);
+  box-shadow: 0 10px 0 var(--ink);
   overflow: hidden;
   --a: var(--sakura-wave);
   --b: var(--sakura-wave-2);
@@ -565,10 +568,19 @@
 }
 .heroPhone {
   position: absolute;
-  width: 52%;
-  left: 24%;
-  top: 8%;
+  width: 48%;
+  left: 26%;
+  top: 7%;
   transform: rotate(-5deg);
+}
+/* A phone-shaped window on the top of the page, so the whole phone stays inside the frame. */
+.heroPhone .phoneScr {
+  aspect-ratio: 9 / 16;
+}
+.heroPhone .phoneScr img {
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
 }
 .env {
   position: absolute;
@@ -705,6 +717,10 @@
 .cSec {
   padding-block: 120px;
   background: var(--cream);
+}
+/* Follows the comparison directly, as in the Level 3 preview: one section gap, not two. */
+.joined {
+  padding-top: 0;
 }
 .cHead {
   text-align: center;
@@ -883,8 +899,8 @@
 }
 .stack .sc {
   position: absolute;
-  width: 260px;
-  height: 220px;
+  width: 284px;
+  height: 208px;
   border-radius: 30px;
   padding: 22px;
   border: var(--hair);
@@ -916,7 +932,7 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  padding-right: 36px;
+  padding-right: 28px;
 }
 .stack .sc b {
   display: block;
@@ -1964,28 +1980,29 @@
   .num {
     font-size: 32px;
   }
-  .blockgrid,
   .proof {
     grid-template-columns: minmax(0, 1fr);
   }
+  /* Twelve blocks as a two-column grid of small tiles, not twelve full-width rows. */
   .blockgrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
   .bk {
-    display: grid;
-    grid-template-columns: 42px minmax(0, 1fr);
-    column-gap: 14px;
-    row-gap: 4px;
-    padding: 16px;
+    gap: 6px;
+    padding: 14px;
     border-radius: 22px;
   }
   .bkIc {
-    width: 42px;
-    height: 42px;
-    grid-row: span 3;
+    width: 38px;
+    height: 38px;
+  }
+  .bk b {
+    font-size: 15.5px;
   }
   .bk p {
-    font-size: 14px;
+    font-size: 13px;
+    line-height: 1.4;
   }
   .bkTag {
     margin-top: 2px;

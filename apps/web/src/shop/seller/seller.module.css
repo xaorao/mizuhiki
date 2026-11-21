@@ -2043,7 +2043,11 @@
     white-space: normal;
     text-align: left;
   }
-  .table tbody td:first-child,
+  /* The product fills the first row beside its menu, instead of pushing the menu onto a row of its own. */
+  .table tbody td:first-child {
+    grid-column: 1 / 4;
+    grid-row: 1;
+  }
   .table tfoot th:first-child {
     grid-column: 1 / -1;
   }
@@ -2056,12 +2060,19 @@
     color: var(--ink-subtle);
   }
   .table td[data-label="Status"] {
-    grid-column: 1 / 4;
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .table td[data-label="Status"]::before {
+    display: inline;
   }
   .table .menuCell {
     grid-column: 4;
     grid-row: 1;
     justify-self: end;
+    align-self: start;
   }
 }
 

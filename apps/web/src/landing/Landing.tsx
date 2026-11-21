@@ -966,7 +966,7 @@ export function Landing() {
         </section>
 
         {/* 12. Proof */}
-        <section className={s.cSec} id="proof">
+        <section className={[s.cSec, s.joined].join(" ")} id="proof">
           <div className={[s.inner, s.reveal].join(" ")}>
             <Head jp="あかし" title="Built on QoreChain. Checked on the live test network.">
               Mizuhiki uses QoreChain&rsquo;s post-quantum key registry and signatures. These transactions are on the

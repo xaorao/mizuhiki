@@ -73,4 +73,9 @@
   .card {
     padding: 20px;
   }
+  /* The links take their own even row under the logo instead of a ragged wrap. */
+  .bar nav {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
