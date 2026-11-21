@@ -140,3 +140,7 @@ QoreChain's own kits: [`@qorechain/sdk`](https://github.com/qorechain/qorechain-
 ## Security
 
 Report a vulnerability privately to the maintainers rather than in a public issue. The threat model lists every party we defend against, what each can and cannot do, and the test that covers it.
+
+## License
+
+[MIT](LICENSE).
