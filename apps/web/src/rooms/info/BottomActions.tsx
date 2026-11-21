@@ -54,7 +54,7 @@ export function BottomActions({ room, names }: { room: RoomState; names: Record<
     setErr(null);
     try {
       await leaveRoom(await room.acct(), detail.id);
-      toast.show("You left the room. New messages are no longer shared with you.");
+      toast.show("You left the room. Its key changes as soon as an admin's device opens it.");
       setSheet(null);
       router.push("/app/rooms");
     } catch (e) {

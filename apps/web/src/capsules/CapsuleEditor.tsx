@@ -657,7 +657,7 @@ function WhatWho({
             {up ? `Sealing ${up.name} ${Math.round(up.p * 100)}%` : "Add files"}
           </Button>
         </div>
-        <LockLine>Each file is encrypted on this device before it uploads.</LockLine>
+        <LockLine>Each file is sealed on this device before it uploads.</LockLine>
       </fieldset>
       <fieldset className={p.fieldset}>
         <legend className={p.legend}>Who it is for</legend>
@@ -854,7 +854,7 @@ function When({
       </fieldset>
       <ToggleRow
         title="Delete the sealed copies when that time ends"
-        detail="Off: they stay until you delete them. On: after the window, no one can collect them, including recipients who have not yet."
+        detail="Off: they stay until you delete them. On: after the window, no one can collect them, including recipients who have not collected theirs yet."
         checked={draft.deleteAfter}
         onChange={(on) => change((d) => ({ ...d, deleteAfter: on }))}
       />
@@ -1016,7 +1016,7 @@ function Guardians({
       <Sheet
         open={checking !== null}
         onClose={() => setChecking(null)}
-        title={`Check it is really ${checking ? label(checking) : ""}`}
+        title={checking ? `Check it is really ${label(checking)}` : "Check who this is"}
         dismissable={busy !== "confirm"}
       >
         <div className={p.form}>

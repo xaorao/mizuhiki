@@ -506,7 +506,7 @@ function ContactsPanel({
               ? `Sealing piece ${Math.min(sealing.done + 1, sealing.total)} of ${sealing.total}`
               : "Seal the pieces"}
           </Button>
-          <LockLine>Split and sealed on this device. Mizuhiki only keeps sealed envelopes.</LockLine>
+          <LockLine>Split and sealed on this device. Mizuhiki only keeps sealed copies.</LockLine>
         </div>
       ) : null}
       <div className={p.actions}>
@@ -890,7 +890,7 @@ function OfflinePanel({
 
   return (
     <section className={p.panel}>
-      <h2>Offline recovery reader</h2>
+      <h2>Offline reader</h2>
       <p>
         A second key, printed on its own sheet and kept offline. Items sent to you are sealed to it too, so with it you
         can read them even if this device and your phrase are gone. It cannot sign in, pay or change anything.

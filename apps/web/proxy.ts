@@ -26,8 +26,8 @@ export function proxy(request: NextRequest) {
     request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() === "https";
   const csp = [
     "default-src 'self'",
-    // 'wasm-unsafe-eval' lets WebAssembly compile (hash-wasm: Argon2id for the device vault, BLAKE3) and nothing else;
-    // JavaScript eval stays blocked. Dev mode adds 'unsafe-eval' for React's debugging tools only.
+    // 'wasm-unsafe-eval' lets WebAssembly compile and nothing else: HarfBuzz subsets fonts for the PDFs the app makes
+    // (lib/fontSubset.ts). JavaScript eval stays blocked. Dev mode adds 'unsafe-eval' for React's debugging tools only.
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'${dev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' blob: data: ${API}`,

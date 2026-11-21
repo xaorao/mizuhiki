@@ -193,7 +193,7 @@ export function PaySheet({
         setPhase("review");
       }
     } catch (e) {
-      setError(`${failureText(e, "The note could not be sealed.")} Nothing was sent.`);
+      setError(failureText(e, "The note could not be sealed. Nothing was sent."));
       setPhase("method");
     }
   };
@@ -203,7 +203,7 @@ export function PaySheet({
     const order: { k: PayStage; label: string }[] = [
       { k: "signing", label: method === "qorex" ? "Waiting for you in QoreX" : "Signing with your post-quantum key" },
       { k: "submitted", label: "Submitted to QoreChain" },
-      { k: "confirmed", label: "Confirmed on chain" },
+      { k: "confirmed", label: "Confirmed on QoreChain" },
       ...(prepared.note ? [{ k: "note" as const, label: "Delivering your sealed note" }] : []),
     ];
     const mark = (k: PayStage) => {
@@ -437,7 +437,7 @@ export function PaySheet({
             <ChoiceCard
               selected={false}
               onSelect={() => void toReview("manual")}
-              title="Copy address and reference"
+              title="Copy address and memo"
               detail="Pay from any QoreChain wallet. This page waits for the payment."
               icon={<Icon name="copy" />}
               tone="butter"
@@ -632,8 +632,8 @@ export function PaySheet({
                   term: "Note",
                   value: prepared.note
                     ? result.noteDelivered === false
-                      ? "Sealed, not delivered yet"
-                      : "Sealed and delivered"
+                      ? "Sealed, not stored yet"
+                      : `Sealed and stored for ${first}`
                     : "None",
                 },
                 { term: "On chain", value: `Block ${result.height}` },
@@ -663,9 +663,9 @@ export function PaySheet({
                         void deliverNote(owner.address, prepared.ref, n.envelope, n.hash)
                           .then(() => {
                             setResult({ ...result, noteDelivered: true });
-                            toast.show("Note delivered");
+                            toast.show(`Note stored for ${first}, sealed.`);
                           })
-                          .catch(() => toast.show("Still not delivered. It is kept on this device.", { tone: "error" }))
+                          .catch(() => toast.show("Still not stored. It is kept on this device.", { tone: "error" }))
                           .finally(() => setResending(false));
                       }}
                     >
@@ -730,11 +730,8 @@ export function PaySheet({
       {phase === "failed" && failure ? (
         <SealFailed
           title={
-            failure.moved === "no"
-              ? "Not paid. No money moved."
-              : failure.moved === "yes"
-                ? "Not paid. Only the network fee was spent."
-                : "Not confirmed yet."
+            // The detail says what moved; the title only says where things stand.
+            failure.moved === "unknown" ? "Not confirmed yet" : "Not paid"
           }
           detail={failure.message}
           txHash={failure.txHash}

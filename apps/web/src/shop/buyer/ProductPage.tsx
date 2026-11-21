@@ -23,7 +23,15 @@ import {
   TextField,
   useToast,
 } from "@mizuhiki/ui";
-import { KIND_INFO, callSlots, formatAmount, parseAmount, type Manifest, type ProductDef } from "@mizuhiki/core";
+import {
+  KIND_INFO,
+  callSlots,
+  formatAmount,
+  parseAmount,
+  type Manifest,
+  type ProductDef,
+  ctaLabel,
+} from "@mizuhiki/core";
 import { mediaUrl } from "@/lib/api";
 import { pageUrl } from "@/lib/site";
 import { loadProduct, type PublicProduct } from "../engine";
@@ -288,7 +296,7 @@ function Product({
                 } else add();
               }}
             >
-              {soldOut ? "Sold out" : needsChoice ? "Choose" : def.cta}
+              {soldOut ? "Sold out" : needsChoice ? "Choose" : ctaLabel(def.cta)}
             </Button>
           </div>
         </div>
@@ -458,7 +466,7 @@ function Product({
           {p.left !== null && !soldOut ? <p className={s.leftLine}>{p.left} left</p> : null}
 
           <Button ref={cta} variant="cord" size="xl" full disabled={soldOut} onClick={() => add()} className={s.cta}>
-            {soldOut ? "Sold out" : editingThis ? "Update cart" : def.cta}
+            {soldOut ? "Sold out" : editingThis ? "Update cart" : ctaLabel(def.cta)}
             {!soldOut && unit !== null ? (
               <span className={s.ctaPrice}>
                 {formatAmount(unit * BigInt(def.limits.quantity ? quantity : 1), token)}
@@ -554,7 +562,7 @@ function Product({
           </div>
           <p className={s.verified}>
             <Icon name="shield" size={14} />
-            Signed by @{name}&apos;s key, checked on QoreChain · version {def.version}
+            This really is @{name}&apos;s product, checked on QoreChain · version {def.version}
           </p>
         </aside>
       </div>

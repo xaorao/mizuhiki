@@ -158,7 +158,7 @@ export function SettingsTab(props: TabProps) {
       <Panel title="Notifications" kicker="おしらせ">
         <ToggleRow
           title="Tell me when an answer arrives"
-          detail="You get a content-free nudge. Answers are only readable on your devices."
+          detail="You get a notice that says only that an answer came in. Answers are only readable on your devices."
           checked={set.notify}
           onChange={(notify) => settings({ notify })}
         />
@@ -715,7 +715,7 @@ function LinkPanel({ def, update, published, ownerName, token }: TabProps) {
   const description =
     def.preview.description.trim() ||
     def.description.trim() ||
-    `A form by @${ownerName}. Answers are encrypted on your device; only @${ownerName} can read them.`;
+    `A form by @${ownerName}. Answers are sealed on your device; only @${ownerName} can read them.`;
   const preview = (patch: Partial<FormDef["preview"]>, key: string) =>
     update((d) => ({ ...d, preview: { ...d.preview, ...patch } }), key);
 

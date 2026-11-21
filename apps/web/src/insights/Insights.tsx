@@ -375,7 +375,7 @@ function ViewsChart({ data, table, onTable }: { data: Data; table: boolean; onTa
                     onFocus={() => setHover(i)}
                     tabIndex={0}
                     role="img"
-                    aria-label={`${label(d.at)}: ${d.views} views, ${d.items} sealed items, ${d.payments} payments`}
+                    aria-label={`${label(d.at)}: ${d.views} ${d.views === 1 ? "view" : "views"}, ${d.items} sealed ${d.items === 1 ? "item" : "items"}, ${d.payments} ${d.payments === 1 ? "payment" : "payments"}`}
                   />
                 </g>
               );

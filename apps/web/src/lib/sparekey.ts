@@ -26,12 +26,12 @@ export interface SheetInput {
 const WORDING = {
   spare: {
     title: "Spare-key sheet",
-    warn: "Without it, no one can open your sealed items, including you.",
+    warn: "Without it, or your recovery contacts, no one can open your sealed items, including you.",
     warn2:
       "Give a copy to someone you trust, or add it to your will. Never type it into a site you did not open yourself.",
     words: "Recovery phrase (24 words, in order)",
     how: [
-      "1. On a new device, open Mizuhiki and choose Log in, then Use my recovery phrase.",
+      "1. On a new device, open Mizuhiki, choose Log in and type these 24 words.",
       "2. Type the 24 words. Set a new device passphrase. Your sealed items open again.",
       "3. If someone else has this sheet, they can open everything. Store it like a passport.",
     ],

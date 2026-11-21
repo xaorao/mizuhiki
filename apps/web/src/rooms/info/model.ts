@@ -71,7 +71,7 @@ const yes: Check = { allowed: true };
 
 /** Remove (or remove and block) someone: admins only; never the owner; admins only by the owner. */
 export function removeCheck(me: MemberRow, target: MemberRow): Check {
-  if (target.address === me.address) return no("To go, use Leave room at the bottom.");
+  if (target.address === me.address) return no("To leave, use Leave room at the bottom.");
   if (!isAdminRole(me)) return no("Only admins can remove people.");
   if (target.status !== "active") return no("They are no longer in this room.");
   if (target.role === "owner") return no("The owner cannot be removed.");

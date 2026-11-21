@@ -233,7 +233,7 @@ export function MyPage() {
           <StatTile
             label="Sealed items received"
             value={sealedCount}
-            detail={`${files} files, ${messages} messages`}
+            detail={`${files} ${files === 1 ? "file" : "files"}, ${messages} ${messages === 1 ? "message" : "messages"}`}
             tone="sora"
           />
           <PaidTile paid={o.stats?.paid ?? []} />

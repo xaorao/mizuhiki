@@ -112,13 +112,13 @@ test("inbox: signed message with a picture, verified sender, preview, save, seal
   await sheet.locator('input[type="file"]').setInputFiles({ name: "photo.png", mimeType: "image/png", buffer: png });
   await sheet.getByRole("button", { name: "Next" }).click();
   // The page load locked the visitor's account: they unlock right in the sheet to sign.
-  await sheet.getByRole("radio", { name: /Signed as you \(unlock first\)/ }).click();
+  await sheet.getByRole("radio", { name: /Show it's from me \(unlock first\)/ }).click();
   await sheet.getByLabel("Device passphrase").fill("wrong passphrase here");
   await sheet.getByRole("button", { name: "Unlock to sign" }).click();
   await expect(sheet.getByRole("alert").or(sheet.locator("[aria-invalid=true]")).first()).toBeVisible();
   await sheet.getByLabel("Device passphrase").fill("lantern river maple tea");
   await sheet.getByRole("button", { name: "Unlock to sign" }).click();
-  await expect(sheet.getByRole("radio", { name: /^Signed as you/ })).toHaveAttribute("aria-checked", "true");
+  await expect(sheet.getByRole("radio", { name: /^Show it's from me/ })).toHaveAttribute("aria-checked", "true");
   await expect(sheet.getByLabel("Device passphrase")).toHaveCount(0);
   await sheet.getByRole("button", { name: "Seal and send" }).click();
   const done = v.getByRole("dialog", { name: "Sealed for Kinari" });

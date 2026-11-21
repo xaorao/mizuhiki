@@ -111,7 +111,14 @@ export const roomRoutes =
     // ---- create -------------------------------------------------------------------------
     app.post("/rooms", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. No room was made.", "nothing-stored");
+      if (!me)
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. No room was made.",
+          "nothing-stored",
+        );
       const b = Create.safeParse(req.body);
       if (!b.success)
         return fail(reply, 400, "BAD_REQUEST", "The room details were incomplete. No room was made.", "nothing-stored");
@@ -212,7 +219,7 @@ export const roomRoutes =
     // ---- list ---------------------------------------------------------------------------
     app.get("/rooms", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const mine = await db
         .select({ m: roomMembers, r: rooms })
         .from(roomMembers)
@@ -399,14 +406,14 @@ export const roomRoutes =
 
     app.get("/rooms/:id", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const v = await roomView((req.params as { id: string }).id, me);
       return refused(v) ? fail(reply, v.refused.status, v.refused.code, v.refused.message) : v;
     });
 
     app.get("/rooms/:id/keys", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const v = await keysView((req.params as { id: string }).id, me);
       return refused(v) ? fail(reply, v.refused.status, v.refused.code, v.refused.message) : v;
     });
@@ -414,7 +421,7 @@ export const roomRoutes =
     // ---- batches (messages) -------------------------------------------------------------
     app.get("/rooms/:id/batches", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const q = Page.safeParse(req.query);
       if (!q.success) return fail(reply, 400, "BAD_REQUEST", "Bad page request.");
       const v = await batchesView((req.params as { id: string }).id, me, q.data.after, q.data.limit);
@@ -427,7 +434,7 @@ export const roomRoutes =
      */
     app.get("/rooms/:id/sync", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const id = (req.params as { id: string }).id;
       const q = Page.safeParse(req.query);
       if (!q.success) return fail(reply, 400, "BAD_REQUEST", "Bad page request.");
@@ -451,7 +458,14 @@ export const roomRoutes =
       { config: { rateLimit: { max: 120, timeWindow: "1 minute" } } },
       async (req, reply) => {
         const me = await sessionAddress(db, req);
-        if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing was sent.", "nothing-stored");
+        if (!me)
+          return fail(
+            reply,
+            401,
+            "SIGNED_OUT",
+            "Unlock Mizuhiki on this device first. Nothing was sent.",
+            "nothing-stored",
+          );
         const { id } = req.params as { id: string };
         const b = z
           .object({
@@ -573,7 +587,7 @@ export const roomRoutes =
     /** "Delete for everyone": the author proves authorship with their delete token; admins may delete any message. */
     app.post("/rooms/:id/batches/:hash/delete", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id, hash } = req.params as { id: string; hash: string };
       const token = z.object({ token: z.string().regex(HASH).optional() }).safeParse(req.body ?? {});
       if (!isHash(hash) || !token.success) return fail(reply, 400, "BAD_REQUEST", "Bad request. Nothing was deleted.");
@@ -620,10 +634,11 @@ export const roomRoutes =
 
     app.post("/rooms/:id/read", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const b = z.object({ seq: z.coerce.bigint().min(0n) }).safeParse(req.body);
-      if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
+      if (!b.success)
+        return fail(reply, 400, "BAD_REQUEST", "That request was incomplete. Reload the page and try again.");
       await db
         .update(roomMembers)
         .set({ lastReadSeq: sql`greatest(${roomMembers.lastReadSeq}, ${b.data.seq})` })
@@ -633,10 +648,11 @@ export const roomRoutes =
 
     app.patch("/rooms/:id/me", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const b = z.object({ muted: z.boolean() }).safeParse(req.body);
-      if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
+      if (!b.success)
+        return fail(reply, 400, "BAD_REQUEST", "That request was incomplete. Reload the page and try again.");
       await db
         .update(roomMembers)
         .set({ muted: b.data.muted, updatedAt: new Date() })
@@ -647,7 +663,7 @@ export const roomRoutes =
     // ---- membership changes (epoch rotation) -------------------------------------------
     app.post("/rooms/:id/epochs", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.", "nothing-stored");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.", "nothing-stored");
       const { id } = req.params as { id: string };
       const b = Epoch.safeParse(req.body);
       if (!b.success) return fail(reply, 400, "BAD_REQUEST", "The change was incomplete.", "nothing-stored");
@@ -812,7 +828,7 @@ export const roomRoutes =
     // ---- roles, permissions, ownership --------------------------------------------------
     app.post("/rooms/:id/role", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const b = z
         .object({ member: z.string().refine(isAddress), role: z.enum(["member", "admin"]), permissions: Perms })
@@ -858,7 +874,7 @@ export const roomRoutes =
 
     app.post("/rooms/:id/transfer", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const b = z.object({ newOwner: z.string().refine(isAddress) }).safeParse(req.body);
       if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request. Nothing changed.");
@@ -891,7 +907,7 @@ export const roomRoutes =
 
     app.post("/rooms/:id/settings", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const b = z
         .object({ approval: z.boolean(), autoDeleteSeconds: z.number().int().min(0).max(31_536_000) })
@@ -911,7 +927,7 @@ export const roomRoutes =
 
     app.post("/rooms/:id/leave", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const r = await roomRow(id);
       const m = r && (await memberRow(id, me));
@@ -929,7 +945,7 @@ export const roomRoutes =
     /** Forget a room you left or were removed from (your list only). */
     app.delete("/rooms/:id/me", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const m = await memberRow(id, me);
       if (!m) return { ok: true };
@@ -944,7 +960,7 @@ export const roomRoutes =
 
     app.post("/rooms/:id/close", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const r = await roomRow(id);
       if (!r || r.owner !== me) return fail(reply, 403, "NOT_OWNER", "Only the owner can delete this room.");
@@ -975,7 +991,7 @@ export const roomRoutes =
     // ---- invites and join requests ------------------------------------------------------
     app.post("/rooms/:id/invites", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.", "nothing-stored");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.", "nothing-stored");
       const { id } = req.params as { id: string };
       const b = z
         .object({
@@ -1018,7 +1034,7 @@ export const roomRoutes =
 
     app.get("/rooms/:id/invites", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const m = await memberRow(id, me);
       if (!canAdd(m)) return fail(reply, 403, "NO_PERMISSION", "You cannot see this room's invite links.");
@@ -1032,10 +1048,11 @@ export const roomRoutes =
 
     app.patch("/rooms/:id/invites/:inv", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id, inv } = req.params as { id: string; inv: string };
       const b = z.object({ revoked: z.literal(true) }).safeParse(req.body);
-      if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
+      if (!b.success)
+        return fail(reply, 400, "BAD_REQUEST", "That request was incomplete. Reload the page and try again.");
       const m = await memberRow(id, me);
       const [row] = await db
         .select()
@@ -1094,7 +1111,7 @@ export const roomRoutes =
       { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
       async (req, reply) => {
         const me = await sessionAddress(db, req);
-        if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. You have not joined.");
+        if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. You have not joined.");
         const { inv } = req.params as { inv: string };
         const b = z.object({ secret: z.string().regex(HASH) }).safeParse(req.body);
         if (!b.success || !INVITE_ID.test(inv)) return fail(reply, 400, "BAD_REQUEST", "This invite link is damaged.");
@@ -1157,10 +1174,11 @@ export const roomRoutes =
     /** A member with the "add" right suggests people; an admin's device seals the key to them. */
     app.post("/rooms/:id/requests", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const b = z.object({ addresses: z.array(z.string().refine(isAddress)).min(1).max(50) }).safeParse(req.body);
-      if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
+      if (!b.success)
+        return fail(reply, 400, "BAD_REQUEST", "That request was incomplete. Reload the page and try again.");
       const r = await roomRow(id);
       const m = r && (await memberRow(id, me));
       if (!r || r.closed || !canAdd(m)) return fail(reply, 403, "NO_PERMISSION", "You cannot add people to this room.");
@@ -1191,17 +1209,18 @@ export const roomRoutes =
 
     app.get("/rooms/:id/requests", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const v = await requestsView((req.params as { id: string }).id, me);
       return refused(v) ? fail(reply, v.refused.status, v.refused.code, v.refused.message) : v;
     });
 
     app.patch("/rooms/:id/requests/:address", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id, address } = req.params as { id: string; address: string };
       const b = z.object({ status: z.literal("declined") }).safeParse(req.body);
-      if (!b.success || !isAddress(address)) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
+      if (!b.success || !isAddress(address))
+        return fail(reply, 400, "BAD_REQUEST", "That request was incomplete. Reload the page and try again.");
       if (!isAdmin(await memberRow(id, me))) return fail(reply, 403, "NOT_ADMIN", "Only admins can decline requests.");
       await db
         .update(roomRequests)
@@ -1214,9 +1233,10 @@ export const roomRoutes =
     /** Unblock someone removed and blocked, so they can ask to join again. */
     app.delete("/rooms/:id/blocked/:address", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id, address } = req.params as { id: string; address: string };
-      if (!isAddress(address)) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
+      if (!isAddress(address))
+        return fail(reply, 400, "BAD_REQUEST", "That request was incomplete. Reload the page and try again.");
       if (!isAdmin(await memberRow(id, me))) return fail(reply, 403, "NOT_ADMIN", "Only admins can unblock people.");
       await db
         .update(roomMembers)
@@ -1228,7 +1248,7 @@ export const roomRoutes =
     /** Cancel your own pending request, or dismiss a declined one. */
     app.delete("/rooms/:id/requests/me", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       await db
         .delete(roomRequests)

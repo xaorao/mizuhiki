@@ -254,7 +254,7 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
       await postMessage(await room.acct(), roomId, { kind: "reaction", target: it.key, emoji, on });
       await room.reload();
     } catch (e) {
-      toast.show(failureText(e, "That did not work. Try again."), { tone: "error" });
+      toast.show(failureText(e, "The reaction was not sent. Try again."), { tone: "error" });
     }
   };
   const pin = async (it: MessageItem) => {
@@ -264,7 +264,7 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
       await room.reload();
       toast.show(it.pinned ? "Unpinned." : "Pinned for everyone.");
     } catch (e) {
-      toast.show(failureText(e, "That did not work. Try again."), { tone: "error" });
+      toast.show(failureText(e, "The pin did not change. Try again."), { tone: "error" });
     }
   };
   const remove = async (it: MessageItem) => {
@@ -274,7 +274,7 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
       await room.reload();
       toast.show("Deleted for everyone. The sealed copy was removed from storage.");
     } catch (e) {
-      toast.show(failureText(e, "That did not work. Try again."), { tone: "error" });
+      toast.show(failureText(e, "The message was not deleted. Try again."), { tone: "error" });
     }
   };
   const copy = async (it: MessageItem) => {
@@ -295,7 +295,7 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
       await room.reload();
       toast.show(detail.me.muted ? "Notifications on." : "Muted. You will not be told about new messages.");
     } catch (e) {
-      toast.show(failureText(e, "That did not work. Try again."), { tone: "error" });
+      toast.show(failureText(e, "Mute did not change. Try again."), { tone: "error" });
     }
   };
   const leave = async () => {
@@ -305,7 +305,7 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
       toast.show("You left the room. The key changes as soon as an admin's device is open.");
       router.push("/app/rooms");
     } catch (e) {
-      toast.show(failureText(e, "That did not work. Try again."), { tone: "error" });
+      toast.show(failureText(e, "You have not left the room. Try again."), { tone: "error" });
     }
   };
   const forget = async () => {
@@ -313,7 +313,7 @@ export function ChatView({ roomId, isNew }: { roomId: string; isNew: boolean }) 
       await forgetRoom(await room.acct(), roomId);
       router.push("/app/rooms");
     } catch (e) {
-      toast.show(failureText(e, "That did not work. Try again."), { tone: "error" });
+      toast.show(failureText(e, "The room was not removed from your list. Try again."), { tone: "error" });
     }
   };
 

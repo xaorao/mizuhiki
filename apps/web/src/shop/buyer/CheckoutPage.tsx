@@ -385,7 +385,7 @@ export function CheckoutPage({ name, seller }: { name: string; seller: { display
                 />
                 <p className={s.fine}>
                   Paying holds your order for an hour.{" "}
-                  {t && t.dueNow > 0n ? `The memo mzk:ord:… ties your payment to it on QoreChain.` : ""}
+                  {t && t.dueNow > 0n ? "A reference on the payment ties it to this order." : ""}
                 </p>
               </div>
             </section>

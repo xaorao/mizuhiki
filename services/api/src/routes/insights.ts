@@ -26,7 +26,7 @@ export const insightRoutes =
 
     app.get("/owner/insights", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const q = z.object({ range: z.enum(["7", "28", "all"]).default("7") }).safeParse(req.query);
       if (!q.success) return fail(reply, 400, "BAD_REQUEST", "That range is not valid.");
       const range = q.data.range;

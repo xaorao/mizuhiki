@@ -128,7 +128,7 @@ export async function latestBlock(o: RestOpts = {}): Promise<{ height: bigint; t
   const { body: raw } = await getJson(`/cosmos/base/tendermint/v1beta1/blocks/latest`, o);
   const body = raw as { block?: { header?: { height: string; time: string } } };
   const h = body.block?.header;
-  if (!h) throw new ChainError("NETWORK", "Could not read the latest block.");
+  if (!h) throw new ChainError("NETWORK", "Could not read the latest block. Check your connection and try again.");
   return { height: BigInt(h.height), time: new Date(h.time) };
 }
 
@@ -136,7 +136,7 @@ export async function blockAt(height: bigint, o: RestOpts = {}): Promise<{ heigh
   const { body: raw } = await getJson(`/cosmos/base/tendermint/v1beta1/blocks/${height.toString()}`, o);
   const body = raw as { block?: { header?: { height: string; time: string } } };
   const h = body.block?.header;
-  if (!h) throw new ChainError("NETWORK", "Could not read a block.");
+  if (!h) throw new ChainError("NETWORK", "Could not read a block. Check your connection and try again.");
   return { height: BigInt(h.height), time: new Date(h.time) };
 }
 

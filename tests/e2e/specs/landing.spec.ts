@@ -115,7 +115,7 @@ test("landing: app tour by mouse and keyboard, proof read from QoreChain, FAQ", 
 
   const q = page.getByText("What if I lose my phone?");
   await q.click();
-  await expect(page.getByText(/any two rebuild it after a 48-hour wait/)).toBeVisible();
+  await expect(page.getByText(/enough of them together rebuild it after a 48-hour wait/)).toBeVisible();
 });
 
 test("landing: links, brand 404, icons and the social card", async ({ page, request }, info) => {

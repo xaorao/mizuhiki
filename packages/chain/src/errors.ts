@@ -73,6 +73,6 @@ export function explainRefusal(
   }
   return {
     code: "REFUSED",
-    message: `The network refused this step (${codespace || "chain"} ${code}). Nothing was sent.`,
+    message: "The network refused this step. Nothing was sent.",
   };
 }

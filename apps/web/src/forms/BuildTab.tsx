@@ -233,7 +233,7 @@ export function BuildTab({ def, update }: TabProps) {
               <TextField
                 label="Title"
                 value={toDisplay(e.title, blocks)}
-                placeholder="Say bye! Recall information with @"
+                placeholder="Say goodbye. Recall answers with @"
                 maxLength={300}
                 onChange={(ev) =>
                   setEnding(e.id, { title: fromDisplay(ev.target.value, blocks, blocks.length) }, `et:${e.id}`)

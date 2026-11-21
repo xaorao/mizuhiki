@@ -348,7 +348,7 @@ function OwnerSide({ pass, holder, onChanged }: { pass: PassView; holder: string
       const r = await bringUpToDate({ ...owner.account, token: await owner.token() }, pass);
       toast.show(
         r.added
-          ? `${r.added} ${r.added === 1 ? "item" : "items"} sealed to ${holder}. The pass covers ${r.covered}.`
+          ? `${r.added} ${r.added === 1 ? "item" : "items"} sealed to ${holder}. The pass covers ${r.covered} ${r.covered === 1 ? "item" : "items"}.`
           : `Up to date. The pass covers ${r.covered} ${r.covered === 1 ? "item" : "items"}.`,
       );
       await onChanged();
@@ -750,7 +750,8 @@ function snippet(it: PassItem): string {
       (o.files.length ? `${o.files.length} ${o.files.length === 1 ? "file" : "files"}` : "Message")
     );
   if (o.kind === "paynote") return o.note.slice(0, 120);
-  return `${Object.keys(o.answers).filter((k) => !k.includes(":")).length} answers`;
+  const n = Object.keys(o.answers).filter((k) => !k.includes(":")).length;
+  return `${n} ${n === 1 ? "answer" : "answers"}`;
 }
 export function ItemRow({ it, onOpen }: { it: PassItem; onOpen: () => void }) {
   const t = TYPE[it.kind] ?? { label: it.kind, tone: "sakura" as const };

@@ -84,7 +84,14 @@ export const formRoutes =
     /** Save a draft (sealed to the owner) and, optionally, publish a signed definition. */
     app.put("/forms", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing was saved.", "nothing-stored");
+      if (!owner)
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. Nothing was saved.",
+          "nothing-stored",
+        );
       const b = z
         .object({
           id: z.string().regex(ID),
@@ -206,7 +213,7 @@ export const formRoutes =
 
     app.get("/owner/forms", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const rows = await db.select().from(forms).where(eq(forms.owner, owner)).orderBy(desc(forms.updatedAt));
       const ids = rows.map((r) => r.id);
       const submitted = ids.length
@@ -247,7 +254,7 @@ export const formRoutes =
     /** The owner's own published record (to change readers without touching unpublished edits). */
     app.get("/owner/forms/:id/record", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const [f] = await db
         .select()
@@ -259,7 +266,7 @@ export const formRoutes =
 
     app.patch("/owner/forms/:id", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
+      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. Nothing changed.");
       const { id } = req.params as { id: string };
       const b = z.object({ archived: z.boolean() }).safeParse(req.body);
       if (!ID.test(id) || !b.success) return fail(reply, 400, "BAD_REQUEST", "Nothing changed.");
@@ -275,7 +282,7 @@ export const formRoutes =
     /** Content-blind results: counters only. Answers are opened on the owner's device. */
     app.get("/owner/forms/:id/stats", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       if (!ID.test(id)) return fail(reply, 400, "BAD_REQUEST", "Not a form.");
       const rows = await db

@@ -132,7 +132,7 @@ export function periodKeysOf(
   const passKeys = out.slice(0, 16);
   if (offline)
     passKeys.push({
-      label: "Offline recovery reader",
+      label: "Offline reader",
       // Not from the phrase: a separate random key printed on its own sheet.
       index: -1,
       mlkem: offline.mlkem,

@@ -90,7 +90,7 @@ test("insights: a view, a tap, a sealed message and a real payment show up; rang
   await expect(today).toBeVisible();
   const lastCol = o.locator("svg rect[aria-label]").last();
   await lastCol.hover();
-  await expect(o.getByRole("status").filter({ hasText: /views/ })).toBeVisible();
+  await expect(o.getByRole("status").filter({ hasText: /\d views?/ })).toBeVisible();
   await o.screenshot({ path: info.outputPath("01-week.png"), fullPage: true });
   // Table view carries the same numbers.
   await o.getByRole("button", { name: "Show as table" }).click();

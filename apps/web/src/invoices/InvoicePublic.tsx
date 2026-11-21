@@ -133,9 +133,8 @@ export function InvoicePublic({ id }: { id: string }) {
               Mizuhiki cannot read it.
             </p>
             <p className={s.verified}>
-              <Icon name="shield" size={14} /> Signed by{" "}
-              {load.served.ownerName ? `@${load.served.ownerName}` : "its sender"}&apos;s post-quantum key, checked on
-              QoreChain just now
+              <Icon name="shield" size={14} /> This invoice really is from{" "}
+              {load.served.ownerName ? `@${load.served.ownerName}` : "its sender"}, checked on QoreChain just now
             </p>
             <InvoiceView doc={load.doc} status={view?.status} sentAt={load.served.sentAt} />
             {load.served.state === "cancelled" ? (

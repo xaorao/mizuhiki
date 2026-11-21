@@ -138,7 +138,9 @@ test("owner builds, publishes and shares a form; a respondent answers through th
   await r.getByRole("button", { name: "OK" }).click();
   await r.getByRole("textbox", { name: "Your email" }).fill("aiko@example.com");
   await r.getByRole("button", { name: "Submit" }).click();
-  await expect(r.getByRole("heading", { name: "Thanks! Your answers are sealed and on their way." })).toBeVisible({
+  await expect(
+    r.getByRole("heading", { name: "Thank you. Your answers are sealed and stored for the form's readers." }),
+  ).toBeVisible({
     timeout: 120_000,
   });
   await rctx.close();

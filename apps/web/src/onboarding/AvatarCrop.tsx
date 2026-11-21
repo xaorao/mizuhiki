@@ -24,7 +24,7 @@ export function AvatarCrop({
     const url = URL.createObjectURL(file);
     const i = new Image();
     i.onload = () => setImg(i);
-    i.onerror = () => setError("This file is not an image we can read. Try a PNG or JPEG.");
+    i.onerror = () => setError("This file is not an image we can read. Try a PNG, JPEG or WebP.");
     i.src = url;
     return () => URL.revokeObjectURL(url);
   }, [file]);

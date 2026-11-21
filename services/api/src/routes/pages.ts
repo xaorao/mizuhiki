@@ -49,7 +49,14 @@ export const pageRoutes =
 
     app.put("/cards", async (req, reply) => {
       const address = await sessionAddress(db, req);
-      if (!address) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing was stored.", "nothing-stored");
+      if (!address)
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. Nothing was stored.",
+          "nothing-stored",
+        );
       const card = (req.body as { card?: RecipientCard } | undefined)?.card;
       if (!card || card.address !== address)
         return fail(reply, 400, "BAD_CARD", "This card is not for your account. Nothing was stored.", "nothing-stored");
@@ -99,7 +106,13 @@ export const pageRoutes =
     app.put("/pages", async (req, reply) => {
       const address = await sessionAddress(db, req);
       if (!address)
-        return fail(reply, 401, "SIGNED_OUT", "Sign in first. Your page was not published.", "nothing-stored");
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. Your page was not published.",
+          "nothing-stored",
+        );
       const rec = (req.body as { record?: Signed<unknown> } | undefined)?.record;
       if (rec?.kind !== "manifest" || rec.signer !== address)
         return fail(
@@ -186,7 +199,7 @@ export const pageRoutes =
     /** Content-blind numbers for the owner home: counts only, never contents. */
     app.get("/owner/stats", async (req, reply) => {
       const address = await sessionAddress(db, req);
-      if (!address) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!address) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const day = (offset: number) => new Date(Date.now() - offset * 86400_000).toISOString().slice(0, 10);
       const [views] = await db
         .select({
@@ -230,7 +243,7 @@ export const pageRoutes =
     /** The signed-in owner's own page record, or null (no public 404 while setting up). */
     app.get("/owner/page", async (req, reply) => {
       const address = await sessionAddress(db, req);
-      if (!address) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!address) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const [page] = await db.select().from(pages).where(eq(pages.address, address));
       return {
         page: page
@@ -247,7 +260,7 @@ export const pageRoutes =
 
     app.post("/pages/unpublish", async (req, reply) => {
       const address = await sessionAddress(db, req);
-      if (!address) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
+      if (!address) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. Nothing changed.");
       await db.update(pages).set({ unpublished: true }).where(eq(pages.address, address));
       return { ok: true };
     });
@@ -269,7 +282,13 @@ export const pageRoutes =
     app.put("/drafts", async (req, reply) => {
       const address = await sessionAddress(db, req);
       if (!address)
-        return fail(reply, 401, "SIGNED_OUT", "Sign in first. Your draft is still on this device.", "nothing-stored");
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. Your draft is still on this device.",
+          "nothing-stored",
+        );
       const blobHash = (req.body as { blobHash?: unknown } | undefined)?.blobHash;
       if (!isHash(blobHash) || !(await ctx.blobs.has(blobHash)))
         return fail(reply, 400, "NO_BLOB", "Upload the sealed draft first.", "nothing-stored");
@@ -287,7 +306,7 @@ export const pageRoutes =
     /** Discard the sealed draft: the editor starts again from the published page. */
     app.delete("/drafts", async (req, reply) => {
       const address = await sessionAddress(db, req);
-      if (!address) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
+      if (!address) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. Nothing changed.");
       const [prev] = await db.select().from(drafts).where(eq(drafts.address, address));
       await db.delete(drafts).where(eq(drafts.address, address));
       if (prev) await release(db, address, "draft", [prev.blobHash]);
@@ -296,7 +315,7 @@ export const pageRoutes =
 
     app.get("/drafts", async (req, reply) => {
       const address = await sessionAddress(db, req);
-      if (!address) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!address) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const [row] = await db.select().from(drafts).where(eq(drafts.address, address));
       return { blobHash: row?.blobHash ?? null, updatedAt: row?.updatedAt.toISOString() ?? null };
     });

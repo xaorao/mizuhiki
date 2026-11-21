@@ -17,9 +17,9 @@ import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { planHash, type CapsulePlan, type Signed } from "@mizuhiki/core";
 import { lastCheckInOf, readCapsule } from "@mizuhiki/chain";
 import { test, expect } from "./fixtures";
+import { PSQL } from "./pg";
 import { API, apiToken, ensureOwner, restoreInBrowser } from "./owner";
 
-const PSQL = "/opt/homebrew/opt/postgresql@17/bin/psql";
 const DEV_DB = process.env.DATABASE_URL ?? "postgres://mizuhiki:mizuhiki-local-dev@127.0.0.1:5432/mizuhiki";
 
 const OWNER = "mzk-e2e-capown";

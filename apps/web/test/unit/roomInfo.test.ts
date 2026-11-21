@@ -46,7 +46,7 @@ describe("who may do what", () => {
   it("remove: owner removes anyone but themself; admins only plain members", () => {
     expect(removeCheck(owner, admin).allowed).toBe(true);
     expect(removeCheck(owner, member).allowed).toBe(true);
-    expect(removeCheck(owner, owner)).toEqual({ allowed: false, reason: "To go, use Leave room at the bottom." });
+    expect(removeCheck(owner, owner)).toEqual({ allowed: false, reason: "To leave, use Leave room at the bottom." });
     expect(removeCheck(admin, member).allowed).toBe(true);
     expect(removeCheck(admin, owner)).toEqual({ allowed: false, reason: "The owner cannot be removed." });
     expect(removeCheck(admin, row(D, "admin"))).toEqual({

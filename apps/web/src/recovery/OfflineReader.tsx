@@ -97,7 +97,7 @@ export function OfflineReader() {
         {items && owner ? (
           <>
             <Kicker>よみとり</Kicker>
-            <h1>Read with your offline key</h1>
+            <h1>Read with your offline reader key</h1>
             <p>
               {items.length} {items.length === 1 ? "item opens" : "items open"} with this key. Items from before the
               offline reader was made open only if they were sealed to it later.
@@ -128,7 +128,7 @@ export function OfflineReader() {
           >
             <Musubi face="normal" size={96} />
             <Kicker>よみとり</Kicker>
-            <h1>Read with an offline key</h1>
+            <h1>Read with an offline reader key</h1>
             <p>
               Type the @name and the 24 words from an offline reader sheet. Items sealed to that key open here. It
               cannot sign in, pay or change anything.

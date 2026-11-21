@@ -13,3 +13,4 @@ export * from "./proof";
 export * from "./rooms";
 export * from "./shop";
 export * from "./capsules";
+export * from "./onchain";

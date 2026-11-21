@@ -8,12 +8,12 @@
  * and the new owner's device changes the key; the room is deleted after an Undo.
  */
 import { test, expect } from "./fixtures";
+import { PSQL } from "./pg";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { readRoom, roleOnChain, ROOM_ROLE } from "@mizuhiki/chain";
 import { execFileSync } from "node:child_process";
 import { roomIdBytes32 } from "@mizuhiki/core";
 
-const PSQL = "/opt/homebrew/opt/postgresql@17/bin/psql";
 const DEV_DB = process.env.DATABASE_URL ?? "postgres://mizuhiki:mizuhiki-local-dev@127.0.0.1:5432/mizuhiki";
 import { parseAddress } from "@qorechain/qoresign";
 import { personaPhrase } from "@mizuhiki/testnet";

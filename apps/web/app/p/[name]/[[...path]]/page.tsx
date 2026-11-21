@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const description =
       d.preview.description ||
       d.description ||
-      `A form by @${name}. Answers are encrypted on your device; only @${name} can read them.`;
+      `A form by @${name}. Answers are sealed on your device; only @${name} can read them.`;
     return {
       title,
       description,

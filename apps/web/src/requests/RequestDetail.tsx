@@ -109,7 +109,7 @@ export function RequestDetail({ id }: { id: string }) {
       toast.show(done);
       if (reload) await load();
     } catch (e) {
-      toast.show(`${failureText(e, "That did not work.")} Nothing changed.`, { tone: "error" });
+      toast.show(failureText(e, "That did not work. Nothing changed."), { tone: "error" });
     } finally {
       setBusy(null);
     }

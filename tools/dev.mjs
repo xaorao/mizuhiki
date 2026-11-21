@@ -2,16 +2,22 @@
 // then the API, the indexer and the web app, with prefixed output.
 import { spawn, execSync } from "node:child_process";
 import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 const env = {
   ...process.env,
   DATABASE_URL: process.env.DATABASE_URL ?? "postgres://mizuhiki:mizuhiki-local-dev@127.0.0.1:5432/mizuhiki",
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000",
 };
+// Postgres client tools: PG_BIN if set, else Homebrew's postgresql@17, else whatever is on PATH.
+const HOMEBREW_PG = "/opt/homebrew/opt/postgresql@17/bin";
+const pgBin = process.env.PG_BIN ?? (existsSync(HOMEBREW_PG) ? HOMEBREW_PG : "");
 try {
-  execSync("/opt/homebrew/opt/postgresql@17/bin/pg_isready -q", { stdio: "ignore" });
+  execSync(`${pgBin ? join(pgBin, "pg_isready") : "pg_isready"} -q`, { stdio: "ignore" });
 } catch {
-  console.error("Postgres is not running. Start it with: brew services start postgresql@17");
+  console.error(
+    "Postgres 17 is not answering on 127.0.0.1:5432. Start it (macOS: brew services start postgresql@17), or set PG_BIN to its bin folder.",
+  );
   process.exit(1);
 }
 execSync("pnpm --filter @mizuhiki/db migrate", { stdio: "inherit", env });

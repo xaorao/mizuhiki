@@ -79,7 +79,8 @@ export const aiRoutes =
      * Signed-in owners only, bounded per hour.
      */
     app.post("/ai/form", { config: { rateLimit: { max: 20, timeWindow: "1 hour" } } }, async (req, reply) => {
-      if (!(await sessionAddress(ctx.db, req))) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!(await sessionAddress(ctx.db, req)))
+        return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       if (!aiEnabled())
         return fail(
           reply,

@@ -31,21 +31,21 @@ export const SETUP_STEPS: { id: SetupStep; title: string; detail: string }[] = [
   {
     id: "pq",
     title: "Register your post-quantum signing key",
-    detail: "ML-DSA-87. Proves every later action is yours.",
+    detail: "Proves every later action is yours.",
   },
-  { id: "kem", title: "Publish your sealing key", detail: "ML-KEM-1024. Senders seal to it on their own device." },
+  { id: "kem", title: "Publish your sealing key", detail: "Senders seal to it on their own device." },
   {
     id: "card",
-    title: "Sign your recipient card",
-    detail: "Ties your sealing keys to your account, so nobody can swap them.",
+    title: "Lock your sealing keys to your account",
+    detail: "So nobody can swap them for their own.",
   },
   {
     id: "window",
     title: "Allow on-chain actions for 2 hours",
-    detail: "Only Mizuhiki's contracts, up to 20 actions. Signed with your post-quantum key.",
+    detail: "Only Mizuhiki's contracts, up to 20 actions.",
   },
   { id: "name", title: "Claim your name", detail: "Recorded on QoreChain in two steps so nobody can take it first." },
-  { id: "publish", title: "Publish your page", detail: "Signed by you; every visitor checks the signature." },
+  { id: "publish", title: "Publish your page", detail: "Every visitor checks it is really yours." },
 ];
 
 /** Enough for the whole setup with a safety margin, in uqor. */
@@ -130,7 +130,9 @@ export async function runSetup(
     live();
     hooks.onStep("window", "running");
     const w = await ensureWindow(owner, 2);
-    hooks.onStep("window", "done", { note: `${w.remainingTxs.toString()} actions left` });
+    hooks.onStep("window", "done", {
+      note: `${w.remainingTxs.toString()} ${w.remainingTxs === 1n ? "action" : "actions"} left`,
+    });
     live();
     hooks.onStep("name", "running");
     if (!mine) {

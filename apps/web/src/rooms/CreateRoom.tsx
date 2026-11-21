@@ -131,7 +131,7 @@ export function CreateRoom() {
       );
       router.push(`/app/rooms/${id}?new=1`);
     } catch (e) {
-      setError(failureText(e, "Something went wrong."));
+      setError(failureText(e, "The room was not made. Try again."));
       setPhase("failed");
     }
   };
@@ -268,7 +268,8 @@ export function CreateRoom() {
               hidden
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f && f.size > 5 * 1024 * 1024) toast.show("Pick a photo under 5 MB.", { tone: "error" });
+                if (f && f.size > 8 * 1024 * 1024)
+                  toast.show("That photo is bigger than 8 MB. Pick a smaller one.", { tone: "error" });
                 else if (f) setPhoto(f);
                 e.target.value = "";
               }}
@@ -302,7 +303,9 @@ export function CreateRoom() {
             <div className={s.ruleRow}>
               <span>
                 <b>New members see</b>
-                <small>Used when invites join on their own. You still choose for each person you approve.</small>
+                <small>
+                  Used when people join through an invite link. You still choose for each person you approve.
+                </small>
               </span>
               <Segmented<"share" | "hide">
                 label="New members see"

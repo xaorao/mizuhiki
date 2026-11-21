@@ -269,8 +269,8 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
                         setPendingNotes(left);
                         toastPending.show(
                           r.every((x) => x.status === "fulfilled")
-                            ? "Note delivered"
-                            : "Still not delivered. It stays on this device.",
+                            ? `Note stored for ${firstName}, sealed.`
+                            : "Still not stored. It stays on this device.",
                           r.every((x) => x.status === "fulfilled") ? {} : { tone: "error" },
                         );
                       })
@@ -305,7 +305,7 @@ export function PublicPage({ name, record, card, registry, deepLink }: PublicPag
           {ready ? (
             <>
               <Icon name="shield" size={14} />
-              <span>Signed by @{name}&apos;s post-quantum key, checked on QoreChain just now</span>
+              <span>This page really is @{name}&apos;s, checked on QoreChain just now</span>
             </>
           ) : (
             <>
@@ -457,7 +457,7 @@ export function PageUnavailable({
             </ButtonLink>
           ) : null}
         </div>
-        <Chip icon="shield">Pages are signed by their owners</Chip>
+        <Chip icon="shield">Every page is checked against its owner</Chip>
       </div>
     </div>
   );

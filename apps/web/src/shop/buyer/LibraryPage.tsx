@@ -113,7 +113,7 @@ export function LibraryPage() {
       try {
         await add(await myOrders(withToken(acct.account, await acct.token())), "account");
       } catch (e) {
-        errs.push(`Your account's purchases could not be loaded: ${failureText(e, "try again")}.`);
+        errs.push(`Your account's purchases could not be loaded. ${failureText(e, "Try again.")}`);
       }
     }
     const ks = await buyerKeys().catch(() => [] as BuyerKey[]);
@@ -204,7 +204,7 @@ export function LibraryPage() {
               </div>
             ) : rows.length === 0 ? (
               <div className={s.card}>
-                <EmptyState title="You haven't bought anything... yet" face="sleepy" jp="まだないよ">
+                <EmptyState title="You haven't bought anything… yet" face="sleepy" jp="まだないよ">
                   Once you do, it shows up here for this wallet, ready to open. Bought with a buyer key on another
                   device? Use Open with my 12 words.
                 </EmptyState>
@@ -280,7 +280,7 @@ export function LibraryPage() {
             {reviews.length === 0 ? (
               <div className={s.card}>
                 <EmptyState
-                  title="You haven't reviewed anything... yet"
+                  title="You haven't reviewed anything… yet"
                   face="sleepy"
                   action={
                     rows?.some((r) => r.o.status === "delivered") ? (

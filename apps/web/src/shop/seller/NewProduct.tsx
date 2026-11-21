@@ -1,7 +1,7 @@
 "use client";
 /**
  * New product (Gumroad's /products/new): three fields, Name, a type card and
- * Price, then "Next: Customize" makes the sealed working copy and opens the editor.
+ * Price, then "Next: Customise" makes the sealed working copy and opens the editor.
  */
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -74,7 +74,7 @@ export function NewProduct() {
             Cancel
           </ButtonLink>
           <Button variant="cord" iconRight="arrow" busy={busy} onClick={() => void next()}>
-            Next: Customize
+            Next: Customise
           </Button>
         </div>
       </header>

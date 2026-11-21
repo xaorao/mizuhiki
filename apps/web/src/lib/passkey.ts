@@ -62,7 +62,7 @@ export async function passkeySecret(args: { credentialId: Uint8Array; prfSalt: U
     },
   })) as PublicKeyCredential | null;
   const secret = a ? prfOf(a) : undefined;
-  if (!secret) throw new Error("This passkey cannot unlock Mizuhiki on this device (no PRF support).");
+  if (!secret) throw new Error("This device's passkeys cannot unlock Mizuhiki. Use your passphrase.");
   return secret;
 }
 

@@ -208,7 +208,7 @@ export function SnapshotSheet({
           e instanceof ApiFailure && e.status === 413
             ? "With every response this snapshot is too large for one link. Nothing was shared; turn off the full table and try again."
             : e instanceof ApiFailure
-              ? `${e.message} No link was made.`
+              ? e.message
               : "The snapshot could not be sealed or uploaded. No link was made; try again.",
       });
     }

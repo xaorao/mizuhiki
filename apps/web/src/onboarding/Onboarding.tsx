@@ -436,11 +436,7 @@ function TemplateStep({
 }) {
   return (
     <div className={s.form}>
-      <Head
-        jp="デザイン"
-        title="BlockPick a look"
-        sub="BlockPick the style that feels right. You can add your content later."
-      />
+      <Head jp="デザイン" title="Pick a look" sub="Pick the style that feels right. You can add your content later." />
       <div className={s.templates} role="radiogroup" aria-label="Template">
         {TEMPLATES.map((t) => (
           <button
@@ -482,7 +478,7 @@ function BlocksStep({ draft, set, onNext }: { draft: Draft; set: (p: Partial<Dra
       <Head
         jp="ブロック"
         title="What should your page do?"
-        sub="BlockPick up to five to get started. You can update them at any time."
+        sub="Pick up to five to get started. You can change them any time."
       />
       <div className={s.picks} role="group" aria-label="Blocks">
         {PICKS.map((p) => {
@@ -976,12 +972,11 @@ function ReadyStep({
         } else if (isChainError(e))
           setError({
             title: e.message,
-            detail:
-              e.moved === "no"
-                ? // Most chain messages already say nothing moved; say only what to do next then.
-                  /Nothing (was )?(changed|sent|moved)/i.test(e.message)
-                  ? "Retry to carry on from this step."
-                  : "Nothing changed on chain."
+            // Chain messages usually already say what moved; then the detail only says what to do next.
+            detail: /Nothing (was )?(changed|sent|moved)|fee was spent|may still go through/i.test(e.message)
+              ? "Retry to carry on from this step."
+              : e.moved === "no"
+                ? "Nothing changed on chain."
                 : e.moved === "unknown"
                   ? "It may still go through; we check again when you retry."
                   : "Only the network fee was spent.",

@@ -193,7 +193,7 @@ export async function invoicePdf(args: {
   }
   need(20);
   page.drawText(
-    clean(reg, `Paid in ${doc.token} on QoreChain testnet with the reference ${doc.id}. Made with Mizuhiki.`),
+    clean(reg, `Pay in ${doc.token} on QoreChain testnet using the reference ${doc.id}. Made with Mizuhiki.`),
     { x: M, y: M - 10, size: 8, font: reg, color: MUTED },
   );
   return pdf.save();

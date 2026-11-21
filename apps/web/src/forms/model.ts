@@ -157,7 +157,7 @@ export const KINDS: KindInfo[] = [
     label: "File upload",
     icon: "upload",
     group: "Uploads",
-    help: "Files are encrypted on the respondent's device before they upload. Only your readers can open them.",
+    help: "Files are sealed on the respondent's device before they upload. Only your readers can open them.",
     example: "Upload your brief · brief.pdf",
   },
   {
@@ -165,7 +165,7 @@ export const KINDS: KindInfo[] = [
     label: "Signature",
     icon: "pen",
     group: "Uploads",
-    help: "They draw a signature; it is encrypted with the answers.",
+    help: "They draw a signature; it is sealed with the answers.",
     example: "Sign to confirm · ✍",
   },
   {
@@ -252,7 +252,9 @@ export function newForm(account: Account, name: string, title = "Untitled form")
     description: "",
     welcome: { enabled: true, button: "Start", showTime: true },
     blocks: [],
-    endings: [{ id: `e${newId(6)}`, title: "Thanks! Your answers are sealed and on their way.", body: "" }],
+    endings: [
+      { id: `e${newId(6)}`, title: "Thank you. Your answers are sealed and stored for the form's readers.", body: "" },
+    ],
     logic: [],
     settings: { progress: true, numbers: true, closed: false, notify: true, language: "en" },
     readers: [],

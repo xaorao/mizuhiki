@@ -134,7 +134,7 @@ test("invoices: create, send to @name, payer opens by link and pays, owner sees 
   await expect(vd.getByText(`Verified: @${OWNER}`)).toBeVisible({ timeout: 30_000 });
   await expect(vd.getByRole("link", { name: "Open the invoice" })).toHaveAttribute("href", link);
   await v.goto(link);
-  await expect(v.getByText(`Signed by @${OWNER}'s post-quantum key, checked on QoreChain just now`)).toBeVisible({
+  await expect(v.getByText(`This invoice really is from @${OWNER}, checked on QoreChain just now`)).toBeVisible({
     timeout: 30_000,
   });
   await expect(v.getByText("Anyone with this link can read this invoice.", { exact: false })).toBeVisible();

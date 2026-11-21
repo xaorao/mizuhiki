@@ -126,7 +126,7 @@ export function SealTo({
         <ChoiceCard
           selected={mode === "gift"}
           onSelect={() => setMode("gift")}
-          title="Send to another wallet"
+          title="Send as a gift"
           detail="A gift: you pay, and it is sealed to their Mizuhiki account."
           icon={<Icon name="heart" />}
           tone="fuji"
@@ -166,7 +166,7 @@ export function SealTo({
           )}
           <b>
             {choice.recipient.kind === "account"
-              ? "This is the only wallet that can open it."
+              ? "This is the only account that can open it."
               : "This is the only key that can open it."}
           </b>
           {choice.gift ? <small>You pay; they open it. You will not be able to open it yourself.</small> : null}
@@ -530,7 +530,7 @@ function GiftChoice({
       const card = await cardOf(address);
       onChange({ address, name, card });
     } catch (e) {
-      setErr(failureText(e, "That wallet could not be found."));
+      setErr(failureText(e, "That account could not be found."));
     } finally {
       setBusy(false);
     }

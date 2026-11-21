@@ -302,7 +302,7 @@ export function OfflineBanner({ queued = 0 }: { queued?: number | undefined }) {
       <span>
         <b>You are offline.</b> Items you already opened stay readable.
         {queued > 0
-          ? ` ${queued} ${queued === 1 ? "send is" : "sends are"} waiting on this device and will go when you are back.`
+          ? ` ${queued} ${queued === 1 ? "item is" : "items are"} waiting on this device and will go when you are back.`
           : " Anything you send waits on this device."}
       </span>
     </div>

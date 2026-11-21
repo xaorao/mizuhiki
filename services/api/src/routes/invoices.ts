@@ -47,7 +47,14 @@ export const invoiceRoutes =
 
     app.put("/invoices", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing was saved.", "nothing-stored");
+      if (!owner)
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. Nothing was saved.",
+          "nothing-stored",
+        );
       const b = Save.safeParse(req.body);
       if (!b.success)
         return fail(reply, 400, "BAD_REQUEST", "The invoice was incomplete. Nothing was saved.", "nothing-stored");
@@ -153,7 +160,7 @@ export const invoiceRoutes =
 
     app.get("/owner/invoices", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const rows = await db
         .select()
         .from(invoices)
@@ -193,7 +200,7 @@ export const invoiceRoutes =
 
     app.patch("/owner/invoices/:id", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
+      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. Nothing changed.");
       const { id } = req.params as { id: string };
       const b = z
         .object({
@@ -218,7 +225,7 @@ export const invoiceRoutes =
 
     app.delete("/owner/invoices/:id", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
+      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. Nothing changed.");
       const { id } = req.params as { id: string };
       const r = await db
         .delete(invoices)

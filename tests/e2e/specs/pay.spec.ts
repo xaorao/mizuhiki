@@ -86,7 +86,7 @@ test("pay: Mizuhiki wallet from a deep link, fUSD, sealed note for both; owner s
   await review.getByRole("button", { name: "Pay 2.5 fUSD" }).click();
   const done = v.getByRole("dialog", { name: "Paid Kinari" });
   await expect(done.getByText("Paid Kinari 2.5 fUSD.")).toBeVisible({ timeout: 180_000 });
-  await expect(done.getByText("Sealed and delivered")).toBeVisible();
+  await expect(done.getByText(/^Sealed and stored for /)).toBeVisible();
   await v.screenshot({ path: info.outputPath("paid.png") });
   const txHash = txOf(await done.innerText());
   expect(txHash).toMatch(/^[0-9A-F]{64}$/i);
@@ -179,7 +179,8 @@ test("pay: QoreX (wallet mock, real signing) pays QOR; a rejection moves nothing
   // Rejected in the wallet: no money moved.
   await p.evaluate(() => (window as unknown as { __qorexMock: { rejectNext(): void } }).__qorexMock.rejectNext());
   await review.getByRole("button", { name: "Pay 0.25 QOR" }).click();
-  await expect(p.getByText("Not paid. No money moved.")).toBeVisible({ timeout: 60_000 });
+  await expect(p.getByText(/Not paid$/)).toBeVisible({ timeout: 60_000 });
+  await expect(p.getByText(/You cancelled in the wallet\. No money moved\./)).toBeVisible();
   await p.getByRole("button", { name: "Back to review" }).click();
 
   await p.getByRole("dialog", { name: "Review" }).getByRole("button", { name: "Pay 0.25 QOR" }).click();
@@ -226,7 +227,7 @@ test("pay: manual payment with address and memo; the page notices the payment", 
   await sheet.getByRole("button", { name: "QOR (test)" }).click();
   await sheet.getByLabel("Note to Kinari (optional)").fill("Paid from my exchange wallet");
   await sheet.getByRole("button", { name: /Continue/ }).click();
-  await sheet.getByRole("radio", { name: /Copy address and reference/ }).click();
+  await sheet.getByRole("radio", { name: /Copy address and memo/ }).click();
   const review = p.getByRole("dialog", { name: "Review" });
   const memoText = (await review.innerText()).match(/mzk:pay:[a-z0-9]+:[0-9a-f]{64}/)?.[0] ?? "";
   expect(parseMemo(memoText)?.noteHash).toMatch(/^[0-9a-f]{64}$/);
@@ -303,7 +304,7 @@ test("pay: the note fails to arrive; resend from the receipt, and from the banne
       .getByRole("button", { name: `Pay ${amount} fUSD` })
       .click();
     const done = v.getByRole("dialog", { name: "Paid Kinari" });
-    await expect(done.getByText("Sealed, not delivered yet")).toBeVisible({ timeout: 180_000 });
+    await expect(done.getByText("Sealed, not stored yet")).toBeVisible({ timeout: 180_000 });
     return { done, txHash: txOf(await done.innerText()) };
   };
 
@@ -318,7 +319,7 @@ test("pay: the note fails to arrive; resend from the receipt, and from the banne
     .toBe(true);
   await v.unroute(/\/drop\/qor1/);
   await first.done.getByRole("button", { name: "Send the note again" }).click();
-  await expect(v.getByText("Note delivered")).toBeVisible({ timeout: 60_000 });
+  await expect(v.getByText(/^Note stored for .+, sealed\.$/)).toBeVisible({ timeout: 60_000 });
   await expect
     .poll(async () => (await ownerIndex(token)).find((r) => r.payment?.txHash === first.txHash)?.noteMissing ?? false)
     .toBe(false);
@@ -331,7 +332,7 @@ test("pay: the note fails to arrive; resend from the receipt, and from the banne
   await v.goto(`/@${OWNER}`);
   await expect(v.getByText("A sealed note for Kinari did not arrive")).toBeVisible({ timeout: 30_000 });
   await v.getByRole("button", { name: "Send it now" }).click();
-  await expect(v.getByText("Note delivered")).toBeVisible({ timeout: 60_000 });
+  await expect(v.getByText(/^Note stored for .+, sealed\.$/)).toBeVisible({ timeout: 60_000 });
   await expect(v.getByText("A sealed note for Kinari did not arrive")).toHaveCount(0);
   await expect
     .poll(async () => (await ownerIndex(token)).find((r) => r.payment?.txHash === second.txHash)?.envelope ?? null, {

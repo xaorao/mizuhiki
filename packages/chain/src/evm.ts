@@ -205,7 +205,11 @@ export function explainEvmError(e: unknown, txHash?: Hex): ChainError {
     const rev = e.walk((x) => x instanceof ContractFunctionRevertedError);
     if (rev instanceof ContractFunctionRevertedError) {
       const name = rev.data?.errorName ?? "reverted";
-      return new ChainError("CONTRACT_REVERT", revertSentence(name), {
+      // After a broadcast the fee is spent, so "nothing was changed" would not be true.
+      const sentence = txHash
+        ? revertSentence(name).replace(/ Nothing was changed\.$/, " Only the network fee was spent.")
+        : revertSentence(name);
+      return new ChainError("CONTRACT_REVERT", sentence, {
         detail: name,
         ...(txHash ? { txHash, moved: "yes" as const } : {}),
       });
@@ -213,10 +217,16 @@ export function explainEvmError(e: unknown, txHash?: Hex): ChainError {
   }
   if (/insufficient funds/i.test(msg))
     return new ChainError("NO_FUNDS", "Not enough test QOR for the network fee. Nothing was sent.", { detail: msg });
-  return new ChainError("NETWORK", "Could not complete this on-chain step. Nothing was changed.", {
-    detail: msg,
-    ...(txHash ? { txHash, moved: "unknown" as const } : {}),
-  });
+  return new ChainError(
+    "NETWORK",
+    txHash
+      ? "This on-chain step did not finish. Check the transaction before trying again."
+      : "Could not complete this on-chain step. Nothing was changed.",
+    {
+      detail: msg,
+      ...(txHash ? { txHash, moved: "unknown" as const } : {}),
+    },
+  );
 }
 
 export function revertSentence(errorName: string): string {

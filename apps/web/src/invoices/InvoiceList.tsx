@@ -44,6 +44,7 @@ import { InvoiceView, STATUS_CHIP } from "./InvoiceView";
 import { ShareSheet } from "./ShareSheet";
 import { invoicePdf } from "@/lib/pdfs";
 import s from "./invoices.module.css";
+import { failureText } from "@/lib/failure";
 
 type Filter = "all" | "draft" | "due" | "overdue" | "paid" | "cancelled" | "archived";
 
@@ -100,8 +101,8 @@ export function InvoiceList() {
       toast.show(done);
       await inv.reload();
       setOpen(null);
-    } catch {
-      toast.show("That did not work. Nothing changed.", { tone: "error" });
+    } catch (e) {
+      toast.show(failureText(e, "The invoice was not changed. Try again."), { tone: "error" });
     } finally {
       setBusy(null);
     }

@@ -513,7 +513,7 @@ export async function openCapsule(a: Tokened, c: CapsuleForMe): Promise<Opened> 
   else {
     const shares = pieces.filter((p) => p.kind === "share" && p.recipient === a.owner.address);
     if (shares.length < plan.threshold)
-      throw new Error(`${shares.length} of ${plan.threshold} guardians have handed over their pieces so far.`);
+      throw new Error(`Guardians who have handed over their pieces so far: ${shares.length} of ${plan.threshold}.`);
     seed = await combineShares(
       shares.map((p) => fromHex(p.value)),
       plan.threshold,

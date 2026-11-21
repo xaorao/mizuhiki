@@ -290,7 +290,9 @@ export function derive(lines: Line[], members: MemberRow[], epochs: EpochRow[]):
           changed.push(b.restrictSaving ? "asked members not to save" : "stopped asking members not to save");
         if (info.historyDefault !== b.historyDefault)
           changed.push(
-            b.historyDefault === "share" ? "set invites to see past messages" : "set invites to see only new messages",
+            b.historyDefault === "share"
+              ? "set people who join by link to see past messages"
+              : "set people who join by link to see only new messages",
           );
         Object.assign(info, {
           approval: b.approval,

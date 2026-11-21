@@ -2,7 +2,8 @@
  * Relay for QoreChain native-lane REST calls from browsers. The public testnet
  * REST endpoint sends no CORS headers (checked 2026-11-18), so a page cannot
  * call it directly. This relay forwards only an allowlist of read routes plus
- * simulate and broadcast of transactions the browser already signed. It holds
+ * simulate and broadcast of transactions the browser already signed, and one RPC read (a committed
+ * transaction's exact bytes, by hash). It holds
  * no keys and changes nothing; a relay that lies is caught where it matters
  * (THREAT_MODEL A6, and packages/chain/src/recipients.ts).
  */
@@ -44,6 +45,25 @@ export const chainRoutes = (): FastifyPluginCallback => (app, _opts, done) => {
     handler: async (req, reply) => {
       const raw = (req.params as { "*": string })["*"];
       const path = `/${raw}`;
+      // The exact committed bytes of one transaction, from the CometBFT RPC node, so a browser can check its
+      // ML-DSA-87 layer over what was really committed (and hash them to the id it asked for).
+      if (path === "/rpc/tx") {
+        const q = req.query as Record<string, unknown>;
+        const hash = typeof q.hash === "string" ? q.hash : "";
+        if (req.method !== "GET" || Object.keys(q).length !== 1 || !/^0x[0-9A-Fa-f]{64}$/.test(hash))
+          return fail(reply, 400, "NOT_RELAYED", "That chain query is not relayed.");
+        let rpc: Response;
+        try {
+          rpc = await fetch(`${NETWORK.rpc}/tx?hash=${hash}`, { signal: AbortSignal.timeout(20_000) });
+        } catch {
+          return fail(reply, 502, "CHAIN_UNREACHABLE", "QoreChain did not answer.", "nothing-changed");
+        }
+        return reply
+          .code(rpc.status)
+          .header("content-type", "application/json")
+          .header("cache-control", "no-store")
+          .send(await rpc.text());
+      }
       const url = new URL(`${NETWORK.rest}${path}`);
       for (const [k, v] of Object.entries(req.query as Record<string, string>)) {
         if (!QUERY_KEYS.has(k) || typeof v !== "string" || v.length > 512)

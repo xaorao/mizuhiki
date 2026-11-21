@@ -128,7 +128,7 @@ export const recoveryRoutes =
 
     app.get("/owner/recovery", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const s = await ensureSettings(me);
       const contacts = await db
         .select()
@@ -172,7 +172,7 @@ export const recoveryRoutes =
 
     app.post("/owner/recovery/contacts", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. Nothing changed.");
       const b = z.object({ invite: SignedShape }).safeParse(req.body);
       const inv = b.success ? RecoveryInviteSchema.safeParse(b.data.invite.body) : null;
       if (!b.success || !inv?.success || inv.data.owner !== me || b.data.invite.signer !== me)
@@ -222,7 +222,7 @@ export const recoveryRoutes =
 
     app.post("/owner/recovery/contacts/:contact/confirm", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { contact } = req.params as { contact: string };
       const [c] = await db
         .select()
@@ -239,7 +239,7 @@ export const recoveryRoutes =
 
     app.delete("/owner/recovery/contacts/:contact", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { contact } = req.params as { contact: string };
       const [c] = await db
         .select()
@@ -257,7 +257,14 @@ export const recoveryRoutes =
     /** A new set of pieces, one per confirmed contact, made and sealed on the owner's device. */
     app.put("/owner/recovery/pieces", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.", "nothing-stored");
+      if (!me)
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. Nothing changed.",
+          "nothing-stored",
+        );
       const b = z
         .object({
           version: z.number().int().min(1),
@@ -335,11 +342,12 @@ export const recoveryRoutes =
 
     app.post("/owner/recovery/marks", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const b = z
         .object({ sheet: z.boolean().optional(), offlineSheet: z.boolean().optional(), tested: z.string().optional() })
         .safeParse(req.body);
-      if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
+      if (!b.success)
+        return fail(reply, 400, "BAD_REQUEST", "That request was incomplete. Reload the page and try again.");
       await ensureSettings(me);
       const set: Partial<typeof recoverySettings.$inferInsert> = { updatedAt: new Date() };
       if (b.data.sheet) set.sheetSavedAt = new Date();
@@ -367,9 +375,10 @@ export const recoveryRoutes =
 
     app.put("/owner/recovery/offline", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const b = z.object({ key: OfflineKeySchema.nullable() }).safeParse(req.body);
-      if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
+      if (!b.success)
+        return fail(reply, 400, "BAD_REQUEST", "That request was incomplete. Reload the page and try again.");
       await ensureSettings(me);
       await db
         .update(recoverySettings)
@@ -381,7 +390,7 @@ export const recoveryRoutes =
 
     app.post("/owner/recovery/offline/items", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.", "nothing-stored");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.", "nothing-stored");
       const b = z
         .object({
           items: z
@@ -435,7 +444,7 @@ export const recoveryRoutes =
 
     app.get("/owner/recovery/offline/items", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const rows = await db
         .select({ source: recoveryOfflineItems.source })
         .from(recoveryOfflineItems)
@@ -446,7 +455,7 @@ export const recoveryRoutes =
     /** A dry run: the signed-in owner opens a request; contacts answer as for real; there is no wait. */
     app.post("/owner/recovery/test", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing was started.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. Nothing was started.");
       const b = z.object({ recipient: KeySchema, secretHash: z.string().regex(HASH) }).safeParse(req.body);
       if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request. Nothing was started.");
       const s = await settingsOf(me);
@@ -484,7 +493,7 @@ export const recoveryRoutes =
 
     app.post("/owner/recovery/requests/:id/cancel", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const [r] = await db
         .select()
@@ -512,7 +521,7 @@ export const recoveryRoutes =
 
     app.get("/recovery/helping", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const mine = await db
         .select()
         .from(recoveryContacts)
@@ -558,7 +567,7 @@ export const recoveryRoutes =
 
     app.post("/recovery/helping/:owner/accept", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. Nothing changed.");
       const { owner } = req.params as { owner: string };
       const [c] = await db
         .select()
@@ -582,7 +591,7 @@ export const recoveryRoutes =
 
     app.post("/recovery/helping/:owner/decline", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { owner } = req.params as { owner: string };
       const [c] = await db
         .select()
@@ -601,7 +610,14 @@ export const recoveryRoutes =
     /** A contact's piece, re-sealed on their device to the new device's one-time key. */
     app.post("/recovery/requests/:id/answer", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing was sent.", "nothing-stored");
+      if (!me)
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. Nothing was sent.",
+          "nothing-stored",
+        );
       const { id } = req.params as { id: string };
       const b = z.object({ envelope: z.string().regex(HASH) }).safeParse(req.body);
       if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request. Nothing was sent.", "nothing-stored");
@@ -670,7 +686,7 @@ export const recoveryRoutes =
      */
     app.post("/recovery/requests/:id/dismiss", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. Nothing changed.");
       const { id } = req.params as { id: string };
       const [r] = await db.select().from(recoveryRequests).where(eq(recoveryRequests.id, id));
       if (!r) return fail(reply, 404, "NOT_FOUND", "This recovery request does not exist.");
@@ -832,7 +848,8 @@ export const recoveryRoutes =
       { config: { rateLimit: { max: 20, timeWindow: "1 hour" } } },
       async (req, reply) => {
         const b = z.object({ who: z.string().min(3).max(80) }).safeParse(req.body);
-        if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
+        if (!b.success)
+          return fail(reply, 400, "BAD_REQUEST", "That request was incomplete. Reload the page and try again.");
         const who = b.data.who.trim().replace(/^@/, "").toLowerCase();
         let owner = ADDR.test(who) ? who : null;
         if (!owner) owner = (await ownerOfName(db, who)) ?? null;
@@ -860,7 +877,8 @@ export const recoveryRoutes =
       const b = z
         .object({ id: z.string().regex(/^ch_[A-Za-z0-9_-]{8,40}$/), nonce: z.string().min(16).max(80) })
         .safeParse(req.body);
-      if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
+      if (!b.success)
+        return fail(reply, 400, "BAD_REQUEST", "That request was incomplete. Reload the page and try again.");
       const [c] = await db.select().from(recoveryChallenges).where(eq(recoveryChallenges.id, b.data.id));
       if (!c || c.expiresAt < new Date() || c.nonceHash !== sha256Hex(utf8(b.data.nonce)))
         return fail(

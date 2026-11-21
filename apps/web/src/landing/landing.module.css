@@ -2043,3 +2043,17 @@
     transition: none;
   }
 }
+
+.proofMore {
+  margin: 24px 0 0;
+  text-align: center;
+}
+.proofMore a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-family: var(--font-round);
+  font-weight: 800;
+  text-underline-offset: 4px;
+}

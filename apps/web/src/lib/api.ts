@@ -55,7 +55,7 @@ async function request<T>(method: string, path: string, body: unknown, o: ApiOpt
     throw new ApiFailure(
       res.status,
       j.error?.code ?? `HTTP_${res.status}`,
-      j.error?.message ?? `Mizuhiki answered with an error (${res.status}).`,
+      j.error?.message ?? "Mizuhiki could not do that right now. Nothing changed. Try again in a minute.",
       j.error?.dataState ?? "unknown",
     );
   }

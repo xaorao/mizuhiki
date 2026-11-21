@@ -248,7 +248,7 @@ function MineList({ list, live }: { list: OwnedCapsule[]; live: Record<string, L
                 <small>
                   {c.state === "draft"
                     ? waiting
-                      ? `${waiting} ${waiting === 1 ? "guardian is" : "guardians are"} waiting for your words check`
+                      ? `${waiting} ${waiting === 1 ? "guardian is" : "guardians are"} waiting for you to compare safety words`
                       : `${c.guardians.length} ${c.guardians.length === 1 ? "guardian" : "guardians"} · not armed yet`
                     : phaseLine(l, c.plan?.body.mode) || `${c.plan?.body.recipients.length ?? 0} recipients`}
                 </small>
@@ -344,7 +344,10 @@ function GuardList({
                       : c.status === "declined"
                         ? "You said no."
                         : ph === "released"
-                          ? `${handed} of ${c.plan?.body.recipients.length ?? 0} recipients have your piece`
+                          ? (() => {
+                              const n = c.plan?.body.recipients.length ?? 0;
+                              return `Your piece reached ${handed} of ${n} ${n === 1 ? "recipient" : "recipients"}`;
+                            })()
                           : phaseLine(l, mode) || "Your piece is sealed. Alone it opens nothing."}
                 </small>
               </span>

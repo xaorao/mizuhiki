@@ -81,7 +81,14 @@ export const passRoutes =
 
     app.post("/passes", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. No pass was made.", "nothing-stored");
+      if (!me)
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. No pass was made.",
+          "nothing-stored",
+        );
       const b = z.object({ invite: SignedShape }).safeParse(req.body);
       if (!b.success)
         return fail(reply, 400, "BAD_REQUEST", "The pass was incomplete. No pass was made.", "nothing-stored");
@@ -158,7 +165,7 @@ export const passRoutes =
 
     app.get("/owner/passes", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const rows = await db.select().from(passes).where(eq(passes.owner, me)).orderBy(desc(passes.createdAt));
       const counts = rows.length
         ? await db
@@ -185,14 +192,14 @@ export const passRoutes =
 
     app.get("/passes/mine", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const rows = await db.select().from(passes).where(eq(passes.holder, me)).orderBy(desc(passes.createdAt));
       return { passes: rows.map(view) };
     });
 
     app.get("/passes/:id", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const p = await passFor((req.params as { id: string }).id, me);
       if (!p) return fail(reply, 404, "NOT_FOUND", "This pass does not exist or is not for you.");
       return view(p);
@@ -200,7 +207,7 @@ export const passRoutes =
 
     app.post("/passes/:id/accept", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. Nothing changed.");
       const id = (req.params as { id: string }).id;
       const [p] = await db
         .select()
@@ -224,7 +231,7 @@ export const passRoutes =
 
     app.post("/passes/:id/decline", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const id = (req.params as { id: string }).id;
       const [p] = await db
         .select()
@@ -240,10 +247,17 @@ export const passRoutes =
     /** The owner confirms after comparing safety words; the key (when the scope needs one) arrives sealed to the holder. */
     app.post("/passes/:id/confirm", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.", "nothing-stored");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.", "nothing-stored");
       const id = (req.params as { id: string }).id;
       const b = z.object({ keyEnvelope: z.string().regex(HASH).nullable() }).safeParse(req.body);
-      if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request.", "nothing-stored");
+      if (!b.success)
+        return fail(
+          reply,
+          400,
+          "BAD_REQUEST",
+          "That request was incomplete. Reload the page and try again.",
+          "nothing-stored",
+        );
       const [p] = await db
         .select()
         .from(passes)
@@ -276,7 +290,7 @@ export const passRoutes =
 
     app.post("/passes/:id/revoke", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const id = (req.params as { id: string }).id;
       const [p] = await db
         .select()
@@ -291,7 +305,7 @@ export const passRoutes =
     /** Older items (or one item from "Add a reader") re-sealed to the pass by the owner's device. */
     app.post("/passes/:id/items", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.", "nothing-stored");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.", "nothing-stored");
       const id = (req.params as { id: string }).id;
       const b = z
         .object({
@@ -345,7 +359,7 @@ export const passRoutes =
      */
     app.get("/passes/:id/items", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const p = await passFor((req.params as { id: string }).id, me);
       if (!p) return fail(reply, 404, "NOT_FOUND", "This pass does not exist or is not for you.");
       const st = statusOf(p);

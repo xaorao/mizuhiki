@@ -228,12 +228,7 @@ export function PayPanel({
     } catch (e) {
       const f = e instanceof PayFailure ? e : new PayFailure(PAY_UNKNOWN_TEXT, "unknown", sentHash);
       setFailure({
-        title:
-          f.moved === "no"
-            ? "Not paid. No money moved."
-            : f.moved === "yes"
-              ? "Not paid. Only the network fee was spent."
-              : "Not confirmed yet.",
+        title: f.moved === "unknown" ? "Not confirmed yet" : "Not paid",
         detail:
           f.moved === "unknown"
             ? `${f.message} Your order is held for an hour; its page keeps checking QoreChain.`

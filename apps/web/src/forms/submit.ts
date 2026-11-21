@@ -38,8 +38,8 @@ async function recipient(address: string, card?: RecipientCard | null): Promise<
 export type SubmitStep = "keys" | "files" | "seal" | "stamp" | "send";
 export const SUBMIT_LABEL: Record<SubmitStep, string> = {
   keys: "Reading the sealing keys from QoreChain",
-  files: "Encrypting your files",
-  seal: "Encrypting your answers",
+  files: "Sealing your files",
+  seal: "Sealing your answers",
   stamp: "Passing the anti-spam check",
   send: "Sending the sealed copy",
 };
@@ -108,7 +108,7 @@ export async function submitAnswers(args: {
       chunks,
       pow,
     });
-    if (r.hash !== sealed.hash) throw new SubmitFailure("The server stored something else than what was sealed.");
+    if (r.hash !== sealed.hash) throw new SubmitFailure("The server stored something other than what was sealed.");
     return { hash: r.hash };
   } catch (e) {
     if (e instanceof SubmitFailure) throw e;

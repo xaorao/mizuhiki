@@ -160,7 +160,7 @@ export function JoinPage({ id }: { id: string }) {
       else
         setActionError({
           title: "You have not joined",
-          detail: failureText(e, "Something went wrong. Nothing changed."),
+          detail: failureText(e, "You have not joined. Nothing changed; try again."),
         });
       if (e instanceof ApiFailure && (e.status === 410 || e.status === 403)) void refresh();
     } finally {
@@ -179,7 +179,7 @@ export function JoinPage({ id }: { id: string }) {
     } catch (e) {
       setActionError({
         title: "Not cancelled",
-        detail: `${failureText(e, "Something went wrong.")} Your request is still waiting.`,
+        detail: `${failureText(e, "That did not finish.")} Your request is still waiting.`,
       });
     } finally {
       setBusy(null);

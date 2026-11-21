@@ -76,7 +76,7 @@ export const settingsRoutes =
 
     app.get("/owner/names", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const rows = await db.select().from(names).where(eq(names.address, me)).orderBy(desc(names.primary), names.name);
       const [page] = await db.select({ name: pages.name }).from(pages).where(eq(pages.address, me));
       return {
@@ -94,7 +94,7 @@ export const settingsRoutes =
 
     app.get("/owner/notifications", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const [p] = await db.select({ prefs: notifyPrefs.prefs }).from(notifyPrefs).where(eq(notifyPrefs.address, me));
       const saved = (p?.prefs ?? {}) as Partial<Record<PushType, boolean>>;
       const subs = await db
@@ -110,7 +110,7 @@ export const settingsRoutes =
 
     app.put("/owner/notifications", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. Nothing changed.");
       // Any subset of the kinds; zod 4 records over an enum would demand every key.
       const b = z.object({ prefs: z.partialRecord(z.enum(PUSH_TYPES), z.boolean()) }).safeParse(req.body);
       if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request. Nothing changed.");
@@ -128,7 +128,7 @@ export const settingsRoutes =
      */
     app.put("/owner/push", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. Nothing changed.");
       if (!pushEnabled(ctx.cfg)) return fail(reply, 503, "PUSH_OFF", "Notifications are not set up on this server.");
       const b = z
         .object({ endpoint: z.url({ protocol: /^https$/ }).max(1000), keys: z.object({ p256dh: b64u, auth: b64u }) })
@@ -150,9 +150,10 @@ export const settingsRoutes =
 
     app.delete("/owner/push", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const b = z.object({ endpoint: z.string().max(1000) }).safeParse(req.body);
-      if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
+      if (!b.success)
+        return fail(reply, 400, "BAD_REQUEST", "That request was incomplete. Reload the page and try again.");
       await db
         .delete(pushSubscriptions)
         .where(and(eq(pushSubscriptions.endpoint, b.data.endpoint), eq(pushSubscriptions.address, me)));
@@ -162,7 +163,7 @@ export const settingsRoutes =
     /** A test notification to this account's browsers, so the person sees it work. */
     app.post("/owner/push/test", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const n = await ctx.push.send(me, "items");
       return { delivered: n };
     });
@@ -176,7 +177,14 @@ export const settingsRoutes =
      */
     app.delete("/owner/page", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing was deleted.", "nothing-changed");
+      if (!me)
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. Nothing was deleted.",
+          "nothing-changed",
+        );
       const b = z.object({ confirm: z.literal("delete my page") }).safeParse(req.body);
       if (!b.success)
         return fail(reply, 400, "CONFIRM", "Type the confirmation to delete. Nothing was deleted.", "nothing-changed");

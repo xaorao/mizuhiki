@@ -7,7 +7,7 @@
  */
 import { useState } from "react";
 import { Icon, Musubi } from "@mizuhiki/ui";
-import { formatAmount, type ProductDef } from "@mizuhiki/core";
+import { formatAmount, type ProductDef, ctaLabel } from "@mizuhiki/core";
 import { mediaUrl } from "@/lib/api";
 import { amountInput, priceLabel, productPath, WEEKDAYS } from "./model";
 import { RichText, Thumb } from "./bits";
@@ -111,7 +111,7 @@ export function ProductPreview({ def, name, displayName }: { def: ProductDef; na
           </div>
         ) : null}
         <span className={s.pvCta} aria-hidden="true">
-          {def.cta}
+          {ctaLabel(def.cta)}
         </span>
         {def.summary.trim() ? <p className={s.pvSummary}>{def.summary}</p> : null}
         {def.details.length ? (

@@ -58,10 +58,12 @@ export function ProveSheet({
     } catch (e) {
       const moved = e instanceof ChainError ? e.moved : "unknown";
       const base = failureText(e, "The anchor could not be written.");
+      // Chain messages already say what moved; add it only when the text does not.
+      const said = /Nothing (was )?(changed|sent|moved|written)|fee was spent/i.test(base);
       setFailure(
-        moved === "no"
+        moved === "no" && !said
           ? `${base} Nothing was written to QoreChain.`
-          : moved === "yes"
+          : moved === "yes" && !said
             ? `${base} A fee was spent; check the certificate before trying again.`
             : base,
       );

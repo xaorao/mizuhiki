@@ -57,7 +57,7 @@ export type SendStep = "keys" | "files" | "seal" | "sign" | "stamp" | "send";
 export const SEND_STEP_LABEL: Record<SendStep, string> = {
   keys: "Reading the sealing key from QoreChain",
   files: "Sealing your files in pieces",
-  seal: "Sealing with ML-KEM-1024",
+  seal: "Sealing it so only they can open it",
   sign: "Signing with your post-quantum key",
   stamp: "Passing the anti-spam check",
   send: "Uploading the sealed copy",
@@ -133,7 +133,10 @@ export async function sendSealed(args: {
   try {
     // Old or locked-down browsers can lack Web Crypto even though the DOM types always declare it.
     if (!(globalThis.crypto as Crypto | undefined)?.subtle)
-      throw new SendFailure("This browser cannot seal files (no Web Crypto). Nothing left your device.", "nothing");
+      throw new SendFailure(
+        "This browser is too old to seal things. Try another browser. Nothing left your device.",
+        "nothing",
+      );
     args.onStep("keys", 0.05);
     const card = to.card ?? (await cardOf(to.address));
     const recipient = await resolveOwner(to.address, card);
@@ -223,7 +226,7 @@ export async function sendSealed(args: {
     );
     if (r.hash !== sealed.hash)
       throw new SendFailure(
-        "The server stored something else than what was sealed. Do not trust this receipt.",
+        "The server stored something other than what was sealed. Do not trust this receipt.",
         "pieces",
       );
     return {
@@ -236,6 +239,6 @@ export async function sendSealed(args: {
       ...(r.late ? { late: true } : {}),
     };
   } catch (e) {
-    return fail(e, "Something went wrong while sealing it on this device.");
+    return fail(e, "This browser could not seal it. Reload and try again.");
   }
 }

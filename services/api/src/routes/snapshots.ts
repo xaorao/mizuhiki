@@ -42,7 +42,14 @@ export const snapshotRoutes =
     /** Keep a sealed snapshot the owner signed. */
     app.put("/owner/snapshots", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing was kept.", "nothing-stored");
+      if (!owner)
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. Nothing was kept.",
+          "nothing-stored",
+        );
       const b = Save.safeParse(req.body);
       if (!b.success)
         return fail(reply, 400, "BAD_REQUEST", "The snapshot was incomplete. Nothing was kept.", "nothing-stored");
@@ -105,7 +112,7 @@ export const snapshotRoutes =
     /** The owner's snapshots of one form (or all), newest first. Metadata only. */
     app.get("/owner/snapshots", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { formId } = req.query as { formId?: string };
       if (formId !== undefined && !FORM_ID.test(formId)) return fail(reply, 400, "BAD_REQUEST", "Not a form.");
       const rows = await db
@@ -122,7 +129,7 @@ export const snapshotRoutes =
     /** Delete a snapshot: the row goes now, the sealed copy at the next sweep. */
     app.delete("/owner/snapshots/:hash", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
+      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. Nothing changed.");
       const { hash } = req.params as { hash: string };
       if (!isHash(hash)) return fail(reply, 400, "BAD_REQUEST", "Not a snapshot. Nothing changed.");
       const gone = await db.transaction(async (tx) => {

@@ -78,6 +78,7 @@ export const ProductDefSchema = z.object({
     .object({ hash, type: z.string().max(60) })
     .nullable()
     .default(null),
+  // Stored as signed; shown through ctaLabel (the brand voice uses no exclamation marks).
   cta: z.enum(["I want this!", "Buy this", "Pay", "Book a time", "Support"]).default("I want this!"),
   summary: z.string().max(200).default(""),
   details: z
@@ -455,3 +456,6 @@ export function zonedToUtc(year: number, month: number, day: number, hour: numbe
   }
   return new Date(guess);
 }
+
+/** The words a product's button shows. "I want this!" stays the signed value; the label drops the exclamation mark. */
+export const ctaLabel = (cta: string): string => cta.replace(/!$/, "");

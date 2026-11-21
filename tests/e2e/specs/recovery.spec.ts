@@ -12,13 +12,13 @@ import { execFileSync } from "node:child_process";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { Purpose, combinePhrase, openItem } from "@mizuhiki/core";
 import { test, expect } from "./fixtures";
+import { PSQL } from "./pg";
 import { API, apiToken, ensureOwner, restoreInBrowser } from "./owner";
 
 const OWNER = "mzk-e2e-recown";
 const C1 = "mzk-e2e-reck1";
 const C2 = "mzk-e2e-reck2";
 const PASS = "lantern river maple tea";
-const PSQL = "/opt/homebrew/opt/postgresql@17/bin/psql";
 const DEV_DB = process.env.DATABASE_URL ?? "postgres://mizuhiki:mizuhiki-local-dev@127.0.0.1:5432/mizuhiki";
 const sqlRun = (q: string) => execFileSync(PSQL, [DEV_DB, "-At", "-c", q], { encoding: "utf8" }).trim();
 

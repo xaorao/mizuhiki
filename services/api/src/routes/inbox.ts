@@ -47,7 +47,7 @@ export const inboxRoutes =
 
     app.get("/owner/inbox", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const q = z
         .object({
           box: z.enum(["inbox", "archived", "sent"]).default("inbox"),
@@ -216,7 +216,7 @@ export const inboxRoutes =
 
     app.patch("/owner/inbox/:hash", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
+      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. Nothing changed.");
       const { hash } = req.params as { hash: string };
       if (!isHash(hash)) return fail(reply, 400, "BAD_HASH", "Not an item id.");
       const b = z.object({ read: z.boolean().optional(), archived: z.boolean().optional() }).safeParse(req.body);
@@ -236,7 +236,7 @@ export const inboxRoutes =
     /** Notes an owner filed for themselves (for example proof labels): hashes and refs only. */
     app.get("/owner/notes", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { kind } = req.query as { kind?: string };
       if (!kind || !SELF_KINDS.includes(kind)) return fail(reply, 400, "BAD_REQUEST", "Say which kind of note.");
       const rows = await db
@@ -250,7 +250,7 @@ export const inboxRoutes =
 
     app.get("/owner/unread", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const [r] = await db
         .select({ n: sql<number>`count(*)::int` })
         .from(envelopes)

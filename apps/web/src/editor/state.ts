@@ -31,7 +31,7 @@ export const CHECKLIST: { id: ChecklistItem; title: string }[] = [
   { id: "profile", title: "Add your name and photo" },
   { id: "spareKey", title: "Create your spare-key sheet" },
   { id: "block", title: "Add a block" },
-  { id: "design", title: "Customize your design" },
+  { id: "design", title: "Customise your design" },
   { id: "share", title: "Share your page" },
   { id: "firstItem", title: "Receive your first sealed item" },
 ];

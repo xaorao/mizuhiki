@@ -10,6 +10,7 @@
 import { execFileSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { test, expect } from "./fixtures";
+import { PSQL } from "./pg";
 import {
   Purpose,
   decryptFile,
@@ -25,7 +26,6 @@ import {
 import { API, apiToken, ensureOwner } from "./owner";
 
 const NAME = "mzk-e2e-editor";
-const PSQL = "/opt/homebrew/opt/postgresql@17/bin/psql";
 const DEV_DB = process.env.DATABASE_URL ?? "postgres://mizuhiki:mizuhiki-local-dev@127.0.0.1:5432/mizuhiki";
 
 type Owner = Awaited<ReturnType<typeof ensureOwner>>;
@@ -197,7 +197,7 @@ test("a respondent fills a form: recall, keys, errors, logic, sealed file and si
   await p.goto(`/@${NAME}/f/${slug}`);
   await expect(p.getByRole("heading", { name: "Kinari client intake" })).toBeVisible({ timeout: 30_000 });
   await expect(p.getByText(/Takes \d+ min/)).toBeVisible();
-  await expect(p.getByText(`Your answers are encrypted on this device. Only @${NAME} can read them.`)).toBeVisible();
+  await expect(p.getByText(`Your answers are sealed on this device. Only @${NAME} can read them.`)).toBeVisible();
   await p.getByRole("button", { name: "Let's go" }).click();
   // required error stays on the question
   await p.keyboard.press("Enter");
@@ -238,7 +238,7 @@ test("a respondent fills a form: recall, keys, errors, logic, sealed file and si
   await p.mouse.down();
   for (let i = 1; i <= 12; i++) await p.mouse.move(box.x + 30 + i * 22, box.y + 120 - Math.sin(i / 2) * 50);
   await p.mouse.up();
-  await expect(p.getByText("Signed. It is encrypted with your answers.")).toBeVisible();
+  await expect(p.getByText("Signed. It is sealed with your answers.")).toBeVisible();
   await p.screenshot({ path: info.outputPath("signature.png") });
   await p.getByRole("button", { name: "Submit" }).click();
   await expect(p.getByText("Sent, sealed.")).toBeVisible({ timeout: 120_000 });

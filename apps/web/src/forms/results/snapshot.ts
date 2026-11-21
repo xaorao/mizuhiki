@@ -92,7 +92,7 @@ export async function shareSnapshot(args: {
     anonymous: true,
   });
   const r = await api.put<{ hash: string }>("/blobs", sealed.envelope);
-  if (r.hash !== sealed.hash) throw new Error("The server stored something else than what was sealed.");
+  if (r.hash !== sealed.hash) throw new Error("The server stored something other than what was sealed.");
   const sig = signRecord({
     kind: "snapshot",
     body: { formId: checked.formId, envelope: sealed.hash },

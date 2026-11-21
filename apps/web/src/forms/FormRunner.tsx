@@ -37,6 +37,11 @@ interface Step {
 }
 
 /** Screens in order: hidden questions skipped, consecutive half-width questions share one. */
+/** "a", "a and b", "a, b and c". */
+function listWords(words: string[]): string {
+  return words.length <= 2 ? words.join(" and ") : `${words.slice(0, -1).join(", ")} and ${words.at(-1) ?? ""}`;
+}
+
 export function buildSteps(def: Pick<FormDef, "blocks">): Step[] {
   const out: Step[] = [];
   let heading = "";
@@ -320,8 +325,8 @@ export function FormRunner({
   const qIndex = (id: string) => def.blocks.filter((b) => isQuestion(b) && !b.hidden).findIndex((b) => b.id === id) + 1;
   const pct = at < 0 ? 0 : Math.round((at / Math.max(1, steps.length)) * 100);
   const consent = def.hideReaders
-    ? "Your answers are encrypted on this device. Only the form's readers can open them."
-    : `Your answers are encrypted on this device. Only ${readerNames.join(" and ")} can read them.`;
+    ? "Your answers are sealed on this device. Only the form's readers can open them."
+    : `Your answers are sealed on this device. Only ${listWords(readerNames)} can read them.`;
 
   if (closedReason && !preview)
     return (
@@ -563,7 +568,7 @@ function QuestionView({
             inputMode={q.kind === "number" ? "decimal" : undefined}
             placeholder={
               q.kind === "short"
-                ? q.placeholder || "Type your answer here..."
+                ? q.placeholder || "Type your answer here…"
                 : q.kind === "email"
                   ? "name@example.com"
                   : q.kind === "phone"
@@ -609,7 +614,7 @@ function QuestionView({
             className={s.area}
             aria-labelledby={`${q.id}-t`}
             autoFocus={autoFocus}
-            placeholder={q.placeholder || "Type your answer here..."}
+            placeholder={q.placeholder || "Type your answer here…"}
             value={str}
             rows={4}
             onChange={(e) => onChange(e.target.value)}

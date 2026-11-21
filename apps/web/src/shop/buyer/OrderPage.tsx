@@ -781,7 +781,7 @@ function isFileFacts(f: unknown): f is FileFacts {
   );
 }
 
-/** A sealed file: "Decrypt and download" with progress (the inbox's FileItem, for purchases). */
+/** A sealed file: "Unseal and download" with progress (the inbox's FileItem, for purchases). */
 function FileCard({ f }: { f: FileFacts }) {
   const [st, setSt] = useState<
     { s: "idle" } | { s: "busy"; p: number } | { s: "ready"; url: string } | { s: "failed"; why: string }
@@ -808,7 +808,7 @@ function FileCard({ f }: { f: FileFacts }) {
       } catch {
         setSt({
           s: "failed",
-          why: "This file could not be decrypted. A piece is missing or was changed. Nothing was saved.",
+          why: "This file could not be unsealed. A piece is missing or was changed. Nothing was saved.",
         });
         return;
       }
@@ -828,7 +828,7 @@ function FileCard({ f }: { f: FileFacts }) {
         <b>{f.name}</b>
         <small>
           {f.type || "File"} · {fmtBytes(f.size)} ·{" "}
-          {st.s === "busy" ? `Decrypting ${pct}%` : st.s === "ready" ? "Decrypted on this device" : "Sealed"}
+          {st.s === "busy" ? `Unsealing ${pct}%` : st.s === "ready" ? "Unsealed on this device" : "Sealed"}
         </small>
         {st.s === "busy" ? (
           <span
@@ -837,7 +837,7 @@ function FileCard({ f }: { f: FileFacts }) {
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={pct}
-            aria-label={`Decrypting ${f.name}`}
+            aria-label={`Unsealing ${f.name}`}
           >
             <i style={{ transform: `scaleX(${st.p})` }} />
           </span>
@@ -851,7 +851,7 @@ function FileCard({ f }: { f: FileFacts }) {
         busy={st.s === "busy"}
         onClick={() => void save()}
       >
-        {st.s === "ready" ? "Download again" : "Decrypt and download"}
+        {st.s === "ready" ? "Download again" : "Unseal and download"}
       </Button>
     </div>
   );

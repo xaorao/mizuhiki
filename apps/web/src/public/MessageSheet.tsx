@@ -228,7 +228,14 @@ export function MessageSheet({
       setPhase("done");
       onSent?.();
     } catch (e) {
-      setFailure(e instanceof SendFailure ? e : new SendFailure("Something went wrong on this device.", "nothing"));
+      setFailure(
+        e instanceof SendFailure
+          ? e
+          : new SendFailure(
+              "This browser could not seal it. Nothing left your device. Reload and try again.",
+              "nothing",
+            ),
+      );
       setPhase("failed");
     }
   };
@@ -399,7 +406,13 @@ export function MessageSheet({
             <ChoiceCard
               selected={signed}
               onSelect={() => (canSign || canUnlock) && setSigned(true)}
-              title={canSign ? "Signed as you" : canUnlock ? "Signed as you (unlock first)" : "Signed (needs Mizuhiki)"}
+              title={
+                canSign
+                  ? "Show it's from me"
+                  : canUnlock
+                    ? "Show it's from me (unlock first)"
+                    : "Show it's from me (needs Mizuhiki)"
+              }
               detail={signDetail}
               icon={<Icon name="pen" />}
               tone="sora"
@@ -523,7 +536,7 @@ export function MessageSheet({
 
       {phase === "failed" && failure ? (
         <SealFailed
-          title={failure.left === "nothing" ? "Not sent. Nothing left your device." : "Not sent."}
+          title="Not sent."
           detail={failure.message}
           onClose={() => {
             reset();

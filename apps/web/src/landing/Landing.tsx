@@ -100,7 +100,7 @@ const BLOCKS: { icon: IconName; bg: string; fg: string; title: string; body: str
     bg: "var(--fuji)",
     fg: "var(--fuji-ink)",
     title: "Forms",
-    body: "Intake, applications, feedback. Answers encrypted in the browser.",
+    body: "Intake, applications, feedback. Answers sealed in the browser.",
     tag: "Answers sealed",
   },
   {
@@ -173,7 +173,7 @@ const STEPS = [
   {
     n: 2,
     title: "They seal on their device",
-    body: "A visitor writes a note or drops a file. Their browser reads your public key from QoreChain and locks it with ML-KEM-1024 before anything is uploaded.",
+    body: "A visitor writes a note or drops a file. Their browser reads your public key from QoreChain and locks it before anything is uploaded.",
     jp: "むすぶ · tie",
   },
   {
@@ -234,7 +234,7 @@ const FAQ: [string, ReactNode][] = [
   ],
   [
     "Do my visitors need an account or a wallet?",
-    "No. Anyone can send a message, a file or a form answer from a normal browser. A wallet is only needed to pay in crypto, and a key only to join a room or keep a purchase.",
+    "No. Anyone can send a message, a file or a form answer from a normal browser. A wallet is only needed to pay, and a key only to join a room or keep a purchase.",
   ],
   [
     "What does post-quantum mean for me?",
@@ -242,7 +242,7 @@ const FAQ: [string, ReactNode][] = [
   ],
   [
     "What if I lose my phone?",
-    "Restore from your recovery phrase, or from your spare key: recovery contacts each hold one piece, and any two rebuild it after a 48-hour wait you can cancel. Without either, nobody can open your sealed items, including us.",
+    "Restore from your recovery phrase, or from your spare key: recovery contacts each hold one piece, and enough of them together rebuild it after a 48-hour wait you can cancel. Without either, nobody can open your sealed items, including us.",
   ],
   [
     "What does it cost?",
@@ -973,6 +973,11 @@ export function Landing() {
               QoreChain test network now; each card reads its own from the chain as you look.
             </Head>
             <ProofCards />
+            <p className={s.proofMore}>
+              <Link href="/onchain">
+                See every contract, key and signature, checked live <Icon name="arrow" size={14} />
+              </Link>
+            </p>
           </div>
         </section>
 
@@ -1109,6 +1114,7 @@ export function Landing() {
               <a href="#how">How sealing works</a>
               <Link href="/recover">Recover an account</Link>
               <Link href="/proof">Check a proof</Link>
+              <Link href="/onchain">Proof on QoreChain</Link>
             </nav>
             <nav aria-label="Legal links">
               <h3>Legal</h3>

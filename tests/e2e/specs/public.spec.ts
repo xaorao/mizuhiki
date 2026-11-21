@@ -8,6 +8,7 @@
 import { randomBytes } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { test, expect } from "./fixtures";
+import { PSQL } from "./pg";
 import { Purpose, decryptFile, fromUtf8, openItem, sha256Hex, isMizuhikiError } from "@mizuhiki/core";
 import { generateSealKeys } from "@qorechain/qoreseal";
 import { API, apiToken, ensureOwner } from "./owner";
@@ -25,7 +26,7 @@ test("visitor: page verifies, info and share sheets, report, missing and unknown
   await ensureOwner("e2e-editor", NAME);
   await page.goto(`/@${NAME}`);
   await expect(page.getByRole("heading", { name: "Kinari Studio" })).toBeVisible();
-  await expect(page.getByText(/Signed by @mzk-e2e-editor's post-quantum key, checked on QoreChain/)).toBeVisible();
+  await expect(page.getByText(/This page really is @mzk-e2e-editor's, checked on QoreChain/)).toBeVisible();
   await page.getByRole("button", { name: /Anything you send is sealed to Kinari/ }).click();
   await expect(page.getByRole("dialog", { name: "What sealed means here" })).toBeVisible();
   await page.keyboard.press("Escape");
@@ -111,7 +112,6 @@ test("visitor on a phone: page fits, message sheet opens from the top bar", asyn
   await expect(page.getByRole("dialog", { name: "Send Kinari something private" })).toBeHidden();
 });
 
-const PSQL = "/opt/homebrew/opt/postgresql@17/bin/psql";
 const DEV_DB = process.env.DATABASE_URL ?? "postgres://mizuhiki:mizuhiki-local-dev@127.0.0.1:5432/mizuhiki";
 
 test("visitor: a manifest changed on the server is refused; unpublished pages vanish; views and taps are counted", async ({

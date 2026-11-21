@@ -234,7 +234,14 @@ export const shopRoutes =
 
     app.put("/products", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing was saved.", "nothing-stored");
+      if (!me)
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. Nothing was saved.",
+          "nothing-stored",
+        );
       const b = Save.safeParse(req.body);
       if (!b.success)
         return fail(reply, 400, "BAD_REQUEST", "The product was incomplete. Nothing was saved.", "nothing-stored");
@@ -401,7 +408,7 @@ export const shopRoutes =
 
     app.get("/owner/products", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const rows = await db.select().from(products).where(eq(products.owner, me)).orderBy(desc(products.updatedAt));
       const stats = await db
         .select({
@@ -435,7 +442,7 @@ export const shopRoutes =
 
     app.patch("/owner/products/:id", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const b = z.object({ status: z.enum(["published", "unpublished"]) }).safeParse(req.body);
       if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request. Nothing changed.");
@@ -452,7 +459,7 @@ export const shopRoutes =
 
     app.delete("/owner/products/:id", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const [p] = await db
         .select()
@@ -608,7 +615,7 @@ export const shopRoutes =
 
     app.get("/owner/discounts", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       return {
         discounts: await (async () => {
           const rows = await db
@@ -624,7 +631,7 @@ export const shopRoutes =
 
     app.put("/owner/discounts", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const b = DiscountBody.safeParse(req.body);
       if (
         !b.success ||
@@ -655,7 +662,7 @@ export const shopRoutes =
 
     app.delete("/owner/discounts/:id", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       await db
         .delete(discounts)
         .where(and(eq(discounts.id, (req.params as { id: string }).id), eq(discounts.owner, me)));
@@ -667,7 +674,8 @@ export const shopRoutes =
       const b = z
         .object({ seller: z.string().refine(isAddress), code: z.string().max(40), token: z.enum(["QOR", "fUSD"]) })
         .safeParse(req.body);
-      if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
+      if (!b.success)
+        return fail(reply, 400, "BAD_REQUEST", "That request was incomplete. Reload the page and try again.");
       const d = await discountFor(b.data.seller, b.data.code, b.data.token);
       if (d === "bad" || d === null) return fail(reply, 404, "NO_DISCOUNT", "That code is not valid for this order.");
       return { discount: d.d };
@@ -827,7 +835,8 @@ export const shopRoutes =
     app.post("/orders/:ref/tx", { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } }, async (req, reply) => {
       const { ref } = req.params as { ref: string };
       const b = z.object({ txHash: z.string().regex(TX) }).safeParse(req.body);
-      if (!REF.test(ref) || !b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
+      if (!REF.test(ref) || !b.success)
+        return fail(reply, 400, "BAD_REQUEST", "That request was incomplete. Reload the page and try again.");
       const [o] = await db.select().from(orders).where(eq(orders.ref, ref));
       if (!o) return fail(reply, 404, "NOT_FOUND", "No such order.");
       const t = await getTx(b.data.txHash.toUpperCase()).catch(() => undefined);
@@ -837,7 +846,7 @@ export const shopRoutes =
 
     app.get("/orders/mine", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const rows = await db
         .select()
         .from(orders)
@@ -852,7 +861,8 @@ export const shopRoutes =
     /** Purchases sealed to a buyer key (no account): looked up by the hash of the key's public parts. */
     app.get("/orders/by-key/:hash", async (req, reply) => {
       const { hash } = req.params as { hash: string };
-      if (!isHash(hash)) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
+      if (!isHash(hash))
+        return fail(reply, 400, "BAD_REQUEST", "That request was incomplete. Reload the page and try again.");
       const rows = await db
         .select()
         .from(orders)
@@ -867,7 +877,7 @@ export const shopRoutes =
     // ---- seller: orders and delivery -------------------------------------------------------
     app.get("/owner/orders", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const rows = await db
         .select()
         .from(orders)
@@ -882,7 +892,7 @@ export const shopRoutes =
     /** Orders an "Instant delivery" helper may deliver: paid, not delivered, for products naming this helper. */
     app.get("/agent/orders", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const mine = await db
         .select()
         .from(products)
@@ -917,10 +927,17 @@ export const shopRoutes =
 
     app.post("/orders/:ref/deliver", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.", "nothing-stored");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.", "nothing-stored");
       const { ref } = req.params as { ref: string };
       const b = z.object({ envelope: z.string().regex(/^[0-9a-f]{64}$/) }).safeParse(req.body);
-      if (!REF.test(ref) || !b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request.", "nothing-stored");
+      if (!REF.test(ref) || !b.success)
+        return fail(
+          reply,
+          400,
+          "BAD_REQUEST",
+          "That request was incomplete. Reload the page and try again.",
+          "nothing-stored",
+        );
       const [o0] = await db.select().from(orders).where(eq(orders.ref, ref));
       if (!o0) return fail(reply, 404, "NOT_FOUND", "No such order.", "nothing-stored");
       const o = await refresh(o0);
@@ -988,7 +1005,7 @@ export const shopRoutes =
 
     app.post("/orders/:ref/balance", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { ref } = req.params as { ref: string };
       const [o] = await db
         .select()
@@ -1004,10 +1021,11 @@ export const shopRoutes =
     /** A refund is the seller's own transfer back; recorded only once QoreChain shows it. */
     app.post("/orders/:ref/refund", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { ref } = req.params as { ref: string };
       const b = z.object({ txHash: z.string().regex(TX) }).safeParse(req.body);
-      if (!b.success) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
+      if (!b.success)
+        return fail(reply, 400, "BAD_REQUEST", "That request was incomplete. Reload the page and try again.");
       const [o] = await db
         .select()
         .from(orders)
@@ -1087,7 +1105,8 @@ export const shopRoutes =
 
     app.get("/orders/:ref/review", async (req, reply: FastifyReply) => {
       const { ref } = req.params as { ref: string };
-      if (!REF.test(ref)) return fail(reply, 400, "BAD_REQUEST", "Bad request.");
+      if (!REF.test(ref))
+        return fail(reply, 400, "BAD_REQUEST", "That request was incomplete. Reload the page and try again.");
       return { reviews: await db.select().from(reviews).where(eq(reviews.orderRef, ref)) };
     });
 

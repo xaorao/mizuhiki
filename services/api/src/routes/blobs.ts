@@ -65,7 +65,14 @@ export const blobRoutes =
     /** Public images for pages. Owner only; type checked by magic bytes; 3 MB cap. */
     app.put("/media", async (req, reply) => {
       const owner = await sessionAddress(ctx.db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing was stored.", "nothing-stored");
+      if (!owner)
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. Nothing was stored.",
+          "nothing-stored",
+        );
       const body = req.body;
       if (!(body instanceof Buffer)) return fail(reply, 400, "EMPTY", "Nothing to store.", "nothing-stored");
       if (body.length > 3 * 1024 * 1024)

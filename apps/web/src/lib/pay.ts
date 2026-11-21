@@ -206,7 +206,7 @@ export async function deliverNote(owner: string, ref: string, envelope: Uint8Arr
     pow,
   });
   if (r.hash !== hash)
-    throw new ApiFailure(500, "MISMATCH", "The server stored something else than the sealed note.", "unknown");
+    throw new ApiFailure(500, "MISMATCH", "The server stored something other than the sealed note.", "unknown");
   await forgetNote(hash);
 }
 

@@ -174,7 +174,7 @@ test("carried state: a new person from the landing page to a page that has been 
   const V = await newContext(browser, info);
   const v = V.page;
   await v.goto(`/@${name}`);
-  await expect(v.getByText(new RegExp(`Signed by @${name}'s post-quantum key, checked on QoreChain`))).toBeVisible({
+  await expect(v.getByText(new RegExp(`This page really is @${name}'s, checked on QoreChain`))).toBeVisible({
     timeout: 60_000,
   });
   await expect(v.getByRole("heading", { name: "Journey Studio" })).toBeVisible();
@@ -223,7 +223,7 @@ test("carried state: a new person from the landing page to a page that has been 
   await review.getByRole("button", { name: `Pay 1.5 ${token}` }).click();
   const paid = p.getByRole("dialog", { name: "Paid Journey" });
   await expect(paid.getByText(`Paid Journey 1.5 ${token}.`)).toBeVisible({ timeout: 180_000 });
-  await expect(paid.getByText("Sealed and delivered")).toBeVisible();
+  await expect(paid.getByText(/^Sealed and stored for /)).toBeVisible();
   const payTx = ((await paid.innerText()).match(/([0-9A-F]{8} ?){8}/i)?.[0] ?? "").replace(/ /g, "");
   const tx1 = (await getTx(payTx)) as unknown as {
     code: number;
@@ -267,7 +267,9 @@ test("carried state: a new person from the landing page to a page that has been 
   await share.getByRole("button", { name: `Send to @${PAYER}` }).click();
   await expect(share.getByRole("button", { name: "Sent" })).toBeVisible({ timeout: 120_000 });
   await p.goto(link);
-  await expect(p.getByText(new RegExp(`Signed by @${name}'s post-quantum key`))).toBeVisible({ timeout: 60_000 });
+  await expect(p.getByText(new RegExp(`This invoice really is from @${name}, checked on QoreChain`))).toBeVisible({
+    timeout: 60_000,
+  });
   await p.getByRole("button", { name: /^Pay #\d{4}$/ }).click();
   const ipay = p.getByRole("dialog", { name: /Pay invoice #\d{4}/ });
   await ipay.getByLabel("Device passphrase").fill(PASS);

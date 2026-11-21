@@ -51,7 +51,7 @@ async function makeProduct(page: Page, kind: RegExp, title: string, price: strin
   await page.getByRole("radio", { name: kind }).click();
   await page.getByRole("group", { name: "Token" }).getByRole("button", { name: "QOR" }).click();
   await page.getByLabel(/^(Price|Full price)/).fill(price);
-  await page.getByRole("button", { name: "Next: Customize" }).click();
+  await page.getByRole("button", { name: "Next: Customise" }).click();
   await page.waitForURL(/\/app\/shop\/pr[0-9a-f]+/, { timeout: 60_000 });
   if (setup) await setup();
   await page
@@ -76,7 +76,7 @@ async function toCheckout(page: Page, title: string, onProduct?: () => Promise<v
   await page
     .locator("aside[aria-label='Buy']")
     .getByRole("button")
-    .filter({ hasText: /I want this!|Book a time/ })
+    .filter({ hasText: /I want this|Book a time/ })
     .first()
     .click();
   await page.waitForURL(new RegExp(`/@${NAME}/checkout`));
@@ -150,7 +150,7 @@ test("shop: instant delivery as a gift, a booked call refunded, a commission in 
   const B = await party(browser, problems, "buyer");
   await restoreInBrowser(B.page, personaPhrase("shop-e2e-buyer"));
   await toCheckout(B.page, report);
-  await B.page.getByRole("radio", { name: /Send to another wallet/ }).click();
+  await B.page.getByRole("radio", { name: /Send as a gift/ }).click();
   await B.page.getByLabel("Their @name or wallet address").fill("@mzk-room-cai");
   await B.page.getByRole("button", { name: "Find" }).click();
   await expect(B.page.getByText("@mzk-room-cai").first()).toBeVisible({ timeout: 60_000 });
@@ -172,7 +172,11 @@ test("shop: instant delivery as a gift, a booked call refunded, a commission in 
 
   // ---- a booked call: the first free time; the next buyer sees it taken
   await toCheckout(B.page, call, async () => {
-    await B.page.getByRole("tablist", { name: "Days" }).locator("button[role=tab]:not([disabled])").first().click();
+    // Late in the week every remaining day can be past its hours: go to the next week, as a person would.
+    const open = B.page.getByRole("tablist", { name: "Days" }).locator("button[role=tab]:not([disabled])");
+    for (let i = 0; i < 3 && (await open.count()) === 0; i++)
+      await B.page.getByRole("button", { name: "Later week" }).click();
+    await open.first().click();
     const first = B.page
       .getByRole("radiogroup", { name: /^Times on/ })
       .getByRole("radio")

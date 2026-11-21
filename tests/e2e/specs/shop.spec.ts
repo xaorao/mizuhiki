@@ -68,7 +68,7 @@ test("shop: publish a sealed product; an account buyer and a 12-word buyer each 
   await S.page.getByRole("radio", { name: /Digital file/ }).click();
   await S.page.getByRole("group", { name: "Token" }).getByRole("button", { name: "QOR" }).click();
   await S.page.getByLabel("Price").fill("0.02");
-  await S.page.getByRole("button", { name: "Next: Customize" }).click();
+  await S.page.getByRole("button", { name: "Next: Customise" }).click();
   await S.page.waitForURL(/\/app\/shop\/pr[0-9a-f]+/, { timeout: 60_000 });
   const productId = /shop\/(pr[0-9a-f]+)/.exec(S.page.url())?.[1] ?? "";
   await S.page.getByRole("tab", { name: "Content" }).click();
@@ -109,10 +109,10 @@ test("shop: publish a sealed product; an account buyer and a 12-word buyer each 
     .first()
     .click();
   await B.page.waitForURL(new RegExp(`/@${NAME}/p/`));
-  await expect(B.page.getByText(/Signed by @mzk-shop-e2e's key, checked on/)).toBeVisible({ timeout: 60_000 });
+  await expect(B.page.getByText(/This really is @mzk-shop-e2e's product, checked on/)).toBeVisible({ timeout: 60_000 });
   await B.page.screenshot({ path: info.outputPath("2-product.png"), animations: "disabled" });
   await B.page
-    .getByRole("button", { name: /I want this!/ })
+    .getByRole("button", { name: /I want this/ })
     .first()
     .click();
   await B.page.waitForURL(new RegExp(`/@${NAME}/checkout`));
@@ -150,7 +150,7 @@ test("shop: publish a sealed product; an account buyer and a 12-word buyer each 
   await expect(B.page.getByText("Thank you for buying. The recordings are below.")).toBeVisible({ timeout: 90_000 });
   const got1 = await downloadedBytes(B.page, () =>
     B.page
-      .getByRole("button", { name: /Decrypt and download/ })
+      .getByRole("button", { name: /Unseal and download/ })
       .first()
       .click(),
   );
@@ -184,7 +184,7 @@ test("shop: publish a sealed product; an account buyer and a 12-word buyer each 
     .first()
     .click();
   await K.page
-    .getByRole("button", { name: /I want this!/ })
+    .getByRole("button", { name: /I want this/ })
     .first()
     .click();
   await K.page.getByRole("radio", { name: /I don't have Mizuhiki/ }).click();
@@ -226,7 +226,7 @@ test("shop: publish a sealed product; an account buyer and a 12-word buyer each 
   await expect(K.page.getByText("Thank you for buying. The recordings are below.")).toBeVisible({ timeout: 90_000 });
   const got2 = await downloadedBytes(K.page, () =>
     K.page
-      .getByRole("button", { name: /Decrypt and download/ })
+      .getByRole("button", { name: /Unseal and download/ })
       .first()
       .click(),
   );

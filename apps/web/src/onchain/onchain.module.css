@@ -1,0 +1,257 @@
+.shell {
+  min-height: 100dvh;
+  background: var(--cream);
+  padding: 20px 16px 96px;
+}
+.bar {
+  max-width: 1040px;
+  margin: 0 auto 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.bar nav {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.bar nav a {
+  color: var(--ink-muted);
+  font-weight: 700;
+  text-decoration: none;
+}
+.bar nav a:hover {
+  color: var(--ink);
+}
+.main {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: grid;
+  gap: 56px;
+}
+.hero {
+  display: grid;
+  gap: 12px;
+  max-width: 680px;
+}
+.hero h1 {
+  margin: 0;
+  font-family: var(--font-round);
+  font-weight: 900;
+  font-size: clamp(32px, 5vw, 48px);
+  line-height: 1.08;
+}
+.lead {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 17px;
+  line-height: 1.55;
+  max-width: 720px;
+}
+.section {
+  display: grid;
+  gap: 12px;
+}
+.section h2 {
+  margin: 0;
+  font-family: var(--font-round);
+  font-weight: 900;
+  font-size: clamp(24px, 3.4vw, 30px);
+}
+.cards,
+.cards2 {
+  margin-top: 8px;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.cards2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  background: var(--paper);
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: var(--drop);
+  padding: 20px;
+}
+.card small {
+  color: var(--ink-muted);
+  font-family: var(--font-round);
+  font-weight: 800;
+  font-size: 13px;
+}
+.card > span {
+  max-width: 100%;
+}
+.card b {
+  font-family: var(--font-round);
+  font-weight: 900;
+  font-size: 24px;
+}
+.card p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.facts {
+  margin: 4px 0;
+  display: grid;
+  gap: 4px;
+  width: 100%;
+}
+.facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+.facts dt {
+  color: var(--ink-muted);
+}
+.facts dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.link {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-muted);
+  text-decoration: none;
+  min-width: 0;
+}
+.link:hover {
+  color: var(--ink);
+}
+.shell code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.verdict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.wait {
+  color: var(--ink-muted);
+  font-family: var(--font-round);
+  font-weight: 800;
+  font-size: 13px;
+}
+.block {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+.note {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.note a {
+  color: var(--ink);
+  font-weight: 700;
+}
+.bad {
+  margin: 0;
+  color: var(--text-error);
+  font-weight: 700;
+}
+.offline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--wait-soft);
+  font-weight: 700;
+}
+.activity {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--drop);
+  overflow: hidden;
+}
+.activity li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 18px;
+}
+.activity li + li {
+  border-top: 1px solid var(--hair-10);
+}
+.what {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.what b {
+  font-family: var(--font-round);
+  font-weight: 800;
+}
+.when {
+  color: var(--ink-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.activity a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+.never {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.never li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  line-height: 1.5;
+}
+.never li :global(svg) {
+  flex: none;
+  margin-top: 3px;
+}
+@media (max-width: 900px) {
+  .cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 680px) {
+  .cards2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .activity li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}

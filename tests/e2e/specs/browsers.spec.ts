@@ -34,7 +34,7 @@ test("core journey in this browser: verify, seal and send, restore, open, save, 
   v.on("console", (m) => m.type() === "error" && problems.push(`visitor console: ${m.text()}`));
   v.on("pageerror", (e) => problems.push(`visitor pageerror: ${e.message}`));
   await v.goto(`/@${NAME}`);
-  await expect(v.getByText(/Signed by @mzk-e2e-editor's post-quantum key, checked on QoreChain/)).toBeVisible({
+  await expect(v.getByText(/This page really is @mzk-e2e-editor's, checked on QoreChain/)).toBeVisible({
     timeout: 60_000,
   });
   await v.screenshot({ path: info.outputPath("public.png"), fullPage: true });

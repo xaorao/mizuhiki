@@ -69,7 +69,7 @@ export function SignaturePad({ onChange, has }: { onChange: (png: File | null) =
       <div className={s.sigRow}>
         <span className={s.hint}>
           <Icon name="pen" size={13} />{" "}
-          {inked ? "Signed. It is encrypted with your answers." : "Sign above with your finger or mouse."}
+          {inked ? "Signed. It is sealed with your answers." : "Sign above with your finger or mouse."}
         </span>
         <Button
           size="sm"

@@ -646,7 +646,7 @@ function NotificationsSection({ tokened }: { tokened: () => Promise<Tokened> }) 
 
   return (
     <Section id="notifications" title="Notifications">
-      <p>A notification says only what kind of thing happened, never what it says. It is encrypted to this browser.</p>
+      <p>A notification says only what kind of thing happened, never what it says. It is sealed to this browser.</p>
       {!data ? (
         <Skeleton lines={3} />
       ) : !data.enabled ? (
@@ -799,7 +799,7 @@ function ReadersSection({ tokened }: { tokened: () => Promise<Tokened> }) {
         expiresAt: null,
         note: "You are my default reader.",
       });
-      toast.show(`Invited. Finish on the pass page once ${found.name ? `@${found.name}` : "they"} accept.`);
+      toast.show(`Invited. Finish on the pass page once ${found.name ? `@${found.name} accepts` : "they accept"}.`);
       setAdding(false);
       setWho("");
       router.push(`/app/passes/${pass.id}`);

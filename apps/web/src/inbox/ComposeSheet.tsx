@@ -132,7 +132,7 @@ export function ComposeSheet({
       setPhase("done");
       onSent();
     } catch (e) {
-      setFailure(failureText(e, "Not sent. Nothing left your device."));
+      setFailure(failureText(e, "Nothing left your device."));
       setPhase("failed");
     }
   };

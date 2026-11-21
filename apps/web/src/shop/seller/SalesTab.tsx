@@ -21,7 +21,7 @@ import {
   type StepItem,
 } from "@mizuhiki/ui";
 import { formatAmount, parseAmount } from "@mizuhiki/core";
-import { explorerAddress, explorerTx } from "@mizuhiki/chain";
+import { ChainError, explorerAddress, explorerTx } from "@mizuhiki/chain";
 import { useOwnerSession } from "@/owner/OwnerProvider";
 import { useDebounced, useRoomEvents } from "@/rooms/useRoom";
 import { listSales, refund, requestBalance, withToken, type OrderView } from "../engine";
@@ -387,13 +387,21 @@ function RefundSheet({
       onDone();
     } catch (e) {
       setStage("failed");
-      const why = e instanceof Error && e.message ? e.message : "The refund did not go through.";
+      const why = failureText(e, "The refund did not go through.");
+      // What moved: the stage reached here, or the chain error's own answer when it came before that.
+      const moved = e instanceof ChainError ? e.moved : "unknown";
       setErr(
         reached.at === "confirmed"
           ? `The money was sent back on QoreChain, but the order was not marked refunded: ${why} Do not send it again; reload Sales in a minute.`
-          : reached.at === "submitted"
-            ? `The transfer was sent but not confirmed yet: ${why} Check your wallet before trying again.`
-            : `${why} No money moved.`,
+          : reached.at === "submitted" || moved === "unknown"
+            ? `${why} Look at your wallet's history before sending it again: if no new transfer is there, no money moved.`
+            : moved === "yes"
+              ? /fee was spent/i.test(why)
+                ? why
+                : `${why} Only the network fee was spent.`
+              : /Nothing (was )?(sent|changed|moved)|No money moved/i.test(why)
+                ? why
+                : `${why} No money moved.`,
       );
     }
   };

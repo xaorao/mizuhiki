@@ -17,6 +17,7 @@ import { KindPanel } from "./KindPanel";
 import { DeliveryPanel } from "./DeliveryPanel";
 import s from "./seller.module.css";
 import { failureText } from "@/lib/failure";
+import { ctaLabel } from "@mizuhiki/core";
 
 const CTAS: ProductDef["cta"][] = ["I want this!", "Buy this", "Pay", "Book a time", "Support"];
 const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -95,7 +96,7 @@ export function ProductTab(props: EditorProps) {
             <select value={def.cta} onChange={(e) => patch({ cta: e.target.value as ProductDef["cta"] })}>
               {CTAS.map((c) => (
                 <option key={c} value={c}>
-                  {c}
+                  {ctaLabel(c)}
                 </option>
               ))}
             </select>

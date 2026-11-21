@@ -76,7 +76,14 @@ export const fileRequestRoutes =
     /** Create, edit, close or reopen: every change is a new signed version. */
     app.put("/owner/file-requests", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing was saved.", "nothing-stored");
+      if (!owner)
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. Nothing was saved.",
+          "nothing-stored",
+        );
       const b = Put.safeParse(req.body);
       const parsed = b.success ? FileRequestSchema.safeParse(b.data.record.body) : null;
       if (!b.success || !parsed?.success)
@@ -139,7 +146,7 @@ export const fileRequestRoutes =
     /** The owner's list: what the server can see (counts, sizes, times), never names or contents. */
     app.get("/owner/file-requests", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const rows = await db
         .select()
         .from(fileRequests)
@@ -177,7 +184,7 @@ export const fileRequestRoutes =
     /** One request with its uploads (envelope hashes the owner's device opens). */
     app.get("/owner/file-requests/:id", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       if (!ID.test(id)) return fail(reply, 404, "NOT_FOUND", "This request does not exist.");
       const [row] = await db
@@ -208,7 +215,14 @@ export const fileRequestRoutes =
     /** Delete a closed request (Dropbox's order). Uploads stay in the inbox: they are the owner's items. */
     app.delete("/owner/file-requests/:id", async (req, reply) => {
       const owner = await sessionAddress(db, req);
-      if (!owner) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing was deleted.", "nothing-changed");
+      if (!owner)
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. Nothing was deleted.",
+          "nothing-changed",
+        );
       const { id } = req.params as { id: string };
       const [row] = await db
         .select()

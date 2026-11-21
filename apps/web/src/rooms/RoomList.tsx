@@ -48,7 +48,7 @@ export function RoomList({ list, activeId }: { list: ListState; activeId?: strin
       toast.show("Request cancelled.");
       void list.reload();
     } catch (e) {
-      toast.show(failureText(e, "That did not work. Try again."), { tone: "error" });
+      toast.show(failureText(e, "The request was not cancelled. Try again."), { tone: "error" });
     }
   };
 

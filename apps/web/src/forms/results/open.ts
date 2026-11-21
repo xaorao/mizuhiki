@@ -57,7 +57,7 @@ function reason(e: unknown): string {
   if (e instanceof ApiFailure)
     return e.status === 404
       ? "Its sealed copy is no longer stored (answers are kept for a limited time)."
-      : `It could not be fetched: ${e.message}`;
+      : "It could not be downloaded. Check your connection and try again.";
   if (isMizuhikiError(e, "NOT_A_READER")) return "Not sealed to your key (it may be for another reader of this form).";
   if (isMizuhikiError(e, "WRONG_CONTEXT")) return "It was sealed for a different use, or changed in storage.";
   if (isMizuhikiError(e, "TAMPERED")) return "It is damaged and could not be opened.";

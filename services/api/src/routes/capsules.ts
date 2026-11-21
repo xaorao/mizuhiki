@@ -75,7 +75,7 @@ export const capsuleRoutes =
 
     app.get("/owner/capsules", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const rows = await db.select().from(capsules).where(eq(capsules.owner, me)).orderBy(desc(capsules.createdAt));
       const ids = rows.map((r) => r.id);
       const gs = ids.length
@@ -111,7 +111,14 @@ export const capsuleRoutes =
     /** Create or update the owner's working copy (sealed to the owner only). */
     app.put("/owner/capsules", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing was saved.", "nothing-stored");
+      if (!me)
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. Nothing was saved.",
+          "nothing-stored",
+        );
       const b = z
         .object({
           id: z.string().regex(ID),
@@ -152,7 +159,7 @@ export const capsuleRoutes =
 
     app.delete("/owner/capsules/:id", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const c = await own(id, me);
       if (!c) return fail(reply, 404, "NOT_FOUND", "No such capsule.");
@@ -167,7 +174,7 @@ export const capsuleRoutes =
 
     app.post("/owner/capsules/:id/guardians", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. Nothing changed.");
       const { id } = req.params as { id: string };
       const c = await own(id, me);
       if (!c) return fail(reply, 404, "NOT_FOUND", "Save the capsule first.");
@@ -212,7 +219,7 @@ export const capsuleRoutes =
 
     app.post("/owner/capsules/:id/guardians/:g/confirm", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id, g } = req.params as { id: string; g: string };
       if (!(await own(id, me))) return fail(reply, 404, "NOT_FOUND", "No such capsule.");
       const [row] = await db
@@ -229,7 +236,7 @@ export const capsuleRoutes =
 
     app.delete("/owner/capsules/:id/guardians/:g", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id, g } = req.params as { id: string; g: string };
       if (!(await own(id, me))) return fail(reply, 404, "NOT_FOUND", "No such capsule.");
       await db
@@ -243,7 +250,14 @@ export const capsuleRoutes =
     /** The signed plan, after `create` or `setGuardians` on chain: checked against the chain before it is kept. */
     app.put("/owner/capsules/:id/plan", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing was armed.", "nothing-stored");
+      if (!me)
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. Nothing was armed.",
+          "nothing-stored",
+        );
       const { id } = req.params as { id: string };
       const c = await own(id, me);
       if (!c) return fail(reply, 404, "NOT_FOUND", "No such capsule.", "nothing-stored");
@@ -360,7 +374,7 @@ export const capsuleRoutes =
 
     app.post("/owner/capsules/:id/cancelled", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const c = await own(id, me);
       if (!c) return fail(reply, 404, "NOT_FOUND", "No such capsule.");
@@ -382,7 +396,7 @@ export const capsuleRoutes =
 
     app.get("/capsules/guarding", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const mine = await db
         .select()
         .from(capsuleGuardians)
@@ -432,7 +446,7 @@ export const capsuleRoutes =
 
     app.post("/capsules/:id/accept", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing changed.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first. Nothing changed.");
       const { id } = req.params as { id: string };
       const g = await guardianRow(id, me);
       if (!g || g.status === "removed")
@@ -463,7 +477,7 @@ export const capsuleRoutes =
 
     app.post("/capsules/:id/decline", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const { id } = req.params as { id: string };
       const g = await guardianRow(id, me);
       if (!g || g.status === "removed") return fail(reply, 404, "NOT_FOUND", "You are not a guardian of this capsule.");
@@ -479,7 +493,14 @@ export const capsuleRoutes =
     /** A guardian's pieces, re-sealed on their device to each recipient, accepted only while the chain says Released and the window is open. */
     app.post("/capsules/:id/release", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first. Nothing was sent.", "nothing-stored");
+      if (!me)
+        return fail(
+          reply,
+          401,
+          "SIGNED_OUT",
+          "Unlock Mizuhiki on this device first. Nothing was sent.",
+          "nothing-stored",
+        );
       const { id } = req.params as { id: string };
       const b = z
         .object({
@@ -574,7 +595,7 @@ export const capsuleRoutes =
 
     app.get("/capsules/for-me", async (req, reply) => {
       const me = await sessionAddress(db, req);
-      if (!me) return fail(reply, 401, "SIGNED_OUT", "Sign in first.");
+      if (!me) return fail(reply, 401, "SIGNED_OUT", "Unlock Mizuhiki on this device first.");
       const rows = await db
         .select()
         .from(capsules)

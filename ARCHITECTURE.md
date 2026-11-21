@@ -174,7 +174,7 @@ tools                   repo audit, dev orchestration
 
 ## 7. Local environment
 
-`pnpm dev` starts Postgres 17 (Homebrew service), runs migrations, then the API, indexer and web app against QoreChain testnet, with contract addresses from `contracts/deployments/testnet.json`. No local chain: the product depends on the ML-DSA precompile and KEM registry, which only the real testnet has.
+`pnpm dev` checks that PostgreSQL 17 answers, runs migrations, then starts the API, the indexer and the web app (and the delivery helper once provisioned) against QoreChain testnet, with contract addresses from `packages/chain/src/deployment.testnet.json`. No local chain: the product depends on the ML-DSA precompile and KEM registry, which only the real testnet has.
 
 ## 8. Decisions and reasons
 
