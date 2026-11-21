@@ -10,7 +10,16 @@ import Link from "next/link";
 import { Button, Icon, useToast } from "@mizuhiki/ui";
 import { warnLeadSeconds } from "@mizuhiki/core";
 import { useOwnerSession } from "@/owner/OwnerProvider";
-import { chainNow, chainState, checkIn, guardedCapsules, guardianPass, ownedCapsules } from "./engine";
+import {
+  READ_CONCURRENCY,
+  chainNow,
+  chainState,
+  checkIn,
+  guardedCapsules,
+  guardianPass,
+  mapLimited,
+  ownedCapsules,
+} from "./engine";
 import { useCapsuleEvents } from "./useCapsuleEvents";
 import s from "./capsules.module.css";
 import { failureText } from "@/lib/failure";
@@ -27,18 +36,18 @@ export function CapsuleWatch() {
     running.current = true;
     try {
       const t = { ...owner.account, token: await owner.token() };
-      const handed = await guardianPass(t, await guardedCapsules(t));
-      const n = handed.reduce((x, h) => x + h.handed, 0);
-      if (n)
-        toast.show(
-          `Your capsule ${n === 1 ? "piece was" : "pieces were"} handed to ${n === 1 ? "its recipient" : "their recipients"}.`,
-        );
+      await guardianPass(t, await guardedCapsules(t), {
+        onHanded: (_id, n) =>
+          toast.show(
+            `Your capsule ${n === 1 ? "piece was" : "pieces were"} handed to ${n === 1 ? "its recipient" : "their recipients"}.`,
+          ),
+      });
       const mine = (await ownedCapsules(t)).filter((c) => c.state === "armed" && c.plan?.body.mode === "if-quiet");
       let soonest: { opensAt: bigint } | null = null;
       if (mine.length) {
         const now = await chainNow();
-        for (const c of mine) {
-          const chain = await chainState(c.id);
+        const states = await mapLimited(mine, READ_CONCURRENCY, (c) => chainState(c.id));
+        for (const chain of states) {
           if ((chain.status !== "armed" && chain.status !== "requested") || chain.opensAt === 0n) continue;
           if (
             Number(chain.opensAt - now) < warnLeadSeconds(Number(chain.quietSeconds)) &&

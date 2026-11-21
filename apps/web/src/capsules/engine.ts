@@ -417,40 +417,78 @@ async function trustedPlan(plan: Signed<CapsulePlan>, chain: CapsuleOnChain): Pr
   return body;
 }
 
-/**
- * The guardian's part, run on its own whenever the dashboard is open: finalise a
- * release whose time has come, then re-seal this guardian's pieces to each
- * recipient. Returns how many pieces were handed over.
- */
 /** Capsules this tab has seen finished (cancelled, expired, or every piece handed over): never read again. */
 const finished = new Set<string>();
 
+/** Chain reads in flight at once during a guardian pass. */
+export const READ_CONCURRENCY = 8;
+
+export async function mapLimited<T, R>(items: T[], limit: number, fn: (x: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array<R>(items.length);
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    while (next < items.length) {
+      const k = next++;
+      out[k] = await fn(items[k] as T);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
+/**
+ * The guardian's part, run on its own whenever the dashboard is open: finalise a
+ * release whose time has come, then re-seal this guardian's pieces to each
+ * recipient. Capsule states are read from QoreChain in parallel; only the few that
+ * are due or released are then handled one at a time (a finalise is a transaction
+ * from this account, so those must not overlap). `onHanded` fires as soon as each
+ * capsule's pieces are delivered, so the guardian hears about it at once, however
+ * many other capsules they guard. Returns how many pieces each capsule got.
+ */
 export async function guardianPass(
   a: Tokened,
   list: GuardedCapsule[],
+  o: { onHanded?: (id: string, pieces: number) => void } = {},
 ): Promise<{ id: string; handed: number; why?: string }[]> {
   const out: { id: string; handed: number; why?: string }[] = [];
-  for (const c of list) {
-    if (c.state !== "armed" || !c.plan || c.status !== "confirmed" || finished.has(c.id)) continue;
+  const todo = list.filter((c) => {
+    if (c.state !== "armed" || !c.plan || c.status !== "confirmed" || finished.has(c.id)) return false;
     // Every piece of the current plan already handed over: nothing left to do, no chain read.
     const version = c.plan.body.version;
     const mine = c.plan.body.pieces.filter((x) => x.guardian === a.owner.address).length;
     if (mine > 0 && c.released.filter((r) => r.version === version).length >= mine) {
       finished.add(c.id);
-      continue;
+      return false;
     }
+    return true;
+  });
+  if (!todo.length) return out;
+  const now = await chainNow();
+  const read = await mapLimited(todo, READ_CONCURRENCY, async (c) => {
     try {
-      let chain = await readCapsule(hexId(c.id));
-      const now = await chainNow();
-      if (phaseOf(chain, now) === "due") {
+      return { c, chain: await readCapsule(hexId(c.id)) };
+    } catch (e) {
+      out.push({ id: c.id, handed: 0, why: failureText(e, "Not handed over.") });
+      return null;
+    }
+  });
+  for (const r of read) {
+    if (!r) continue;
+    const ph0 = phaseOf(r.chain, now);
+    if (ph0 === "cancelled" || ph0 === "expired") finished.add(r.c.id);
+    if (ph0 !== "due" && ph0 !== "released") continue;
+    const c = r.c;
+    try {
+      let chain = r.chain;
+      if (ph0 === "due") {
         await finalizeCapsule(a.owner, hexId(c.id));
         chain = await readCapsule(hexId(c.id));
       }
       const ph = phaseOf(chain, await chainNow());
       if (ph === "cancelled" || ph === "expired") finished.add(c.id);
-      if (ph !== "released") continue;
+      if (ph !== "released" || !c.plan) continue;
       const plan = await trustedPlan(c.plan, chain);
-      const done = new Set(c.released.filter((r) => r.version === plan.version).map((r) => r.recipient));
+      const done = new Set(c.released.filter((x) => x.version === plan.version).map((x) => x.recipient));
       const items: { recipient: string; envelope: string }[] = [];
       for (const p of plan.pieces.filter((x) => x.guardian === a.owner.address && !done.has(x.recipient))) {
         const piece = openItem({
@@ -460,17 +498,20 @@ export async function guardianPass(
           context: p.recipient,
         });
         const to = await resolveOwner(p.recipient, await cardOf(p.recipient));
-        const s = sealItem({
+        const sealed = sealItem({
           purpose: Purpose.capsuleShare(c.id),
           readers: [to],
           plaintext: piece,
           context: "release",
           anonymous: true,
         });
-        await api.put("/blobs", s.envelope);
-        items.push({ recipient: p.recipient, envelope: s.hash });
+        await api.put("/blobs", sealed.envelope);
+        items.push({ recipient: p.recipient, envelope: sealed.hash });
       }
-      if (items.length) await api.post(`/capsules/${c.id}/release`, { version: plan.version, items }, T(a));
+      if (items.length) {
+        await api.post(`/capsules/${c.id}/release`, { version: plan.version, items }, T(a));
+        o.onHanded?.(c.id, items.length);
+      }
       out.push({ id: c.id, handed: items.length });
     } catch (e) {
       out.push({ id: c.id, handed: 0, why: failureText(e, "Not handed over.") });
