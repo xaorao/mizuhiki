@@ -24,6 +24,7 @@ import {
   useMusubi,
   useToast,
 } from "@mizuhiki/ui";
+import { kindsLine } from "@/lib/kinds";
 import { DENOMS, denomByBase, fromBaseUnits } from "@mizuhiki/chain";
 import type { Block } from "@mizuhiki/core";
 import { useOwner } from "@/owner/OwnerProvider";
@@ -152,8 +153,13 @@ export function MyPage() {
   const sealedCount = Object.entries(items)
     .filter(([k]) => k !== "form")
     .reduce((n, [, v]) => n + v.count, 0);
-  const files = items.file?.count ?? 0;
-  const messages = items.message?.count ?? 0;
+  const sealedLine = kindsLine(
+    Object.fromEntries(
+      Object.entries(items)
+        .filter(([k]) => k !== "form")
+        .map(([k, v]) => [k, v.count]),
+    ),
+  );
   const views = o.stats?.views ?? { week: 0, previousWeek: 0 };
   const change =
     views.previousWeek > 0 ? Math.round(((views.week - views.previousWeek) / views.previousWeek) * 100) : null;
@@ -234,7 +240,7 @@ export function MyPage() {
           <StatTile
             label="Sealed items received"
             value={sealedCount}
-            detail={`${files} ${files === 1 ? "file" : "files"}, ${messages} ${messages === 1 ? "message" : "messages"}`}
+            detail={sealedLine || "Nothing yet"}
             tone="sora"
           />
           <PaidTile paid={o.stats?.paid ?? []} />

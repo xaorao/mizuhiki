@@ -71,6 +71,8 @@ export const when = (sec: bigint | number) =>
     minute: "2-digit",
   });
 /** "in 3 days" / "in 2 h 5 min", from the chain's clock. */
+const plural = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`;
+
 export function countdown(to: bigint, now: bigint): string {
   const s = Number(to - now);
   if (s <= 0) return "now";
@@ -250,7 +252,7 @@ function MineList({ list, live }: { list: OwnedCapsule[]; live: Record<string, L
                     ? waiting
                       ? `${waiting} ${waiting === 1 ? "guardian is" : "guardians are"} waiting for you to compare safety words`
                       : `${c.guardians.length} ${c.guardians.length === 1 ? "guardian" : "guardians"} · not set yet`
-                    : phaseLine(l, c.plan?.body.mode) || `${c.plan?.body.recipients.length ?? 0} recipients`}
+                    : phaseLine(l, c.plan?.body.mode) || plural(c.plan?.body.recipients.length ?? 0, "recipient")}
                 </small>
               </span>
               <span className={p.itemEnd}>

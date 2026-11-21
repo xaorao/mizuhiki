@@ -134,6 +134,10 @@ export function QuestionCard({ q, index }: { q: QuestionSummary; index: number }
           <Icon name="lock" size={14} /> {q.files} sealed file{q.files === 1 ? "" : "s"}. Files are never part of a
           summary.
         </p>
+      ) : q.withheld ? (
+        <p className={s.quiet}>
+          <Icon name="lock" size={14} /> Contact details are kept out of a shared summary.
+        </p>
       ) : (
         <TextList title="Latest answers" items={q.latest} />
       )}

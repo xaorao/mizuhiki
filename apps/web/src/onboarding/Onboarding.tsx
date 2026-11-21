@@ -812,7 +812,13 @@ function CheckStep({ phrase, onNext, onBack }: { phrase: string; onNext: () => v
             }
           }}
           onChange={(e) => setVals((v) => v.map((x, j) => (j === i ? e.target.value : x)))}
-          error={tried && wrong[i] ? `That is not word ${p + 1}. Check your sheet.` : undefined}
+          error={
+            tried && wrong[i]
+              ? (vals[i] ?? "").trim()
+                ? `That is not word ${p + 1}. Check your sheet.`
+                : `Type word ${p + 1} from your sheet.`
+              : undefined
+          }
           autoFocus={i === 0}
         />
       ))}

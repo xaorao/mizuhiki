@@ -68,7 +68,11 @@ test("proof: anchor a document, certificate from chain, match and no match, anch
   });
   await expect(p.getByRole("link", { name: `@${NAME}` })).toBeVisible();
   await expect(p.getByText(owner.address)).toBeVisible();
-  await expect(p.getByText(new RegExp(`block ${a?.blockNumber.toString() ?? "x"} · block time`))).toBeVisible();
+  await expect(
+    p.getByText(
+      new RegExp(`recorded by QoreChain in block ${a ? Number(a.blockNumber).toLocaleString("en-US") : "x"}$`),
+    ),
+  ).toBeVisible();
   const tx = p.getByRole("link", { name: /^0x[0-9a-f]{16}/ });
   await expect(tx).toHaveAttribute("href", /\/tx\/0x[0-9a-f]{64}$/);
   // no content anywhere on the page

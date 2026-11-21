@@ -175,6 +175,20 @@
   gap: 6px;
   align-items: center;
 }
+/* Also used as a quiet text button: no browser button chrome, sized to its words. */
+button.backLink {
+  justify-self: start;
+  border: 0;
+  background: none;
+  padding: 6px 0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+button.backLink:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
 
 @media (max-width: 640px) {
   .ringPanel {

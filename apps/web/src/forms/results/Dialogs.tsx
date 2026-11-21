@@ -264,7 +264,8 @@ export function SnapshotSheet({
               </li>
               <li>
                 <Icon name="check" size={14} /> The summary of {count} opened answer{count === 1 ? "" : "s"}: charts,
-                numbers and the latest text answers
+                numbers and the latest text answers, which can include names. Emails, phone numbers and wallet addresses
+                are left out
               </li>
               <li>
                 <Icon name="x" size={14} /> Never files, signatures or your tags

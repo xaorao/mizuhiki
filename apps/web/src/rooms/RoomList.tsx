@@ -152,10 +152,10 @@ export function RoomList({ list, activeId }: { list: ListState; activeId?: strin
                   data-active={activeId === r.id || undefined}
                   data-state={r.status}
                 >
-                  <RoomAvatar name={name} photo={sum?.photo} roomId={r.id} size={48} />
+                  <RoomAvatar name={name} photo={sum?.photo} roomId={r.id} size={48} pending={!sum} />
                   <span className={s.rowText}>
                     <b>
-                      {name}
+                      <span className={s.rowName}>{name}</span>
                       {r.muted ? <Icon name="bell" size={14} label="Muted" /> : null}
                     </b>
                     <small>{preview}</small>

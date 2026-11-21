@@ -39,6 +39,8 @@ export const QuestionSummarySchema = z.discriminatedUnion("type", [
     ...base,
     type: z.literal("texts"),
     latest: z.array(z.object({ text: z.string().max(25_000), at: z.string().max(40) })).max(5000),
+    /** Left out of a shared summary: contact details (emails, phone numbers, wallet addresses). */
+    withheld: z.literal(true).optional(),
   }),
   z.object({ ...base, type: z.literal("files"), files: count }),
 ]);

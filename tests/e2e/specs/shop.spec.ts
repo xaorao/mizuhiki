@@ -175,6 +175,18 @@ test("shop: publish a sealed product; an account buyer and a 12-word buyer each 
     )
     .toMatchObject({ rating: 5, text: "Lovely recordings." });
   await B.page.screenshot({ path: info.outputPath("3-buyer-opened.png"), animations: "disabled" });
+  // The receipt: order, total, and the payment read back as a link to QoreChain.
+  await B.page.getByRole("link", { name: "Receipt" }).first().click();
+  await B.page.waitForURL(/\/library\/[A-Za-z0-9_-]{22}\/receipt/);
+  await expect(B.page.getByText(`Paid @${NAME}`).first()).toBeVisible({ timeout: 60_000 });
+  await expect(B.page.getByText(ref1).first()).toBeVisible();
+  await expect(B.page.getByText("0.02 QOR").first()).toBeVisible();
+  await expect(B.page.getByRole("heading", { name: "On QoreChain" })).toBeVisible();
+  await expect(B.page.getByRole("link", { name: /^[0-9A-F]{64}$/ }).first()).toHaveAttribute(
+    "href",
+    /^https:\/\/explore\.qore\.network\/tx\//,
+  );
+  await B.page.screenshot({ path: info.outputPath("3b-receipt.png"), animations: "disabled", fullPage: true });
 
   // ---- buyer 2: no account; a 12-word buyer key; pays by hand from another wallet
   const K = await party(browser, problems, "keybuyer");

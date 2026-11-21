@@ -97,14 +97,17 @@ export function RoomAvatar({
   photo,
   roomId,
   size = 44,
+  pending = false,
 }: {
   name: string;
   photo: FileFacts | null | undefined;
   roomId: string;
   size?: number;
+  /** The room's name is still being opened on this device. */
+  pending?: boolean;
 }) {
   const src = useSealedPhoto(photo);
-  return <Avatar name={name || "Room"} src={src} size={size} tone={toneOf(roomId)} />;
+  return <Avatar name={name || "Room"} src={src} size={size} tone={toneOf(roomId)} blank={pending} />;
 }
 
 export function fmtBytes(n: number): string {

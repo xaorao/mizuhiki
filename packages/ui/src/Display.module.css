@@ -221,14 +221,23 @@
 }
 .panelHead {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
   padding: 18px 22px;
   border-bottom: 2.5px dashed var(--rule-rose);
 }
 .panelHead h2 {
   font-size: 20px;
+}
+/* The title keeps its line; a long action (a chip, a note) moves under it instead of squeezing it. */
+.panelHead > div:first-child {
+  flex: 1 1 auto;
+  min-width: min(100%, 160px);
+}
+.panelHead h2 {
+  text-wrap: balance;
 }
 .panelBody {
   padding: 8px 22px 18px;

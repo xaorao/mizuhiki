@@ -83,6 +83,9 @@ function useNarrow(): boolean {
   );
 }
 
+/** Answers that identify or reach a person; kept out of a snapshot unless the full table is included. */
+const PERSONAL_KINDS = new Set<string>(["email", "phone", "wallet"]);
+
 export function ResultsTab(props: TabProps) {
   const { def, account, published, ownerName } = props;
   const formId = def.id;
@@ -242,7 +245,10 @@ export function ResultsTab(props: TabProps) {
       o.ownerOnly
         ? q
         : q.type === "texts"
-          ? { ...q, latest: q.latest.slice(0, SNAPSHOT_TEXTS) }
+          ? // Contact details stay out of a shared summary; only the full table (chosen on purpose) carries them.
+            !o.table && PERSONAL_KINDS.has(q.kind)
+            ? { ...q, latest: [], withheld: true as const }
+            : { ...q, latest: q.latest.slice(0, SNAPSHOT_TEXTS) }
           : q.type === "bars"
             ? { ...q, others: q.others.slice(0, SNAPSHOT_TEXTS) }
             : q,

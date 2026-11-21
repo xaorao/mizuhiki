@@ -111,12 +111,15 @@ export function Avatar({
   size = 104,
   lock = false,
   tone = "peach",
+  blank = false,
 }: {
   name: string;
   src?: string | undefined;
   size?: number | undefined;
   lock?: boolean | undefined;
   tone?: "peach" | "sakura" | "sora" | "matcha" | "butter" | "fuji" | undefined;
+  /** No letters yet (the name is still being opened): a plain coloured circle. */
+  blank?: boolean | undefined;
 }) {
   const initials =
     name
@@ -130,7 +133,11 @@ export function Avatar({
       className={[s.avatar, s[`a_${tone}`]].join(" ")}
       style={{ width: size, height: size, fontSize: size * 0.34, borderWidth: size > 60 ? 4 : 2.5 }}
     >
-      {src ? <img src={src} alt="" width={size} height={size} /> : <span aria-hidden="true">{initials}</span>}
+      {src ? (
+        <img src={src} alt="" width={size} height={size} />
+      ) : blank ? null : (
+        <span aria-hidden="true">{initials}</span>
+      )}
       <span className="sr-only">{name}</span>
       {lock ? (
         <span className={s.lock} style={{ width: size * 0.3, height: size * 0.3 }} aria-hidden="true">

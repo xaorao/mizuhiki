@@ -150,8 +150,9 @@
     gap: 6px;
     overflow-x: auto;
     margin: 0 -16px;
-    padding: 2px 16px 6px;
+    padding: 2px 44px 6px 16px;
     scrollbar-width: none;
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
   }
   .toc a {
     flex: none;

@@ -185,6 +185,37 @@ test("owner builds, publishes and shares a form; a respondent answers through th
   const ocr = execFileSync("tesseract", [`${pdfPath}-page-1.png`, "-", "--psm", "4"]).toString();
   expect(ocr).toContain(title.split(" ")[0] ?? "Studio");
   expect(ocr).toMatch(/Large/);
+
+  // Share a snapshot: sealed here to a key inside the link, signed with the owner's key; a stranger opens it.
+  await o.getByRole("button", { name: "Share a snapshot" }).click();
+  const snap = o.getByRole("dialog", { name: "Share a snapshot" });
+  await snap.getByRole("button", { name: "Create the link" }).click();
+  const openIt = snap.getByRole("link", { name: "Open it" });
+  await expect(openIt).toBeVisible({ timeout: 60_000 });
+  const snapLink = (await openIt.getAttribute("href")) ?? "";
+  expect(snapLink).toMatch(/\/r\/[0-9a-f]{64}#/);
+  await o.screenshot({ path: info.outputPath("snapshot-made.png") });
+  const sctx = await browser.newContext();
+  const sp = await sctx.newPage();
+  await sp.goto(snapLink);
+  await expect(
+    sp.getByText(`Shared by @${NAME}, signed with their post-quantum key, checked on QoreChain`),
+  ).toBeVisible({
+    timeout: 60_000,
+  });
+  await expect(sp.getByRole("heading", { level: 1, name: title })).toBeVisible();
+  await expect(sp.getByText(/from 1 answer\. It does not update\./)).toBeVisible();
+  await expect(sp.getByText("Large").first()).toBeVisible();
+  // Without the full table, contact details stay out: the email question says so instead of showing it.
+  await expect(sp.getByText("aiko@example.com")).toHaveCount(0);
+  await expect(sp.getByText("Contact details are kept out of a shared summary.")).toBeVisible();
+  await sp.screenshot({ path: info.outputPath("snapshot-public.png"), fullPage: true });
+  // A link with the key cut off says so, without showing anything.
+  await sp.goto(snapLink.split("#")[0] ?? snapLink);
+  await expect(sp.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 30_000 });
+  await expect(sp.getByText("Large")).toHaveCount(0);
+  await sp.screenshot({ path: info.outputPath("snapshot-no-key.png"), fullPage: true });
+  await sctx.close();
   await octx.close();
 });
 

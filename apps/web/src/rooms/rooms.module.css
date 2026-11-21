@@ -147,6 +147,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.rowName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .rowText small {
   color: var(--ink-muted);
   font-size: 14px;

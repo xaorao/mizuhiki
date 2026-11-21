@@ -72,6 +72,9 @@
   overflow-x: auto;
   scrollbar-width: none;
   padding-bottom: 4px;
+  /* A soft edge says there is more; the end padding means the last item is never under the fade. */
+  padding-right: 28px;
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
 }
 .filters > * {
   flex: none;

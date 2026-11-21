@@ -29,22 +29,27 @@ test("sign up: name, goal, look, blocks, profile, key, setup on chain, live page
   await expect(page.getByRole("button", { name: "Continue" })).toBeDisabled();
   await page.getByLabel("Page name").fill(name);
   await expect(page.getByText("It's available")).toBeVisible();
+  await page.screenshot({ path: info.outputPath("s1-name.png") });
   await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(page.getByRole("heading", { name: "What is your page for?" })).toBeVisible();
   await page.getByRole("radio", { name: /Business/ }).click();
+  await page.screenshot({ path: info.outputPath("s2-goal.png") });
   await page.getByRole("button", { name: "Continue" }).click();
 
   await page.getByRole("radio", { name: /Kinari/ }).click();
+  await page.screenshot({ path: info.outputPath("s3-look.png") });
   await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(page.getByRole("heading", { name: "What should your page do?" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Pay me/ })).toHaveAttribute("aria-pressed", "true");
+  await page.screenshot({ path: info.outputPath("s4-blocks.png") });
   await page.getByRole("button", { name: "Continue" }).click();
 
   await page.getByLabel("Display name").fill("E2E Studio");
   await page.getByLabel("Bio").fill("Contracts and invoices come through here, sealed.");
   await expect(page.locator("aside").getByRole("heading", { name: "E2E Studio" })).toBeVisible();
+  await page.screenshot({ path: info.outputPath("s5-profile.png") });
   await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(page.getByRole("heading", { name: "Create your key" })).toBeVisible();
@@ -52,6 +57,7 @@ test("sign up: name, goal, look, blocks, profile, key, setup on chain, live page
   await expect(page.locator("ol[aria-label='Your 24 recovery words'] b")).toHaveCount(24);
   const words = await page.locator("ol[aria-label='Your 24 recovery words'] b").allInnerTexts();
   expect(words).toHaveLength(24);
+  await page.screenshot({ path: info.outputPath("s6-key.png") });
   const phrase = words.join(" ");
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Save my spare-key sheet" }).click();
@@ -73,6 +79,7 @@ test("sign up: name, goal, look, blocks, profile, key, setup on chain, live page
   await page.getByLabel(labels[0] ?? "", { exact: true }).fill("wrongword");
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByText(`That is not word ${(positions[0] ?? 0) + 1}. Check your sheet.`)).toBeVisible();
+  await page.screenshot({ path: info.outputPath("s7-check-wrong.png") });
   for (const [i, p] of positions.entries())
     await page.getByLabel(labels[i] ?? "", { exact: true }).fill(words[p] ?? "");
   await page.getByRole("button", { name: "Check" }).click();
@@ -80,12 +87,14 @@ test("sign up: name, goal, look, blocks, profile, key, setup on chain, live page
   await expect(page.getByRole("heading", { name: "Lock this device" })).toBeVisible();
   await page.getByLabel("Device passphrase").fill("short");
   await expect(page.getByText("Use at least 10 characters.")).toBeVisible();
+  await page.screenshot({ path: info.outputPath("s8-passphrase.png") });
   await page.getByLabel("Device passphrase").fill("lantern river maple tea");
   await page.getByLabel("Type it again").fill("lantern river maple tea");
   await page.getByRole("button", { name: "Lock and continue" }).click();
 
   await expect(page.getByRole("heading", { name: "Getting your account ready" })).toBeVisible();
   await expect(page.getByText("Open the faucet")).toBeVisible();
+  await page.screenshot({ path: info.outputPath("s9-funding.png") });
   const account = deriveAccount(phrase);
   // Fund the new account from the dev wallet (the faucet needs a web sign-in).
   const dev = devWallet();
@@ -122,4 +131,28 @@ test("sign up on a phone: steps fit, no sideways scroll", async ({ page }, info)
   const [sw, iw] = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
   expect(sw).toBeLessThanOrEqual(iw);
   await page.screenshot({ path: info.outputPath("name-phone.png") });
+  // Every step before the account exists, on a phone: each fits with no sideways scroll.
+  const fits = async (shot: string) => {
+    const [w, i] = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
+    expect(w, shot).toBeLessThanOrEqual(i);
+    await page.screenshot({ path: info.outputPath(`${shot}.png`), fullPage: true });
+  };
+  await expect(page.getByText("It's available")).toBeVisible({ timeout: 30_000 });
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "What is your page for?" })).toBeVisible();
+  await page.getByRole("radio", { name: /Business/ }).click();
+  await fits("goal-phone");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("radio", { name: /Kinari/ }).click();
+  await fits("look-phone");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "What should your page do?" })).toBeVisible();
+  await fits("blocks-phone");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByLabel("Display name").fill("Phone Studio");
+  await fits("profile-phone");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Create your key" })).toBeVisible();
+  await expect(page.locator("ol[aria-label='Your 24 recovery words'] b")).toHaveCount(24);
+  await fits("key-phone");
 });

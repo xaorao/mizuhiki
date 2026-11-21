@@ -152,8 +152,8 @@ export function Certificate({ hash }: { hash: string }) {
                 <dd>
                   {when(load.first.a.at)}
                   <small>
-                    {Intl.DateTimeFormat().resolvedOptions().timeZone} · block {load.first.a.blockNumber.toString()} ·
-                    block time
+                    Your time zone ({Intl.DateTimeFormat().resolvedOptions().timeZone.replaceAll("_", " ")}), as
+                    recorded by QoreChain in block {load.first.a.blockNumber.toLocaleString("en-US")}
                   </small>
                 </dd>
               </div>

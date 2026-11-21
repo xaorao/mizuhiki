@@ -164,11 +164,11 @@ form.recipientHead {
   flex: 1;
 }
 /* The name field takes the room; the Add button keeps its words. */
-.recipientHead > :first-child {
+form.recipientHead > :first-child {
   flex: 1;
   min-width: 0;
 }
-.recipientHead > button {
+form.recipientHead > button {
   flex: none;
 }
 .fileChips {

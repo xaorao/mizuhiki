@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Button, EmptyState, Kicker, LockLine, Oops, Segmented, Skeleton, StatTile, useToast } from "@mizuhiki/ui";
+import { kindsLine } from "@/lib/kinds";
 import { useOwner } from "@/owner/OwnerProvider";
 import { api } from "@/lib/api";
 import { pageUrl } from "@/lib/site";
@@ -30,22 +31,6 @@ interface Data {
   taps: { subject: string; count: number }[];
   forms: { id: string; title: string; views: number; starts: number; submits: number }[];
 }
-
-/** How each kind of received item is counted in words: [one, many]. */
-const KIND_WORDS: Record<string, [string, string]> = {
-  message: ["message", "messages"],
-  filedrop: ["file upload", "file uploads"],
-  reply: ["reply", "replies"],
-  paynote: ["payment note", "payment notes"],
-  form: ["form answer", "form answers"],
-  order: ["order", "orders"],
-  invoice: ["invoice", "invoices"],
-  request: ["request", "requests"],
-};
-const kindWords = (k: string, n: number) => {
-  const w = KIND_WORDS[k];
-  return `${n} ${w ? w[n === 1 ? 0 : 1] : k}`;
-};
 
 /** "+3 vs the previous 7 days" in words, never color alone. */
 function change(now: number, before: number | null, range: Range): string | undefined {
@@ -185,11 +170,7 @@ export function Insights() {
               <StatTile
                 label="Sealed items received"
                 value={data.items.total}
-                detail={
-                  Object.entries(data.items.byKind)
-                    .map(([k, n]) => kindWords(k, n))
-                    .join(", ") || change(data.items.total, data.items.previous, data.range)
-                }
+                detail={kindsLine(data.items.byKind) || change(data.items.total, data.items.previous, data.range)}
                 tone="sora"
               />
               <PaidTile paid={data.money.byDenom} label="Money received" />
