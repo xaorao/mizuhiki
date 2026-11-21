@@ -260,7 +260,7 @@ test("a deal room: create, chat, invite with approval, remove, all checked again
 
   // Ana's device checked the member list against QoreChain after the change.
   const panel = A.page.locator("aside[aria-label='Room info']");
-  await panel.getByRole("button", { name: /Encryption/ }).click();
+  await panel.getByRole("button", { name: /Sealing/ }).click();
   await expect(panel.getByText("Checked on this device against the record on QoreChain. It matches.")).toBeVisible({
     timeout: 60_000,
   });

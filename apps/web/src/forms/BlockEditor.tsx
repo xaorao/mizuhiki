@@ -380,7 +380,7 @@ function KindSettings({ q, setQ }: { q: Question; setQ: (p: Partial<Question>, c
           {field("Files allowed", q.maxFiles, (v) => setQ({ maxFiles: Math.min(10, Math.max(1, v ?? 1)) }), 1, 10)}
           {field("Largest file (MB)", q.maxMB, (v) => setQ({ maxMB: Math.min(500, Math.max(1, v ?? 25)) }), 1, 500)}
           <p className={s.settingNote}>
-            <Icon name="lock" size={12} /> Files are encrypted on the respondent&apos;s device before they upload.
+            <Icon name="lock" size={12} /> Files are sealed on the respondent&apos;s device before they upload.
           </p>
         </>
       ) : null}

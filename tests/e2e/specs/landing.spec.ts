@@ -13,14 +13,14 @@ import { test, expect } from "./fixtures";
 
 const SECTIONS = [
   "One link for everything private.",
-  "Twelve blocks. One lock on all of them.",
+  "Twelve blocks. Sealed before anything leaves.",
   "Build your private page in minutes.",
   "How sealing works.",
+  "Why seal it for the quantum age now.",
+  "Built on QoreChain. Checked on the live test network.",
   "Share it wherever clients find you.",
   "Your private desk, behind the page.",
   "See what came in. We only see that something did.",
-  "Why lock it for the quantum age now.",
-  "Built on QoreChain. Checked on the live test network.",
   "A private page for every kind of work.",
   "We tell you what stays public first.",
   "Questions? Answered.",

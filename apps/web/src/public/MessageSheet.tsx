@@ -379,7 +379,7 @@ export function MessageSheet({
             </p>
           ) : null}
           {error ? <Oops title="Nothing to seal yet">{error}</Oops> : null}
-          <LockLine>Encrypted on this device. Only {first} can open it.</LockLine>
+          <LockLine>Sealed on this device. Only {first} can open it.</LockLine>
           {retention ? (
             <p className={s.expiry}>
               <Icon name="clock" size={14} /> We delete the sealed copy after {retention} days. Anything on chain stays.

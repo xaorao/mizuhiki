@@ -72,7 +72,7 @@ function Privacy() {
       </p>
       <h2>Notifications</h2>
       <p>
-        If you turn them on, a notification says only what kind of thing happened. It is encrypted to your browser and
+        If you turn them on, a notification says only what kind of thing happened. It is sealed to your browser and
         passes through your browser maker&rsquo;s push service. We do not offer email notifications.
       </p>
       <h2>Deleting</h2>

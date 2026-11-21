@@ -45,7 +45,7 @@ function EncryptionRow({ room }: { room: RoomState }) {
           <Icon name="lock" />
         </span>
         <span>
-          <b>Encryption</b>
+          <b>Sealing</b>
           <small>Messages and files are sealed to the people in this room.</small>
         </span>
         <Icon name="chev" className={[s.lockChev, open ? s.lockChevOpen : ""].join(" ")} />

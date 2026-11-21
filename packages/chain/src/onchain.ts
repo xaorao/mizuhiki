@@ -275,3 +275,11 @@ export async function nameKeys(name: string): Promise<AccountKeysOnChain> {
     },
   };
 }
+
+/** How an EVM transaction ended, read from its receipt: used to show refused calls (reverted) as they happened. */
+export async function evmOutcome(
+  hash: `0x${string}`,
+): Promise<{ status: "success" | "reverted"; block: bigint; from: string; to: string | null }> {
+  const r = await publicClient().getTransactionReceipt({ hash });
+  return { status: r.status, block: r.blockNumber, from: r.from, to: r.to };
+}

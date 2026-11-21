@@ -16,6 +16,7 @@ import {
   isUnreachable,
   nameKeys,
   recentActivity,
+  evmOutcome,
   type AccountKeysOnChain,
   type Activity,
   type ContractFacts,
@@ -75,7 +76,7 @@ const EVENT_TEXT: Record<string, string> = {
   NameReleased: "Page name released",
   Anchored: "Document fingerprint anchored",
   RoomCreated: "Room created",
-  RoomEpoch: "Room lock changed",
+  RoomEpoch: "Room key changed",
   RoomClosed: "Room closed",
   Published: "Form or product published",
   CapsuleCreated: "Capsule armed",
@@ -301,6 +302,76 @@ function ActivityList({ attempt, retry }: { attempt: number; retry: () => void }
   );
 }
 
+/** The Q-Day Drill rehearsal (`pnpm --filter @mizuhiki/testnet drill`, 2026-11-21): the two calls that reached a contract. */
+const DRILL_CALLS: { hash: `0x${string}`; what: string }[] = [
+  {
+    hash: "0x4cc25cdfe5961dd8d81aab415262cb9b7933932548f1fd7045ee4dde82669611",
+    what: "Release the owner's page name, signed with a key that is not the owner's",
+  },
+  {
+    hash: "0x73b2ce344a6c4aaa545b97e851ad3c2bc7d8ca96284a688287df6e10543c7054",
+    what: "Record a fingerprint in the owner's name, with the same forged signature",
+  },
+];
+
+const DRILL_REFUSED = [
+  "A transfer signed with the classical key alone: refused, the account must add its ML-DSA-87 signature.",
+  "A transfer with a forged ML-DSA-87 signature: refused, the post-quantum signature did not verify.",
+  "Opening an EVM window with the classical key: refused, only the post-quantum key can open one.",
+  "With no window open, every EVM transfer, token approval and contract call: refused by the chain before it ran.",
+  "During a live window the owner had opened for our contracts: a transfer and a token approval to anyone else were refused, the window does not list them.",
+];
+
+function DrillCall({ c, attempt }: { c: (typeof DRILL_CALLS)[number]; attempt: number }) {
+  const read = useCallback(() => evmOutcome(c.hash), [c.hash]);
+  const st = useRead(read, attempt);
+  return (
+    <li>
+      <span className={s.what}>
+        <b>{c.what}</b>
+      </span>
+      <span className={s.when}>
+        {st.s === "loading" ? (
+          "reading…"
+        ) : st.s === "ok" ? (
+          <StatusChip status={st.v.status === "reverted" ? "ok" : "danger"}>
+            {st.v.status === "reverted" ? `Refused by the contract · block ${n(st.v.block)}` : "Went through"}
+          </StatusChip>
+        ) : (
+          "could not read it now"
+        )}
+      </span>
+      <a href={explorerTx(c.hash)} target="_blank" rel="noreferrer" aria-label={`Transaction ${c.hash}`}>
+        <code>{short(c.hash, 10, 0)}</code> <Icon name="share" size={12} />
+      </a>
+    </li>
+  );
+}
+
+function Drill({ attempt }: { attempt: number }) {
+  return (
+    <>
+      <ul className={s.never}>
+        {DRILL_REFUSED.map((x) => (
+          <li key={x}>
+            <Icon name="lock" size={16} /> {x}
+          </li>
+        ))}
+      </ul>
+      <ol className={s.activity}>
+        {DRILL_CALLS.map((c) => (
+          <DrillCall key={c.hash} c={c} attempt={attempt} />
+        ))}
+      </ol>
+      <p className={s.note}>
+        16 attempts in all, none got through, and the attacker&apos;s address ended with nothing. The owner&apos;s own
+        transaction afterwards went through as normal. Run it yourself:{" "}
+        <code>pnpm --filter @mizuhiki/testnet drill</code>.
+      </p>
+    </>
+  );
+}
+
 export function OnChain() {
   const [attempt, setAttempt] = useState(0);
   const retry = useCallback(() => setAttempt((x) => x + 1), []);
@@ -359,10 +430,19 @@ export function OnChain() {
         </Section>
 
         <Section
+          id="qday"
+          jp="まもり"
+          title="A stolen classical key cannot act"
+          lead="We gave an attacker the classical secp256k1 key of a fresh account with its ML-DSA-87 key registered, as the QoreChain Q-Day Drill does, and tried everything that key alone can do."
+        >
+          <Drill attempt={attempt} />
+        </Section>
+
+        <Section
           id="activity"
           jp="いま"
           title="Latest activity on our contracts"
-          lead="Names, fingerprints, room key changes and capsules, as the chain recorded them."
+          lead="Names, fingerprints, room key changes and capsules, as the chain recorded them. Most of it comes from our automated test runs, which make real testnet transactions."
         >
           <ActivityList attempt={attempt} retry={retry} />
         </Section>

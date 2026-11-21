@@ -31,6 +31,10 @@ test("proof page: contracts, keys, a signature verified here, and live activity"
   await expect(sigs.getByText("Verified in your browser")).toBeVisible({ timeout: 120_000 });
   await expect(sigs.getByText("Signature did not verify")).toHaveCount(0);
 
+  // The Q-Day Drill rehearsal: both calls that reached a contract read back from the chain as refused.
+  const drill = page.getByRole("region", { name: "A stolen classical key cannot act" });
+  await expect(drill.getByText(/Refused by the contract · block/)).toHaveCount(2, { timeout: 90_000 });
+  await expect(drill.getByText("Went through", { exact: true })).toHaveCount(0);
   const activity = page.getByRole("region", { name: "Latest activity on our contracts" });
   await expect(activity.getByText(/blocks ago/).first()).toBeVisible({ timeout: 180_000 });
   // Every row links to its transaction on the explorer.

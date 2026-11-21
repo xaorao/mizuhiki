@@ -428,7 +428,7 @@ export function FormRunner({
 
         {phase === "sending" ? (
           <section className={s.screen} aria-live="polite">
-            <p className={s.kicker}>Encrypting…</p>
+            <p className={s.kicker}>Sealing…</p>
             <SealMoment steps={sendSteps} progress={progress} />
           </section>
         ) : null}
@@ -816,7 +816,7 @@ function QuestionView({
             </label>
           ) : null}
           <p className={s.hint}>
-            <Icon name="lock" size={12} /> Encrypted on this device before it uploads.
+            <Icon name="lock" size={12} /> Sealed on this device before it uploads.
           </p>
           {fileErr ? <p className={s.err}>{fileErr}</p> : null}
         </div>

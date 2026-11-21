@@ -116,7 +116,7 @@ const BLOCKS: { icon: IconName; bg: string; fg: string; title: string; body: str
     bg: "var(--sora)",
     fg: "var(--sora-ink)",
     title: "Rooms",
-    body: "Group chats and files. Remove someone and the lock changes.",
+    body: "Group chats and files. Remove someone and the room gets a new key.",
     tag: "Sealed to members",
   },
   {
@@ -141,7 +141,7 @@ const BLOCKS: { icon: IconName; bg: string; fg: string; title: string; body: str
     fg: "var(--cord-text)",
     title: "Spare key",
     body: "Recovery contacts and a printable sheet, so a lost phone loses nothing.",
-    tag: "Shared 2 of 3",
+    tag: "Split among contacts",
   },
   {
     icon: "check",
@@ -173,13 +173,13 @@ const STEPS = [
   {
     n: 2,
     title: "They seal on their device",
-    body: "A visitor writes a note or drops a file. Their browser reads your public key from QoreChain and locks it before anything is uploaded.",
+    body: "A visitor writes a note or drops a file. Their browser reads your public key from QoreChain and seals it before anything is uploaded.",
     jp: "むすぶ · tie",
   },
   {
     n: 3,
     title: "You open it, only you",
-    body: "The locked copy waits in your inbox. Your device unties it. Both of you keep a receipt that proves what was sealed and when.",
+    body: "The sealed copy waits in your inbox, and only your device can open it. Both of you keep a receipt that proves what was sealed and when.",
     jp: "ひらく · open",
   },
 ];
@@ -230,15 +230,15 @@ const TEMPLATES: { img: StaticImageData; title: string; sub: string; name: strin
 const FAQ: [string, ReactNode][] = [
   [
     "Can Mizuhiki read what people send me?",
-    "No. Everything is locked on the sender's device with your public key before it is uploaded. We store the locked copy and never have the key that opens it.",
+    "No. Everything is sealed on the sender's device with your public key before it is uploaded. We store the sealed copy and never have the key that opens it.",
   ],
   [
     "Do my visitors need an account or a wallet?",
-    "No. Anyone can send a message, a file or a form answer from a normal browser. A wallet is only needed to pay, and a key only to join a room or keep a purchase.",
+    "No. Anyone can send a message, a file or a form answer from a normal browser, on a phone or a computer. A wallet is only needed to pay, and a key only to join a room or keep a purchase.",
   ],
   [
     "What does post-quantum mean for me?",
-    "Files are locked with ML-KEM-1024, the method NIST standardised in 2024 for the age of quantum computers, and pages are signed with ML-DSA-87. What people send you today stays private even if someone records it now and tries to open it years from now.",
+    "Files are sealed with ML-KEM-1024, the method NIST standardised in 2024 for the age of quantum computers, and pages are signed with ML-DSA-87. What people send you today stays private even if someone records it now and tries to open it years from now.",
   ],
   [
     "What if I lose my phone?",
@@ -247,10 +247,6 @@ const FAQ: [string, ReactNode][] = [
   [
     "What does it cost?",
     "Mizuhiki is free while it runs on the QoreChain test network. Network fees are paid in test QOR.",
-  ],
-  [
-    "Can people send me files without an account?",
-    "Yes. Messages, files and form answers need nothing but a browser, on a phone or a computer.",
   ],
   ["Is it live?", "Mizuhiki runs on the QoreChain test network today. Payments use test tokens with no real value."],
 ];
@@ -542,15 +538,15 @@ export function Landing() {
               <ul className={s.ticks}>
                 <li>
                   <Icon name="check" size={18} />
-                  Free to start
+                  Free on the test network
                 </li>
                 <li>
                   <Icon name="check" size={18} />
-                  Visitors need no account
+                  No account to send you files or forms
                 </li>
                 <li>
                   <Icon name="check" size={18} />
-                  Ready in 2 minutes
+                  Keys never leave your device
                 </li>
               </ul>
             </div>
@@ -600,7 +596,7 @@ export function Landing() {
         {/* 5. Twelve blocks */}
         <section className={s.cSec} id="features">
           <div className={[s.inner, s.reveal].join(" ")}>
-            <Head jp="ぜんぶ、ひとつのページに" title="Twelve blocks. One lock on all of them.">
+            <Head jp="ぜんぶ、ひとつのページに" title="Twelve blocks. Sealed before anything leaves.">
               Everything a link in bio does, plus the private things it never could. Add the blocks you need; each one
               seals what people send before it leaves their device.
             </Head>
@@ -655,8 +651,8 @@ export function Landing() {
         <section className={s.cSec} id="how">
           <div className={[s.inner, s.reveal].join(" ")}>
             <Head jp="むすびかた" title="How sealing works.">
-              The lock is tied on the sender&rsquo;s device with your public key from QoreChain. Only your device holds
-              the key that unties it.
+              What people send is sealed on their device with your public key from QoreChain. Only your device holds the
+              key that opens it.
             </Head>
             <ol className={s.steps}>
               {STEPS.map((st) => (
@@ -674,7 +670,113 @@ export function Landing() {
           </div>
         </section>
 
-        {/* 8. Share it */}
+        {/* 8. Why post-quantum now */}
+        <section className={[s.cSec, s.joined].join(" ")} id="why">
+          <div className={[s.inner, s.reveal].join(" ")}>
+            <Head jp="いま、まもる" title="Why seal it for the quantum age now.">
+              Contracts, medical results and family papers stay sensitive for decades. Anything recorded today can be
+              opened the day a large quantum computer arrives, unless it was sealed with encryption built for that day.
+            </Head>
+            <ol className={s.pq}>
+              <li>
+                <span className={s.dot} lang="ja">
+                  今
+                </span>
+                <b>Today</b>
+                <p>
+                  Someone copies encrypted files from a breach or a network. They can&rsquo;t read them yet, so they
+                  store them.
+                </p>
+              </li>
+              <li>
+                <span className={s.dot} lang="ja">
+                  待
+                </span>
+                <b>Years of waiting</b>
+                <p>Storage is cheap. Old files that matter, like IDs and contracts, are worth keeping.</p>
+              </li>
+              <li>
+                <span className={s.dot} lang="ja">
+                  封
+                </span>
+                <b>Q-Day</b>
+                <p>
+                  Today&rsquo;s common encryption can be broken. Files sealed with ML-KEM-1024, the NIST 2024 standard
+                  Mizuhiki uses, are built to stay shut.
+                </p>
+              </li>
+            </ol>
+            <div className={s.cmp}>
+              <table>
+                <caption className="sr-only">Who can open what people send you</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Who can open it</th>
+                    <th scope="col">Tools that keep the keys on their servers</th>
+                    <th scope="col" className={s.us}>
+                      Mizuhiki
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">The company running the service</th>
+                    <td>Can, it holds the keys</td>
+                    <td className={s.us}>
+                      <span className={s.no}>Cannot</span>, it never has your key
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Someone who breaches the servers</th>
+                    <td>Can, if the keys are taken too</td>
+                    <td className={s.us}>
+                      <span className={s.no}>Cannot</span>, only sealed copies are stored
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">A future quantum computer</th>
+                    <td>Depends on the encryption used</td>
+                    <td className={s.us}>
+                      <span className={s.yes}>Built to resist</span> with ML-KEM-1024
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">A thief with today&rsquo;s signing keys</th>
+                    <td>Can act as you</td>
+                    <td className={s.us}>
+                      <span className={s.no}>Cannot</span>, every change needs your post-quantum signature
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">You</th>
+                    <td>Yes</td>
+                    <td className={s.us}>
+                      <span className={s.yes}>Yes</span>, on your own device
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        {/* 9. Proof, joined to the comparison */}
+        <section className={[s.cSec, s.joined].join(" ")} id="proof">
+          <div className={[s.inner, s.reveal].join(" ")}>
+            <Head jp="あかし" title="Built on QoreChain. Checked on the live test network.">
+              Mizuhiki uses QoreChain&rsquo;s post-quantum key registry and signatures. These transactions are on the
+              QoreChain test network now; each card reads its own from the chain as you look.
+            </Head>
+            <ProofCards />
+            <p className={s.proofMore}>
+              <Link href="/onchain">
+                See every contract, key and signature, checked live <Icon name="arrow" size={14} />
+              </Link>
+            </p>
+          </div>
+        </section>
+
+        {/* 10. Share it */}
         <section className={[s.band, s.matcha, s.rev].join(" ")}>
           <div className={[s.sec, s.reveal].join(" ")}>
             <div>
@@ -752,7 +854,7 @@ export function Landing() {
           </div>
         </section>
 
-        {/* 9. Owner app tour */}
+        {/* 11. Owner app tour */}
         <section className={s.cSec} id="app">
           <div className={[s.inner, s.reveal].join(" ")}>
             <Head jp="あなたのへや" title="Your private desk, behind the page.">
@@ -819,7 +921,7 @@ export function Landing() {
           </div>
         </section>
 
-        {/* 10. Insights bento */}
+        {/* 12. Insights bento */}
         <section className={[s.band, s.kinari].join(" ")}>
           <div className={[s.sec, s.reveal].join(" ")}>
             <div className={s.bento} aria-label="An example week in Insights">
@@ -879,105 +981,6 @@ export function Landing() {
                 {hasAccount ? "Open Insights" : "Start your page"}
               </Link>
             </div>
-          </div>
-        </section>
-
-        {/* 11. Why post-quantum now */}
-        <section className={s.cSec} id="why">
-          <div className={[s.inner, s.reveal].join(" ")}>
-            <Head jp="いま、まもる" title="Why lock it for the quantum age now.">
-              Contracts, medical results and family papers stay sensitive for decades. Anything recorded today can be
-              opened the day a large quantum computer arrives, unless it was sealed with a lock built for that day.
-            </Head>
-            <ol className={s.pq}>
-              <li>
-                <span className={s.dot} lang="ja">
-                  今
-                </span>
-                <b>Today</b>
-                <p>
-                  Someone copies encrypted files from a breach or a network. They can&rsquo;t read them yet, so they
-                  store them.
-                </p>
-              </li>
-              <li>
-                <span className={s.dot} lang="ja">
-                  待
-                </span>
-                <b>Years of waiting</b>
-                <p>Storage is cheap. Old files that matter, like IDs and contracts, are worth keeping.</p>
-              </li>
-              <li>
-                <span className={s.dot} lang="ja">
-                  封
-                </span>
-                <b>Q-Day</b>
-                <p>
-                  Today&rsquo;s common locks can be broken. Files sealed with ML-KEM-1024, the NIST 2024 standard
-                  Mizuhiki uses, are built to stay shut.
-                </p>
-              </li>
-            </ol>
-            <div className={s.cmp}>
-              <table>
-                <caption className="sr-only">Who can open what people send you</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Who can open what people send you</th>
-                    <th scope="col">Typical link and file tools</th>
-                    <th scope="col" className={s.us}>
-                      Mizuhiki
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <th scope="row">The company running the service</th>
-                    <td>Usually can, it holds the keys</td>
-                    <td className={s.us}>
-                      <span className={s.no}>Cannot</span>, it never has your key
-                    </td>
-                  </tr>
-                  <tr>
-                    <th scope="row">Someone who breaches the servers</th>
-                    <td>Often can</td>
-                    <td className={s.us}>
-                      <span className={s.no}>Cannot</span>, only sealed copies are stored
-                    </td>
-                  </tr>
-                  <tr>
-                    <th scope="row">A future quantum computer</th>
-                    <td>Depends on the lock used</td>
-                    <td className={s.us}>
-                      <span className={s.yes}>Built to resist</span> with ML-KEM-1024
-                    </td>
-                  </tr>
-                  <tr>
-                    <th scope="row">You</th>
-                    <td>Yes</td>
-                    <td className={s.us}>
-                      <span className={s.yes}>Yes</span>, on your own device
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        {/* 12. Proof */}
-        <section className={[s.cSec, s.joined].join(" ")} id="proof">
-          <div className={[s.inner, s.reveal].join(" ")}>
-            <Head jp="あかし" title="Built on QoreChain. Checked on the live test network.">
-              Mizuhiki uses QoreChain&rsquo;s post-quantum key registry and signatures. These transactions are on the
-              QoreChain test network now; each card reads its own from the chain as you look.
-            </Head>
-            <ProofCards />
-            <p className={s.proofMore}>
-              <Link href="/onchain">
-                See every contract, key and signature, checked live <Icon name="arrow" size={14} />
-              </Link>
-            </p>
           </div>
         </section>
 

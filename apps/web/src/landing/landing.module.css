@@ -1455,6 +1455,17 @@
 .cmp .us {
   background: var(--wash-blush);
 }
+@media (max-width: 560px) {
+  .cmp th,
+  .cmp td {
+    padding: 12px 10px;
+    font-size: 14px;
+    hyphens: manual;
+  }
+  .cmp thead th {
+    font-size: 13px;
+  }
+}
 .yes {
   color: var(--ok);
   font-weight: 800;

@@ -1,38 +1,51 @@
 # Mizuhiki 水引
 
-A private page for anyone who works with clients, patients, students or family. One link, like a link-in-bio page, where people can pay you, send you messages and files, fill in your forms, buy from your shop, join your rooms or receive a time capsule. Everything they send is sealed in their own browser to your post-quantum key before it leaves their device, so Mizuhiki stores it without being able to read it.
+**A private link-in-bio page. Everything people send you is sealed in their browser with post-quantum encryption, so only you can open it.**
 
-Mizuhiki runs on the **QoreChain test network**. QoreChain carries the keys, names and records that let any browser check a page is really yours; the content itself never goes on chain.
+Freelancers, lawyers, clinics and families give out one link. Through it people pay, send messages and files, fill in forms, buy from a shop, join a group room or leave a time capsule. Before anything leaves the sender's device it is sealed with ML-KEM-1024 to the owner's key, which the sender's browser reads from QoreChain. Our server stores sealed bytes it cannot open, so a breach of the server reveals nothing that was sent.
 
-- **Proof on QoreChain:** `/onchain` reads our contracts, the demo account's keys, post-quantum signatures and the latest contract activity from the chain in your browser.
-- **Threat model:** [THREAT_MODEL.md](THREAT_MODEL.md). **Architecture and protocols:** [ARCHITECTURE.md](ARCHITECTURE.md).
+Runs on the **QoreChain test network** (`qorechain-diana`, EVM chain id 9800). Category: **Encrypted Apps**.
+
+## Encrypted Apps requirements, and where each is met
+
+| Requirement                           | How Mizuhiki meets it                                                                                                                                                                             | Evidence                                                                                                                                                                  |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ML-KEM-1024 encryption                | Every message, file piece, form answer, invoice, room key and capsule share is sealed with QoreSeal (ML-KEM-1024 with X25519, AES-256-GCM)                                                        | [`packages/core/src/seal.ts`](packages/core/src/seal.ts), tests in [`packages/core/test`](packages/core/test)                                                             |
+| Registered recipient keys             | Sign-up registers the owner's ML-KEM-1024 key on QoreChain; a sender's browser reads it from the chain, never from our server                                                                     | [`packages/chain/src/keys.ts`](packages/chain/src/keys.ts), [`recipients.ts`](packages/chain/src/recipients.ts); `/onchain` reads the demo account's registered keys live |
+| ML-DSA key binding                    | The ML-DSA-87 key is registered with a proof of possession; the page, the recipient card and every contract action are signed with it, and the contracts verify it through QoreChain's precompile | [`contracts/src`](contracts/src), Foundry tests in [`contracts/test`](contracts/test), signatures verified live on `/onchain`                                             |
+| Client-side encryption and decryption | Sealing and opening run only in the browser; keys exist only on the owner's devices                                                                                                               | [`apps/web`](apps/web), [THREAT_MODEL.md](THREAT_MODEL.md)                                                                                                                |
+
+**Beyond the brief: a stolen classical key cannot act as you.** Every change on our contracts needs the account's ML-DSA-87 signature, and EVM transactions need a window opened with the post-quantum key. In a rehearsal of the fest's Q-Day Drill on testnet, an attacker holding only an account's secp256k1 key tried 16 attacks (native transfers, opening a window, EVM transfers, a token approval, drain calls on all three contracts); all 16 were refused by the chain or reverted by the contracts. Run it yourself: `pnpm --filter @mizuhiki/testnet drill`.
+
+**See it checked live:** the `/onchain` page reads our contracts, the demo account's keys, post-quantum signatures and the latest contract activity straight from QoreChain in your browser.
 
 ## What it does
 
-| Area               | What people can do                                                                         |
-| ------------------ | ------------------------------------------------------------------------------------------ |
-| Public page        | Your blocks, checked against your key on QoreChain before anything can be sent from it     |
-| Pay                | Any amount in test QOR or test dollars, with a note only you (and the payer) can read      |
-| Messages and files | Notes and files up to 2 GB, sealed before upload; no account needed to send                |
-| Inbox              | Sealed items opened on your device; reply, save, archive                                   |
-| Invoices           | Line items sealed to you, your client and your accountant; paid status read from the chain |
-| Forms              | Intake, applications, feedback; answers sealed in the respondent's browser                 |
-| File requests      | A checklist of documents to ask for, sealed on the way in                                  |
-| Shop               | Files, calls, commissions and tips; each buyer gets their own sealed copy                  |
-| Rooms              | Group chats and files; removing someone changes the room's key                             |
-| Proofs             | Anchor a document's fingerprint and get a certificate anyone can check                     |
-| Passes             | Give someone sealed access to part of what you hold, and revoke it                         |
-| Capsules           | Files that open on a date, after a wait, or if you stop checking in, with guardians        |
-| Spare key          | Recovery contacts each hold a piece of your key; a printable spare-key sheet               |
-| Insights           | Views, taps and payments, counted without reading anything                                 |
-| Settings           | Names on chain, passphrase and passkey, notifications, default reader, export, delete      |
+Twelve blocks can go on a page; each one that takes something in seals it before it leaves the sender's device.
+
+| Block              | What people can do                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------------ |
+| Pay me             | Any amount in test QOR or test dollars, with a note only you (and the payer) can read            |
+| Invoices           | Line items sealed to you, your client and your accountant; paid status read from the chain       |
+| Messages and files | Notes and files up to 2 GB, sealed before upload; no account needed to send                      |
+| File requests      | A checklist of documents to ask for, sealed on the way in                                        |
+| Forms              | Intake, applications, feedback; answers sealed in the respondent's browser                       |
+| Shop               | Files, calls, commissions and tips; each buyer gets their own sealed copy                        |
+| Rooms              | Group chats and files; removing someone gives the room a new key                                 |
+| Passes             | Give someone sealed access to part of what you hold, and revoke it                               |
+| Capsules           | Files that open on a date, after a wait, or if you stop checking in, with guardians              |
+| Spare key          | Recovery contacts each hold a piece of your key; a printable spare-key sheet                     |
+| Receipts and proof | A receipt for every seal; anchor a document's fingerprint and get a certificate anyone can check |
+| Insights           | Views, taps and payments, counted without reading anything                                       |
+
+Behind the page: the **public page** itself, checked against your key on QoreChain before anything can be sent from it; the **inbox**, where sealed items open on your device; and **settings** (names on chain, passphrase and passkey, notifications, default reader, export, delete).
 
 ## How it works
 
 - **Keys live only on your devices.** Your 24 recovery words derive a QoreChain account with a secp256k1 key, an ML-DSA-87 signing key (FIPS 204) and an ML-KEM-1024 sealing key (FIPS 203). On each device the phrase is kept encrypted with AES-256-GCM under a key from your device passphrase (PBKDF2-SHA-256, 600,000 iterations) or from a passkey (WebAuthn PRF).
 - **Sealing happens in the sender's browser.** QoreSeal seals to the recipient's ML-KEM-1024 key, read from QoreChain, before upload. Our API stores sealed bytes and the minimum metadata to route them.
-- **Pages are signed and checked.** Your page is signed with your ML-DSA-87 key; a visitor's browser asks QoreChain who holds the name and which key it has, and refuses a page that does not match. Native-lane transactions carry QoreChain's hybrid signature (secp256k1 plus ML-DSA-87).
-- **Contracts check post-quantum signatures.** Every change made for an account on our contracts carries that account's ML-DSA-87 signature, which the contract verifies through QoreChain's precompile, inside a short EVM permission window opened from the native lane.
+- **Pages are signed and checked.** Your page is signed with your ML-DSA-87 key; a visitor's browser asks QoreChain who holds the name and which key it has, and refuses a page that does not match. QoreChain has two transaction lanes: its native (Cosmos) lane, where every transaction carries a hybrid signature (secp256k1 plus ML-DSA-87), and an EVM lane for contracts.
+- **Contracts check post-quantum signatures.** Every change made for an account on our contracts carries that account's ML-DSA-87 signature, which the contract verifies through a QoreChain built-in (a precompile). QoreChain lets an account with a post-quantum key send EVM transactions only inside a short window it opens with that key, limited to our contracts, a number of transactions and a fee cap.
 
 ## Contracts on QoreChain testnet
 
@@ -119,6 +132,10 @@ pnpm test:e2e:prod      # the whole suite against a production build (stop the d
 ```
 
 The integration and end-to-end suites make real testnet transactions. They fund disposable accounts from a testnet-only wallet read from `~/.secrets/qorechain/testnet-wallet.env` (one `QORE_MNEMONIC` line holding a testnet phrase); persona phrases are kept in `var/personas.json`, both outside version control. The end-to-end suites run on desktop and phone viewports, with Firefox, WebKit and an iPhone profile for the core journey, and fail on any console error, page error or failed request.
+
+## Built with
+
+QoreChain's own kits: [`@qorechain/sdk`](https://github.com/qorechain/qorechain-sdk), [QoreSign](https://github.com/qorechain/qoresign) (hybrid signing and key registration), [QoreSeal](https://github.com/qorechain/qoreseal) (ML-KEM-1024 sealing) and the [QoreX types](https://github.com/qorechain/qorex-integrations). Also Next.js and React, Fastify, Drizzle ORM with PostgreSQL, viem, `@noble/hashes`, `@scure/bip39`, `shamir-secret-sharing`, `fflate`, `pdf-lib`, `qrcode`, `motion`, `web-push`, `zod`, Foundry for the contracts, and Playwright and Vitest for tests. The writing helpers use the Anthropic API (Claude).
 
 ## Security
 
