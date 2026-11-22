@@ -8,6 +8,9 @@ const env = {
   ...process.env,
   DATABASE_URL: process.env.DATABASE_URL ?? "postgres://mizuhiki:mizuhiki-local-dev@127.0.0.1:5432/mizuhiki",
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000",
+  // On a laptop every request comes from one loopback address, so the per-network starter-grant limit (5 a day,
+  // THREAT_MODEL A9) would stop local sign-ups after five; the daily cap and every other check still apply.
+  STARTER_PER_IP_DAY: process.env.STARTER_PER_IP_DAY ?? "100000",
 };
 // Postgres client tools: PG_BIN if set, else Homebrew's postgresql@17, else whatever is on PATH.
 const HOMEBREW_PG = "/opt/homebrew/opt/postgresql@17/bin";

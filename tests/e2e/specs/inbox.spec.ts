@@ -273,7 +273,7 @@ test("inbox: signed message with a picture, verified sender, preview, save, seal
 
   // ---- an item not sealed to the owner's key says so and opens nothing
   await dropRaw(owner.address, [recipientOf(generateSealKeys())], "not for you");
-  const wrong = list.getByRole("button", { name: /Anonymous.*Sealed · tap to open/ }).first();
+  const wrong = list.getByRole("button", { name: /Message Anonymous Sealed · tap to open/ }).first();
   await expect(wrong).toBeVisible({ timeout: 15_000 });
   await wrong.click();
   await expect(detail.getByText("This was not sealed to your key, so it cannot be opened here.")).toBeVisible({
