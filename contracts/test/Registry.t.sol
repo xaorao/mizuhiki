@@ -72,6 +72,31 @@ contract RegistryTest is Base {
         assertEq(o, alice);
     }
 
+    /// Security review (2026-11-21): re-submitting someone's live commitment in the block of their reveal used to
+    /// reset its block and make the reveal fail. A live commitment now keeps its block.
+    function test_recommitting_a_live_commitment_cannot_block_the_reveal() public {
+        _commit("aria", alice);
+        bytes32 c = keccak256(abi.encode("aria", alice, SECRET));
+        vm.prank(bob);
+        reg.commit(c); // the griefer, in the same block as the reveal
+        assertEq(reg.commitBlock(c), uint64(block.number - 1));
+        bytes32 a = keccak256(abi.encode(keccak256("register"), keccak256("aria"), CARD));
+        reg.register(alice, "aria", CARD, SECRET, _sig(reg, alice, a));
+        (address o,) = reg.resolve("aria");
+        assertEq(o, alice);
+    }
+
+    function test_an_expired_commitment_can_be_made_again() public {
+        bytes32 c = keccak256(abi.encode("aria", alice, SECRET));
+        reg.commit(c);
+        vm.roll(block.number + reg.MAX_COMMIT_BLOCKS() + 2);
+        reg.commit(c);
+        assertEq(reg.commitBlock(c), uint64(block.number));
+        vm.roll(block.number + 1);
+        bytes32 a = keccak256(abi.encode(keccak256("register"), keccak256("aria"), CARD));
+        reg.register(alice, "aria", CARD, SECRET, _sig(reg, alice, a));
+    }
+
     function test_bad_signature_reverts() public {
         _commit("aria", alice);
         bytes32 a = keccak256(abi.encode(keccak256("register"), keccak256("aria"), CARD));
@@ -202,7 +227,8 @@ contract RegistryTest is Base {
     function test_room_member_cannot_rotate_or_promote() public {
         _createRoom();
         _role(alice, bob, 1);
-        bytes32 a = keccak256(abi.encode(keccak256("rotateRoom"), ROOM, uint64(2), bytes32("m"), bytes32("d"), bytes32("x")));
+        bytes32 a =
+            keccak256(abi.encode(keccak256("rotateRoom"), ROOM, uint64(2), bytes32("m"), bytes32("d"), bytes32("x")));
         bytes memory s = _sig(reg, bob, a);
         vm.expectRevert(abi.encodeWithSelector(MizuhikiRegistry.NotRoomAdmin.selector, ROOM, bob));
         reg.rotateRoom(bob, ROOM, 2, "m", "d", "x", s);
@@ -224,7 +250,9 @@ contract RegistryTest is Base {
     function test_stale_epoch_reverts() public {
         _createRoom();
         _rotate(alice, 2, "m2");
-        bytes32 a = keccak256(abi.encode(keccak256("rotateRoom"), ROOM, uint64(2), bytes32("m"), bytes32("d"), bytes32("removed")));
+        bytes32 a = keccak256(
+            abi.encode(keccak256("rotateRoom"), ROOM, uint64(2), bytes32("m"), bytes32("d"), bytes32("removed"))
+        );
         bytes memory s = _sig(reg, alice, a);
         vm.expectRevert(abi.encodeWithSelector(MizuhikiRegistry.StaleEpoch.selector, uint64(3), uint64(2)));
         reg.rotateRoom(alice, ROOM, 2, "m", "d", "removed", s);
@@ -241,7 +269,8 @@ contract RegistryTest is Base {
         vm.expectRevert(abi.encodeWithSelector(MizuhikiRegistry.NotRoomAdmin.selector, ROOM, alice));
         reg.closeRoom(alice, ROOM, sa);
         reg.closeRoom(bob, ROOM, _sig(reg, bob, c));
-        bytes32 a = keccak256(abi.encode(keccak256("rotateRoom"), ROOM, uint64(2), bytes32("m"), bytes32("d"), bytes32("x")));
+        bytes32 a =
+            keccak256(abi.encode(keccak256("rotateRoom"), ROOM, uint64(2), bytes32("m"), bytes32("d"), bytes32("x")));
         bytes memory sr = _sig(reg, bob, a);
         vm.expectRevert(abi.encodeWithSelector(MizuhikiRegistry.NoRoom.selector, ROOM));
         reg.rotateRoom(bob, ROOM, 2, "m", "d", "x", sr);

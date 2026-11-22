@@ -41,7 +41,11 @@ abstract contract Base is Test {
         return abi.encodePacked(keccak256(abi.encodePacked(secretOf[signer], abi.encodePacked(d))));
     }
 
-    function _forged(PqAuth c, address victim, bytes32 actionHash, address attacker) internal view returns (bytes memory) {
+    function _forged(PqAuth c, address victim, bytes32 actionHash, address attacker)
+        internal
+        view
+        returns (bytes memory)
+    {
         bytes32 d = c.actionDigest(victim, actionHash);
         return abi.encodePacked(keccak256(abi.encodePacked(secretOf[attacker], abi.encodePacked(d))));
     }

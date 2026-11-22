@@ -65,7 +65,12 @@ contract MizuhikiRegistry is PqAuth {
 
     event RoomCreated(bytes32 indexed roomId, address indexed owner, bytes32 membershipHash, bytes32 distributionHash);
     event RoomEpoch(
-        bytes32 indexed roomId, uint64 indexed epoch, address indexed by, bytes32 membershipHash, bytes32 distributionHash, bytes32 reason
+        bytes32 indexed roomId,
+        uint64 indexed epoch,
+        address indexed by,
+        bytes32 membershipHash,
+        bytes32 distributionHash,
+        bytes32 reason
     );
     event RoomRole(bytes32 indexed roomId, address indexed member, uint8 role, address by);
     event RoomClosed(bytes32 indexed roomId, address indexed by);
@@ -98,7 +103,11 @@ contract MizuhikiRegistry is PqAuth {
     }
 
     /// @notice commitment = keccak256(abi.encode(name, owner, secret)). Anyone may submit it.
+    /// @dev A live commitment keeps its block: re-submitting it (as a griefer might, in the block of the reveal)
+    /// changes nothing. Only an unused or expired one is (re)recorded.
     function commit(bytes32 commitment) external {
+        uint64 at = commitBlock[commitment];
+        if (at != 0 && block.number <= uint256(at) + MAX_COMMIT_BLOCKS) return;
         commitBlock[commitment] = uint64(block.number);
         emit Committed(commitment, uint64(block.number));
     }
@@ -110,7 +119,13 @@ contract MizuhikiRegistry is PqAuth {
         delete commitBlock[c];
     }
 
-    function claimName(address owner, string calldata name, bool makePrimary, bytes32 secret, bytes calldata pqSignature) external {
+    function claimName(
+        address owner,
+        string calldata name,
+        bool makePrimary,
+        bytes32 secret,
+        bytes calldata pqSignature
+    ) external {
         if (!isValidName(name)) revert InvalidName();
         bytes32 h = keccak256(bytes(name));
         if (ownerOfName[h] != address(0)) revert NameTaken(h);
@@ -179,11 +194,16 @@ contract MizuhikiRegistry is PqAuth {
     function anchor(address by, bytes32 contentHash, bytes32 kind, bytes calldata pqSignature) external {
         if (_anchors[contentHash].at != 0) revert AlreadyAnchored(contentHash);
         _authorise(by, keccak256(abi.encode(keccak256("anchor"), contentHash, kind)), pqSignature);
-        _anchors[contentHash] = Anchor({by: by, at: uint64(block.timestamp), blockNumber: uint64(block.number), kind: kind});
+        _anchors[contentHash] =
+            Anchor({by: by, at: uint64(block.timestamp), blockNumber: uint64(block.number), kind: kind});
         emit Anchored(contentHash, by, kind, uint64(block.timestamp));
     }
 
-    function anchorOf(bytes32 contentHash) external view returns (address by, uint64 at, uint64 blockNumber, bytes32 kind) {
+    function anchorOf(bytes32 contentHash)
+        external
+        view
+        returns (address by, uint64 at, uint64 blockNumber, bytes32 kind)
+    {
         Anchor memory a = _anchors[contentHash];
         return (a.by, a.at, a.blockNumber, a.kind);
     }
@@ -192,12 +212,20 @@ contract MizuhikiRegistry is PqAuth {
     // rooms
     // =======================================================================================
 
-    function createRoom(address owner, bytes32 roomId, bytes32 membershipHash, bytes32 distributionHash, bytes calldata pqSignature)
-        external
-    {
+    function createRoom(
+        address owner,
+        bytes32 roomId,
+        bytes32 membershipHash,
+        bytes32 distributionHash,
+        bytes calldata pqSignature
+    ) external {
         if (rooms[roomId].owner != address(0)) revert RoomExists(roomId);
-        _authorise(owner, keccak256(abi.encode(keccak256("createRoom"), roomId, membershipHash, distributionHash)), pqSignature);
-        rooms[roomId] = Room({owner: owner, epoch: 1, membershipHash: membershipHash, distributionHash: distributionHash, closed: false});
+        _authorise(
+            owner, keccak256(abi.encode(keccak256("createRoom"), roomId, membershipHash, distributionHash)), pqSignature
+        );
+        rooms[roomId] = Room({
+            owner: owner, epoch: 1, membershipHash: membershipHash, distributionHash: distributionHash, closed: false
+        });
         roleOf[roomId][owner] = ROLE_OWNER;
         emit RoomCreated(roomId, owner, membershipHash, distributionHash);
         emit RoomRole(roomId, owner, ROLE_OWNER, owner);
@@ -272,7 +300,14 @@ contract MizuhikiRegistry is PqAuth {
     // publications: forms, products, passes, invoices (hash only)
     // =======================================================================================
 
-    function publish(address owner, bytes32 kind, bytes32 id, bytes32 contentHash, bool active, bytes calldata pqSignature) external {
+    function publish(
+        address owner,
+        bytes32 kind,
+        bytes32 id,
+        bytes32 contentHash,
+        bool active,
+        bytes calldata pqSignature
+    ) external {
         _authorise(owner, keccak256(abi.encode(keccak256("publish"), kind, id, contentHash, active)), pqSignature);
         emit Published(owner, kind, id, contentHash, active);
     }

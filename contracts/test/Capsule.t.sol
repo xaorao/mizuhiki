@@ -26,7 +26,8 @@ contract CapsuleTest is Base {
 
     function _create(CapsuleVault.Mode mode, uint64 releaseAt, uint64 wait, uint64 quiet) internal {
         address[] memory g = _guardians();
-        bytes32 a = keccak256(abi.encode(keccak256("create"), ID, mode, g, uint8(2), releaseAt, wait, quiet, ACCESS, PLAN));
+        bytes32 a =
+            keccak256(abi.encode(keccak256("create"), ID, mode, g, uint8(2), releaseAt, wait, quiet, ACCESS, PLAN));
         vm.prank(relayer);
         v.create(alice, ID, mode, g, 2, releaseAt, wait, quiet, ACCESS, PLAN, _sig(v, alice, a));
     }
