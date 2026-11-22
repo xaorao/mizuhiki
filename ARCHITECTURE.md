@@ -291,6 +291,32 @@ Read from the spec (5.7), Dropbox's help pages (help.dropbox.com/share/create-fi
 - **Visitor page:** `/@name/request/<id>`: who is asking (name verified on chain), title, description, deadline, one drop zone, optional name, the same seal moment and receipt as every send; closed, past-deadline, unknown and damaged states each say what happened and that nothing was sent.
 - **Page block:** a `fileRequest` block on the public page opens the request in place.
 
+## 8h. Starter grant: test QOR at sign-up, no faucet
+
+Read from the gas abstraction page (docs.qorechain.io/user-guide/gas-abstraction: only `uqor` is accepted, conversion
+off), the testnet REST (`/cosmos/feegrant/v1beta1/...` is served: the fee-grant module is live), QoreSign's
+`verifySiwq` (`packages/ts/src/siwq.ts`: with `requirePq: false` it still checks that the classical key controls the
+address, then the ADR-36 signature), our sign-up funding step (`apps/web/src/onboarding/Onboarding.tsx`) and the
+drop service's proof of work (`packages/core/src/pow.ts`).
+
+- **Why a grant, not a fee grant.** A new account does not exist on chain until it receives tokens, so a fee grant
+  cannot pay its first transaction; and sign-up also opens an EVM window and claims a name on the EVM lane, whose gas a
+  fee grant does not cover. Gas abstraction accepts no other token. So the sponsor sends a small amount once.
+- **Proof of control before any key is on chain.** The browser asks for a one-time challenge (the existing
+  `/auth/challenge`), signs it with the new account's classical key, and adds a proof of work bound to the address
+  and the challenge. The API checks it with `verifySiwq({ requirePq: false })`; the ML-DSA key cannot be checked yet
+  because it is registered with the grant's money.
+- **Who gets it.** An address that has never existed on chain, has no balance and has never had a grant (one row per
+  address, enforced by the database). At most `STARTER_PER_IP_DAY` grants per network address a day and
+  `STARTER_DAILY_CAP` in all. Testnet only: refused when the configured chain is not `qorechain-diana`.
+- **The sponsor.** A dedicated testnet account (`SPONSOR_PHRASE`, git-ignored `.env.local`), keys registered so its
+  sends carry the hybrid signature. Sends go one at a time in the API process so sequences never collide. Off when the
+  phrase is unset.
+- **Failing honestly.** Sponsor too low, cap reached, account already funded, or the network unreachable: the API says
+  which, records nothing, and the funding step shows the faucet path as before, with that reason.
+- **Screens.** The funding step asks for the grant by itself, says "Sending you 0.2 test QOR, free on the test
+  network", links the transaction, and continues as the balance arrives.
+
 ## 9. Sources behind the facts used here
 
 - QoreSign 0.2.0 source: `repos/qoresign/packages/ts/src` (`sign.ts`, `message.ts`, `network.ts`, `siwq.ts`).

@@ -28,6 +28,7 @@ import { passRoutes } from "./routes/passes";
 import { recoveryRoutes } from "./routes/recovery";
 import { capsuleRoutes } from "./routes/capsules";
 import { insightRoutes } from "./routes/insights";
+import { grantRoutes } from "./routes/grants";
 import { settingsRoutes } from "./routes/settings";
 import { fileRequestRoutes } from "./routes/filerequests";
 
@@ -134,6 +135,7 @@ export async function buildServer(
   await app.register(insightRoutes(ctx));
   await app.register(fileRequestRoutes(ctx));
   await app.register(settingsRoutes(ctx));
+  await app.register(grantRoutes(ctx));
   return {
     app,
     ctx,

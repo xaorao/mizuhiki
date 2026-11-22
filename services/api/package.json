@@ -9,7 +9,8 @@
     "start": "tsx src/main.ts",
     "migrate": "pnpm --filter @mizuhiki/db migrate",
     "typecheck": "tsc -p tsconfig.json",
-    "push:keys": "node tools/push-keys.mjs"
+    "push:keys": "node tools/push-keys.mjs",
+    "sponsor:provision": "tsx src/tools/sponsor.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.10.0",

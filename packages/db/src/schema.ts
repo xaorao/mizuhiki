@@ -778,3 +778,19 @@ export const fileRequests = pgTable(
   },
   (t) => [index("file_requests_owner").on(t.owner, t.createdAt)],
 );
+
+/**
+ * Starter grants (ARCHITECTURE 8h): test QOR sent once to a new account so sign-up needs no faucet. One row per
+ * address; the network address is kept only as a salted hash, for the per-network daily limit.
+ */
+export const starterGrants = pgTable(
+  "starter_grants",
+  {
+    address: text("address").primaryKey(),
+    ipHash: text("ip_hash").notNull(),
+    amount: text("amount").notNull(),
+    txHash: text("tx_hash").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("starter_grants_ip_idx").on(t.ipHash, t.createdAt), index("starter_grants_at_idx").on(t.createdAt)],
+);

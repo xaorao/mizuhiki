@@ -104,6 +104,24 @@ Can read files of products the seller switched to Instant delivery. **Stated (pr
 
 QoreSeal 0.1.0 has had no external review; our chunked file sealing is our own construction on AES-256-GCM. Both are named on the security page. **Stated (promise 6).**
 
+### A9. Someone draining the starter grant (testnet sponsor)
+
+The sponsor sends 0.2 test QOR once to a new account so sign-up needs no faucet (ARCHITECTURE 8h).
+
+- Asking twice for one account: one row per address, claimed before the send, so two requests at once cannot both be
+  paid; an address that has ever been on chain or holds any QOR is refused. **Stopped.**
+- Asking for an address you do not control: the request must carry that address's classical-key signature over a
+  one-time challenge from our server; a reused or expired challenge is refused. **Stopped.**
+- Many fresh keys from one network: a proof of work per request (18 bits by default), 6 requests per 10 minutes and 5
+  grants a day per network address. **Slowed.**
+- Many fresh keys from many networks: the global daily cap (300) bounds the loss at 60 test QOR a day, which has no
+  value. **Bounded.** When the cap or the sponsor's balance runs out, sign-up falls back to the faucet with that reason.
+- Learning who signed up from where: the network address is stored only as a keyed hash (HMAC with a secret derived
+  from the sponsor's phrase), which cannot be brute-forced back without that secret. **Stopped.**
+- The sponsor's key: on the server only, git-ignored, testnet only (the chain configuration is the testnet by type).
+  Taking the server takes the remaining test QOR, nothing else: the sponsor holds no one's data and signs nothing for
+  anyone. **Bounded.** Tests: `services/api/test/integration/grants.test.ts`, `tests/e2e/specs/signup.spec.ts`.
+
 ## Things we explicitly do not claim
 
 - That metadata is hidden from us.

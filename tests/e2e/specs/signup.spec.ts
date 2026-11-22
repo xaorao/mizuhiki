@@ -7,9 +7,8 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { test, expect } from "./fixtures";
-import { DENOMS, msgSend, resolveOnChain, sendTx, keyState } from "@mizuhiki/chain";
+import { DENOMS, resolveOnChain, keyState, waitForTx } from "@mizuhiki/chain";
 import { deriveAccount } from "@mizuhiki/core";
-import { devWallet } from "@mizuhiki/testnet";
 
 const API = process.env.API_URL ?? "http://127.0.0.1:4000";
 
@@ -93,16 +92,25 @@ test("sign up: name, goal, look, blocks, profile, key, setup on chain, live page
   await page.getByRole("button", { name: "Lock and continue" }).click();
 
   await expect(page.getByRole("heading", { name: "Getting your account ready" })).toBeVisible();
-  await expect(page.getByText("Open the faucet")).toBeVisible();
+  // No faucet: Mizuhiki's testnet sponsor sends the starter test QOR by itself (ARCHITECTURE 8h).
+  const sent = page.getByText(/^Mizuhiki sent you 0\.2 test QOR for the network fees of setup\./);
+  await expect(sent).toBeVisible({ timeout: 120_000 });
+  await expect(page.getByText("Open the faucet")).toHaveCount(0);
   await page.screenshot({ path: info.outputPath("s9-funding.png") });
   const account = deriveAccount(phrase);
-  // Fund the new account from the dev wallet (the faucet needs a web sign-in).
-  const dev = devWallet();
-  await sendTx(
-    dev,
-    [msgSend(dev.address, account.address.bech32, DENOMS.QOR.denom, 400_000n)],
-    "mzk:test-fund:e2e-signup",
-  );
+  // Source of truth: the sponsor's transaction on QoreChain paid this account exactly 0.2 test QOR.
+  const grantTx =
+    (await page.getByRole("link", { name: "See the transaction" }).getAttribute("href"))?.split("/tx/")[1] ?? "";
+  const gtx = await waitForTx(grantTx);
+  expect(gtx.code).toBe(0);
+  const send = (
+    gtx.tx as {
+      body: { memo: string; messages: { to_address: string; amount: { denom: string; amount: string }[] }[] };
+    }
+  ).body;
+  expect(send.memo).toBe("mzk:starter-grant");
+  expect(send.messages[0]?.to_address).toBe(account.address.bech32);
+  expect(send.messages[0]?.amount).toEqual([{ denom: DENOMS.QOR.denom, amount: "200000" }]);
 
   await expect(page.getByRole("heading", { name: "Your page is live" })).toBeVisible({ timeout: 300_000 });
   await page.screenshot({ path: info.outputPath("done.png") });

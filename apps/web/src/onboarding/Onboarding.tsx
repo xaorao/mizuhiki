@@ -59,6 +59,7 @@ import { MIN_SETUP_UQOR, SETUP_STEPS, runSetup, type SetupStep } from "./setup";
 import { draftFromManifest, saveDraft } from "@/editor/state";
 import s from "./onboarding.module.css";
 import { failureText } from "@/lib/failure";
+import { askStarterGrant, type GrantOutcome } from "@/lib/starterGrant";
 
 type Step = "name" | "goal" | "template" | "blocks" | "profile" | "phrase" | "check" | "passphrase" | "ready" | "done";
 const ORDER: Step[] = [
@@ -901,6 +902,7 @@ function ReadyStep({
     {},
   );
   const [balance, setBalance] = useState<bigint | null>(null);
+  const [grant, setGrant] = useState<GrantOutcome | { s: "asking" } | null>(null);
   const [error, setError] = useState<{ title: string; detail: string; tx?: string | undefined } | null>(null);
   const [taken, setTaken] = useState(false);
   const [newName, setNewName] = useState("");
@@ -919,6 +921,18 @@ function ReadyStep({
   useEffect(() => {
     if (acct.status === "locked") setNeedUnlock(true);
   }, [acct.status]);
+
+  // The sponsor's starter test QOR, asked for once when the funding step starts waiting (ARCHITECTURE 8h).
+  const asked = useRef(false);
+  useEffect(() => {
+    const a = acctRef.current.account;
+    if (states.fund !== "running" || asked.current || !a) return;
+    asked.current = true;
+    const ctl = new AbortController();
+    setGrant({ s: "asking" });
+    void askStarterGrant(a, ctl.signal).then(setGrant);
+    return () => ctl.abort();
+  }, [states.fund]);
 
   useEffect(() => {
     const a = acctRef.current.account;
@@ -1029,18 +1043,35 @@ function ReadyStep({
         ? {
             body: (
               <div className={s.fund}>
-                <p>
-                  Setup spends about 0.12 test QOR in network fees; this step waits for <b>0.2</b> so there is room to
-                  spare. The QoreChain faucet gives 100 test QOR once a day: sign in to the QoreChain dashboard (free),
-                  paste this address and choose Request Tokens.
-                </p>
-                <CopyValue value={acct.account.owner.address} label="address" />
-                <div className={s.actions}>
-                  <a className={s.faucet} href={NETWORK.faucet} target="_blank" rel="noopener noreferrer">
-                    Open the faucet
-                    <Icon name="share" size={16} />
-                  </a>
-                </div>
+                {grant === null || grant.s === "asking" ? (
+                  <p role="status">
+                    Sending you {fromBaseUnits(MIN_SETUP_UQOR, 6)} test QOR from Mizuhiki, free on the test network, for
+                    the network fees of setup (about 0.12)…
+                  </p>
+                ) : grant.s === "sent" ? (
+                  <p role="status">
+                    Mizuhiki sent you {fromBaseUnits(grant.amount, 6)} test QOR for the network fees of setup.{" "}
+                    <a href={explorerTx(grant.txHash)} target="_blank" rel="noopener noreferrer">
+                      See the transaction
+                    </a>
+                  </p>
+                ) : (
+                  <>
+                    {grant.s === "refused" ? <p className={s.fine}>{grant.why}</p> : null}
+                    <p>
+                      Setup spends about 0.12 test QOR in network fees; this step waits for <b>0.2</b> so there is room
+                      to spare. The QoreChain faucet gives 100 test QOR once a day: sign in to the QoreChain dashboard
+                      (free), paste this address and choose Request Tokens.
+                    </p>
+                    <CopyValue value={acct.account.owner.address} label="address" />
+                    <div className={s.actions}>
+                      <a className={s.faucet} href={NETWORK.faucet} target="_blank" rel="noopener noreferrer">
+                        Open the faucet
+                        <Icon name="share" size={16} />
+                      </a>
+                    </div>
+                  </>
+                )}
                 <p className={s.fine}>
                   {balance === null
                     ? "Checking the balance…"

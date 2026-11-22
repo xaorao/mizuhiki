@@ -26,7 +26,7 @@ export const SETUP_STEPS: { id: SetupStep; title: string; detail: string }[] = [
   {
     id: "fund",
     title: "Get test QOR",
-    detail: "Network fees are paid in test QOR. Setup uses about 0.12; the faucet gives 100.",
+    detail: "Network fees are paid in test QOR. Setup uses about 0.12, and Mizuhiki sends you 0.2 to start.",
   },
   {
     id: "pq",

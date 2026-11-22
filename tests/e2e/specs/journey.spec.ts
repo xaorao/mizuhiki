@@ -142,6 +142,10 @@ test("carried state: a new person from the landing page to a page that has been 
   await o.getByRole("button", { name: "Check" }).click();
   await o.getByLabel("Device passphrase").fill(PASS);
   await o.getByLabel("Type it again").fill(PASS);
+  // The fallback when the sponsor is off or out: the faucet path, funded here by hand (the faucet needs a sign-in).
+  await o.route("**/grants/starter", (r) =>
+    r.request().method() === "GET" ? r.fulfill({ json: { enabled: false, reason: "off" } }) : r.continue(),
+  );
   await o.getByRole("button", { name: "Lock and continue" }).click();
   await expect(o.getByText("Open the faucet")).toBeVisible({ timeout: 60_000 });
   await expect(o.getByText(/sign in to the QoreChain dashboard/)).toBeVisible();

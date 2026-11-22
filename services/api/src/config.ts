@@ -33,6 +33,20 @@ const Env = z.object({
    * faces clients directly; behind one proxy, 1, or every per-network limit would see one address for everyone.
    */
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
+  /**
+   * Starter grants (ARCHITECTURE 8h): the testnet sponsor account's 24 words. Unset, grants are off and sign-up shows
+   * the faucet. Testnet only; never a phrase that holds real value.
+   */
+  SPONSOR_PHRASE: z.string().optional(),
+  /** Test QOR sent once to a new account, in uqor. Sign-up spends about 120,000; 200,000 leaves room. */
+  STARTER_GRANT_UQOR: z.coerce.number().int().min(1).max(5_000_000).default(200_000),
+  /** Grants a day across everyone, and per network address. */
+  STARTER_DAILY_CAP: z.coerce.number().int().min(0).default(300),
+  STARTER_PER_IP_DAY: z.coerce.number().int().min(0).default(5),
+  /** Grant requests per network address in 10 minutes, before any other check. */
+  STARTER_REQUESTS_PER_10MIN: z.coerce.number().int().min(1).default(6),
+  /** Proof-of-work bits on a grant request: a few seconds of browser work, nothing for one person. */
+  STARTER_POW_BITS: z.coerce.number().int().min(0).max(28).default(18),
 });
 
 export type Config = z.infer<typeof Env>;
