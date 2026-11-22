@@ -227,8 +227,7 @@ contract RegistryTest is Base {
     function test_room_member_cannot_rotate_or_promote() public {
         _createRoom();
         _role(alice, bob, 1);
-        bytes32 a =
-            keccak256(abi.encode(keccak256("rotateRoom"), ROOM, uint64(2), bytes32("m"), bytes32("d"), bytes32("x")));
+        bytes32 a = keccak256(abi.encode(keccak256("rotateRoom"), ROOM, uint64(2), bytes32("m"), bytes32("d"), bytes32("x")));
         bytes memory s = _sig(reg, bob, a);
         vm.expectRevert(abi.encodeWithSelector(MizuhikiRegistry.NotRoomAdmin.selector, ROOM, bob));
         reg.rotateRoom(bob, ROOM, 2, "m", "d", "x", s);
@@ -250,9 +249,7 @@ contract RegistryTest is Base {
     function test_stale_epoch_reverts() public {
         _createRoom();
         _rotate(alice, 2, "m2");
-        bytes32 a = keccak256(
-            abi.encode(keccak256("rotateRoom"), ROOM, uint64(2), bytes32("m"), bytes32("d"), bytes32("removed"))
-        );
+        bytes32 a = keccak256(abi.encode(keccak256("rotateRoom"), ROOM, uint64(2), bytes32("m"), bytes32("d"), bytes32("removed")));
         bytes memory s = _sig(reg, alice, a);
         vm.expectRevert(abi.encodeWithSelector(MizuhikiRegistry.StaleEpoch.selector, uint64(3), uint64(2)));
         reg.rotateRoom(alice, ROOM, 2, "m", "d", "removed", s);
@@ -269,8 +266,7 @@ contract RegistryTest is Base {
         vm.expectRevert(abi.encodeWithSelector(MizuhikiRegistry.NotRoomAdmin.selector, ROOM, alice));
         reg.closeRoom(alice, ROOM, sa);
         reg.closeRoom(bob, ROOM, _sig(reg, bob, c));
-        bytes32 a =
-            keccak256(abi.encode(keccak256("rotateRoom"), ROOM, uint64(2), bytes32("m"), bytes32("d"), bytes32("x")));
+        bytes32 a = keccak256(abi.encode(keccak256("rotateRoom"), ROOM, uint64(2), bytes32("m"), bytes32("d"), bytes32("x")));
         bytes memory sr = _sig(reg, bob, a);
         vm.expectRevert(abi.encodeWithSelector(MizuhikiRegistry.NoRoom.selector, ROOM));
         reg.rotateRoom(bob, ROOM, 2, "m", "d", "x", sr);

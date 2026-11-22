@@ -35,11 +35,7 @@ contract AnchorBook is PqAuth {
     }
 
     /// @notice One account's record for a fingerprint (at == 0: none).
-    function anchorOf(bytes32 contentHash, address by)
-        external
-        view
-        returns (uint64 at, uint64 blockNumber, bytes32 kind)
-    {
+    function anchorOf(bytes32 contentHash, address by) external view returns (uint64 at, uint64 blockNumber, bytes32 kind) {
         Anchor memory a = _anchors[contentHash][by];
         return (a.at, a.blockNumber, a.kind);
     }

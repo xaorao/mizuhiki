@@ -52,13 +52,7 @@ contract CapsuleVault is PqAuth {
     mapping(address => uint64) public lastCheckIn;
 
     event CapsuleCreated(
-        bytes32 indexed id,
-        address indexed owner,
-        Mode mode,
-        uint8 threshold,
-        uint64 releaseAt,
-        uint64 waitSeconds,
-        uint64 quietSeconds
+        bytes32 indexed id, address indexed owner, Mode mode, uint8 threshold, uint64 releaseAt, uint64 waitSeconds, uint64 quietSeconds
     );
     event GuardiansSet(bytes32 indexed id, address[] guardians, uint8 threshold, bytes32 planHash);
     event CheckedIn(address indexed owner, uint64 at);
@@ -128,16 +122,7 @@ contract CapsuleVault is PqAuth {
             owner,
             keccak256(
                 abi.encode(
-                    keccak256("create"),
-                    id,
-                    mode,
-                    guardians,
-                    threshold,
-                    releaseAt,
-                    waitSeconds,
-                    quietSeconds,
-                    accessSeconds,
-                    planHash
+                    keccak256("create"), id, mode, guardians, threshold, releaseAt, waitSeconds, quietSeconds, accessSeconds, planHash
                 )
             ),
             pqSignature
@@ -163,24 +148,15 @@ contract CapsuleVault is PqAuth {
     }
 
     /// @notice Replace guardians after the owner re-split the key; old shares stop fitting.
-    function setGuardians(
-        address owner,
-        bytes32 id,
-        address[] calldata guardians,
-        uint8 threshold,
-        bytes32 planHash,
-        bytes calldata pqSignature
-    ) external {
+    function setGuardians(address owner, bytes32 id, address[] calldata guardians, uint8 threshold, bytes32 planHash, bytes calldata pqSignature)
+        external
+    {
         Capsule storage c = _live(id);
         if (c.owner != owner) revert NotOwner(id);
         _checkGuardians(owner, guardians, threshold);
-        _authorise(
-            owner, keccak256(abi.encode(keccak256("setGuardians"), id, guardians, threshold, planHash)), pqSignature
-        );
+        _authorise(owner, keccak256(abi.encode(keccak256("setGuardians"), id, guardians, threshold, planHash)), pqSignature);
         address[] storage old = _guardians[id];
-        for (uint256 i = 0; i < old.length; i++) {
-            isGuardian[id][old[i]] = false;
-        }
+        for (uint256 i = 0; i < old.length; i++) isGuardian[id][old[i]] = false;
         delete _guardians[id];
         _storeGuardians(id, guardians);
         c.threshold = threshold;
@@ -244,11 +220,7 @@ contract CapsuleVault is PqAuth {
         Capsule storage c = _live(id);
         uint64 at = opensAt(id);
         if (at == 0 || block.timestamp < at) revert NotYet(at);
-        _release(
-            id,
-            c,
-            c.mode == Mode.AtTime ? bytes32("time") : c.mode == Mode.AfterWait ? bytes32("wait") : bytes32("quiet")
-        );
+        _release(id, c, c.mode == Mode.AtTime ? bytes32("time") : c.mode == Mode.AfterWait ? bytes32("wait") : bytes32("quiet"));
     }
 
     // ---- internal ----------------------------------------------------------------------------
