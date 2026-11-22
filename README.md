@@ -6,6 +6,29 @@ Freelancers, lawyers, clinics and families give out one link. Through it people 
 
 Runs on the **QoreChain test network** (`qorechain-diana`, EVM chain id 9800). Category: **Encrypted Apps**.
 
+## Try it in two minutes
+
+On a running Mizuhiki (locally: [Run it locally](#run-it-locally), then <http://localhost:3000>). Every step below is
+also an end-to-end test against the real testnet ([`tests/e2e/specs/judge.spec.ts`](tests/e2e/specs/judge.spec.ts)),
+so this guide cannot drift from the product.
+
+1. **Open `/@aria`.** Before showing anything, your browser asks QoreChain who holds the name `aria` and which keys it
+   has, and checks the page's signature: the footer says _"This page really is @aria's, checked on QoreChain just
+   now"_.
+2. **Send Aria something sealed.** Press **Message**, write a line, attach a file, **Seal and send**. It is sealed in
+   your browser with ML-KEM-1024 to Aria's key read from the chain; the receipt shows what was sealed, for whom, and
+   that nothing readable went on chain.
+3. **Open `/onchain`.** Our contracts and Aria's registered keys, read from the chain, and four of her transactions,
+   each fetched as the exact bytes the chain committed: hybrid signatures are verified in your browser against her
+   registered ML-DSA-87 key; her key's own registration is shown as the one step the chain requires to be classical;
+   her capsule check-in is shown as accepted by the contract, which checked her ML-DSA-87 signature itself. Below
+   that, the Q-Day Drill rehearsal: both attack calls read back from the chain as refused.
+4. **Make your own page at `/signup`.** Pick a name, a goal and a look, then save your 24 words. No faucet: Mizuhiki
+   sends the account 0.2 test QOR by itself, then registers your ML-DSA-87 and ML-KEM-1024 keys and claims your name
+   on chain. The on-chain part takes under a minute.
+5. **Message yourself from a private window** (step 2 on your own `/@name`), then open it in your **Inbox**. It opens
+   on your device only: our server holds sealed bytes it cannot read.
+
 ## Encrypted Apps requirements, and where each is met
 
 | Requirement                           | How Mizuhiki meets it                                                                                                                                                                             | Evidence                                                                                                                                                                  |
