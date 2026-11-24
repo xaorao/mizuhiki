@@ -7,13 +7,13 @@ Scope: the four contracts in [`contracts/src`](contracts/src) (`PqAuth`, `Mizuhi
 
 ## How they were reviewed
 
-| Method                                                                                               | Result                                                                                                                                                                                                           |
-| ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Slither 0.11.6, all 102 detectors (Trail of Bits)                                                    | 9 results, none a defect; each explained below                                                                                                                                                                   |
-| Manual design review: minimalism, loops, input validation, external calls, invariants, roles, replay | 1 low-severity finding (fixed in source), 2 informational                                                                                                                                                        |
-| Foundry tests, including the attacker cases                                                          | 41 passing: forged, replayed, cross-contract and cross-chain signatures, unregistered and unproven keys, an inactive precompile, front-running a name, stale room epochs, role escalation and the capsule states |
-| The same contracts on testnet with real ML-DSA-87 signatures                                         | `pnpm --filter @mizuhiki/testnet test` (contracts) and the Q-Day Drill rehearsal: 16 of 16 attacks with only the classical key refused or reverted                                                               |
-| QoreChain Dashboard Contract Auditor (QCAIA)                                                         | Not yet run: it needs a Dashboard sign-in; the report will be linked here                                                                                                                                        |
+| Method                                                                                               | Result                                                                                                                                                                                                                            |
+| ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Slither 0.11.6, all 102 detectors (Trail of Bits)                                                    | 9 results, none a defect; each explained below                                                                                                                                                                                    |
+| Manual design review: minimalism, loops, input validation, external calls, invariants, roles, replay | 1 low-severity finding (fixed in source), 2 informational                                                                                                                                                                         |
+| Foundry tests, including the attacker cases                                                          | 41 passing: forged, replayed, cross-contract and cross-chain signatures, unregistered and unproven keys, an inactive precompile, front-running a name, stale room epochs, role escalation and the capsule states                  |
+| The same contracts on testnet with real ML-DSA-87 signatures                                         | `pnpm --filter @mizuhiki/testnet test` (contracts) and the Q-Day Drill rehearsal: 16 of 16 attacks with only the classical key refused or reverted                                                                                |
+| QoreChain Dashboard Contract Auditor (QCAIA)                                                         | `MizuhikiRegistry` (with `PqAuth`): score 85 of 100, 3 findings and 1 note, each checked against the code below; none is a defect. `CapsuleVault` and `AnchorBook` were reviewed by the other methods in this table, not by QCAIA |
 
 ## Design in one paragraph
 
@@ -32,6 +32,22 @@ most; paged reads).
 | 1   | Low      | `MizuhikiRegistry.commit` overwrote an existing commitment's block. A griefer who re-submits someone's live commitment in the block of their reveal makes the reveal fail (`block.number <= at`). It cannot take the name (the commitment binds name, owner and secret, and the claim needs the owner's ML-DSA signature), only delay the claim. | **Fixed in source**: a live commitment keeps its block; an expired one can be made again. Tests: `test_recommitting_a_live_commitment_cannot_block_the_reveal`, `test_an_expired_commitment_can_be_made_again`. The deployed testnet registry predates the fix: redeploying would erase every name and room on testnet, so it ships with the next deployment. |
 | 2   | Info     | `MizuhikiRegistry.anchor` keeps one record per fingerprint, so whoever anchors first wins.                                                                                                                                                                                                                                                       | Known and superseded: the app writes anchors only to `AnchorBook`, where every account keeps its own record (written for exactly this); it still reads registry anchors made before AnchorBook existed.                                                                                                                                                       |
 | 3   | Info     | A capsule's collection window (`accessSeconds`) is honoured by guardians, not enforced on chain: guardians release key pieces only while the window is open.                                                                                                                                                                                     | By design and stated in the threat model: the chain has no time lock that could enforce it.                                                                                                                                                                                                                                                                   |
+
+## QCAIA results, each checked
+
+The Dashboard auditor read the flattened `MizuhikiRegistry` source (the file in this repository, with the `commit` fix).
+It scored it 85 of 100, risk "medium", and left the quantum-safety score blank (it scores CosmWasm contracts for that,
+not Solidity). Each finding was checked against the code and the tests:
+
+- **High, "privilege escalation in room roles"** (`setRole` said not to check that only the owner grants admin): not
+  a defect. A caller who is not an admin or the owner is stopped by `_requireAdmin`; an admin who tries to grant or
+  remove admin hits `(role == ROLE_ADMIN || current == ROLE_ADMIN) && actor != r.owner`, and the owner role cannot be
+  set at all (`role > ROLE_ADMIN || member == r.owner`). Test: `test_admin_cannot_make_or_remove_admins`.
+- **Medium, "overflow in the commit block sum"**: not a defect. `uint256(at) + MAX_COMMIT_BLOCKS` adds a 64-bit value
+  and 66,000 in 256-bit arithmetic, so it cannot overflow, and Solidity 0.8 would revert if it could.
+- **Low, "unbounded loop in `isValidName`"**: not a defect. The length is checked before the loop, so it runs at
+  most 30 times; a longer name returns false at once (test: the 31-character case in `test_names_rules`).
+- **Info, replay protection**: confirms the per-signer nonce design.
 
 ## Slither results, each explained
 
