@@ -90,7 +90,7 @@ describe("proof page reads", () => {
     expect(items.length).toBeGreaterThan(0);
     for (let i = 1; i < items.length; i++) expect(items[i - 1]!.block >= items[i]!.block).toBe(true);
     const name = items.find((a) => a.event === "NameClaimed");
-    if (name) expect(name.name).toMatch(/^[a-z0-9-]+$/);
+    if (name) expect(name.name).toMatch(/^[a-z0-9._-]{3,30}$/);
   }, 240_000);
   it("reads a demo name's owner and both post-quantum keys from QoreChain", async () => {
     const k = await nameKeys("aria");

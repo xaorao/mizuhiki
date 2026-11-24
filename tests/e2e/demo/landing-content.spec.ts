@@ -104,10 +104,10 @@ test("demo content on @aria", async ({ browser }) => {
       .locator('input[type="file"]')
       .setInputFiles({ name: "q4-checklist.pdf", mimeType: "application/pdf", buffer: pdf("Q4 receipts checklist") });
     await sheet.getByRole("button", { name: "Next" }).click();
-    await sheet.getByRole("radio", { name: /Signed as you \(unlock first\)/ }).click();
+    await sheet.getByRole("radio", { name: /Show it's from me \(unlock first\)/ }).click();
     await sheet.getByLabel("Device passphrase").fill(PASS);
     await sheet.getByRole("button", { name: "Unlock to sign" }).click();
-    await expect(sheet.getByRole("radio", { name: /^Signed as you/ })).toHaveAttribute("aria-checked", "true");
+    await expect(sheet.getByRole("radio", { name: /^Show it's from me/ })).toHaveAttribute("aria-checked", "true");
     await sheet.getByRole("button", { name: "Seal and send" }).click();
     await expect(mila.getByRole("dialog", { name: "Sealed for Aria" })).toBeVisible({ timeout: 180_000 });
     await mila.context().close();

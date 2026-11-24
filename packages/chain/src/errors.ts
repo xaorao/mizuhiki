@@ -1,4 +1,5 @@
 import { BaseError, HttpRequestError, TimeoutError } from "viem";
+import { denomByBase } from "./config";
 /** A chain step that did not complete, with what happened to the person's money and data. */
 export type ChainErrorCode =
   | "NO_FUNDS"
@@ -52,6 +53,29 @@ export function isUnreachable(e: unknown): boolean {
   return e instanceof TypeError && /failed to fetch|networkerror|load failed|network/i.test(e.message);
 }
 
+const amountOf = (units: string, decimals: number): string => {
+  const v = BigInt(units);
+  const scale = 10n ** BigInt(decimals);
+  const frac = (v % scale).toString().padStart(decimals, "0").replace(/0+$/, "");
+  return `${(v / scale).toString()}${frac ? `.${frac}` : ""}`;
+};
+
+/**
+ * Which coin ran short. The bank module names it ("spendable balance 1585000erc20:0x… is smaller than
+ * 10000000erc20:0x…"); a payment short of fUSD must not be blamed on the network fee.
+ */
+function shortfall(log: string): string {
+  const fee = "Not enough test QOR to pay the network fee. Nothing was sent.";
+  const m = /spendable balance (\d+)([a-z][\w:/.-]*?) is smaller than (\d+)([a-z][\w:/.-]*?):? insufficient/i.exec(log);
+  if (!m) return fee;
+  const [, haveUnits = "0", , needUnits = "0", base = ""] = m;
+  const d = denomByBase(base);
+  if (!d) return fee;
+  const have = amountOf(haveUnits, d.decimals);
+  const need = amountOf(needUnits, d.decimals);
+  return `Not enough ${d.label}: this needs ${need} ${d.symbol} and the account has ${have} ${d.symbol}. Nothing was sent.`;
+}
+
 /** Map a Cosmos SDK refusal log to a plain sentence. */
 export function explainRefusal(
   codespace: string,
@@ -60,7 +84,7 @@ export function explainRefusal(
 ): { code: ChainErrorCode; message: string } {
   const l = log.toLowerCase();
   if ((codespace === "sdk" && code === 5) || l.includes("insufficient funds")) {
-    return { code: "NO_FUNDS", message: "Not enough test QOR to pay the network fee. Nothing was sent." };
+    return { code: "NO_FUNDS", message: shortfall(log) };
   }
   if (l.includes("not found") && l.includes("account")) {
     return {

@@ -1021,7 +1021,17 @@ function ReadyStep({
 
   const items: StepItem[] = SETUP_STEPS.map((x) => {
     const i = info[x.id];
-    const detail = (
+    // The grant's receipt stays on the finished step: the balance poll can see the coins before the grant request
+    // itself returns, and the person should still learn where their test QOR came from.
+    const granted = x.id === "fund" && states.fund === "done" && grant?.s === "sent" ? grant : null;
+    const detail = granted ? (
+      <>
+        Mizuhiki sent you {fromBaseUnits(granted.amount, 6)} test QOR for the network fees of setup.{" "}
+        <a href={explorerTx(granted.txHash)} target="_blank" rel="noopener noreferrer" className={s.tx}>
+          See the transaction
+        </a>
+      </>
+    ) : (
       <>
         {x.detail}
         {i?.tx ? (

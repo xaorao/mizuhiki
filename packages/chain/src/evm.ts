@@ -19,6 +19,7 @@ import {
   type Address,
   type Hex,
   type PublicClient,
+  type Transport,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { pqSign } from "@qorechain/qoresign";
@@ -41,12 +42,39 @@ export interface Deployment {
   deployedAt: { registryTx: Hex; vaultTx: Hex; block: string };
 }
 
+/**
+ * The testnet RPC sits behind several nodes; one a block behind answers a read at "latest" with "header not found"
+ * (JSON-RPC -32602, which viem treats as final and does not retry). That is lag, not a bad call: wait for the node to
+ * catch up and ask again, a few times, before giving up. Every other error passes through unchanged.
+ */
+export function lagTolerant(base: Transport, o: { attempts?: number; delayMs?: number } = {}): Transport {
+  const attempts = o.attempts ?? 4;
+  const delayMs = o.delayMs ?? 600;
+  return (config) => {
+    const t = base(config);
+    const request: typeof t.request = async (args, opts) => {
+      for (let i = 1; ; i++) {
+        try {
+          return await t.request(args, opts);
+        } catch (e) {
+          const lag = e instanceof Error && /header not found/i.test(e.message);
+          if (!lag || i >= attempts) throw e;
+          await new Promise((r) => setTimeout(r, delayMs * i));
+        }
+      }
+    };
+    return { ...t, request };
+  };
+}
+
 let cachedPublic: PublicClient | undefined;
 export function publicClient(): PublicClient {
   cachedPublic ??= createPublicClient({
     chain: qorechainTestnet,
     // JSON-RPC batching (the endpoint accepts batches, checked): one request carries the calls made together.
-    transport: http(NETWORK.evmRpc, { retryCount: 3, retryDelay: 400, batch: { batchSize: 25, wait: 16 } }),
+    transport: lagTolerant(
+      http(NETWORK.evmRpc, { retryCount: 3, retryDelay: 400, batch: { batchSize: 25, wait: 16 } }),
+    ),
   }) as PublicClient;
   return cachedPublic;
 }

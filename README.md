@@ -76,11 +76,13 @@ Network `qorechain-diana`, EVM chain id 9800. Source in [`contracts/src`](contra
 
 | Contract         | Address                                      | Deploy transaction                                                   |
 | ---------------- | -------------------------------------------- | -------------------------------------------------------------------- |
-| MizuhikiRegistry | `0x302942b02c5e6746e92acf64c95e3ef42bdd64ea` | `0x1ec621af026a74f89f2a88ed3ca77af2cde9936ee55ac008696f45371f121c60` |
+| MizuhikiRegistry | `0xb3a27b35a9fb50dbd3b5f14a8c27445c37e64641` | `0x64445b49298b618f285b560b8248c0fd6d9012eb299cb810f0c639fa1ddd6f2d` |
 | CapsuleVault     | `0x52501bdb5d8fb4c87ebb10b41b52b1cf9b8e263c` | `0xa817e85b75ca5b407ec4764ff7ed3bca4c26f10c12f3bbf6420856a05a6729a2` |
 | AnchorBook       | `0x9d5379a7f28bae86e087abb8e7a72274335f316a` | `0xa2e4eeb86fc9a6c2346e83ceff1221b6d2fc6b1b0cc6d576c0954f55a0cade18` |
 
 Explorer: <https://explore.qore.network>. The `/onchain` page shows each one's code size and deploy receipt, read live.
+The registry was redeployed with the fix for [security review finding 1](SECURITY_REVIEW.md#findings); the first one,
+`0x302942b02c5e6746e92acf64c95e3ef42bdd64ea`, is still read for proof anchors made before AnchorBook existed.
 
 ## Repository
 

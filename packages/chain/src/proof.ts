@@ -13,7 +13,8 @@ import { Action, bytes32Text, publicClient, signAction, writeContract } from "./
 import { ensureWindow, type Owner } from "./registry";
 import { ChainError } from "./errors";
 
-const reg = { address: CONTRACTS.registry, abi: mizuhikiRegistryAbi } as const;
+/** Anchors made before AnchorBook existed live in the first registry; the current one has none. */
+const reg = { address: CONTRACTS.legacyRegistry, abi: mizuhikiRegistryAbi } as const;
 const book = { address: CONTRACTS.anchorBook, abi: anchorBookAbi } as const;
 const PAGE = 50n;
 

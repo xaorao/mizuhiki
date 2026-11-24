@@ -50,7 +50,7 @@ import { ensurePersona, type ReadyPersona } from "@mizuhiki/testnet";
 import { DeliveryAgent } from "@mizuhiki/delivery-agent";
 import type { FastifyInstance } from "fastify";
 import { loadConfig } from "../../src/config";
-import { runMigrations } from "@mizuhiki/db";
+import { makeDb, runMigrations } from "@mizuhiki/db";
 import { buildServer } from "../../src/server";
 
 const DB = "postgres://mizuhiki:mizuhiki-local-dev@127.0.0.1:5432/mizuhiki_test";
@@ -574,6 +574,19 @@ describe("shop: discounts, call slots and a commission", () => {
 });
 
 describe("shop: Instant delivery by the helper", () => {
+  it("publishes the helper's own sealing card when the server has none", async () => {
+    const { sql: q } = makeDb(DB);
+    await q`delete from cards where address = ${helper.address}`;
+    await q.end();
+    expect((await app.inject({ method: "GET", url: `/cards/${helper.address}` })).statusCode).toBe(404);
+    const agent = new DeliveryAgent({ api: base, phrase: helper.phrase, log: () => undefined });
+    expect(await agent.ensureCard()).toBe("published");
+    const got = await app.inject({ method: "GET", url: `/cards/${helper.address}` });
+    expect(got.statusCode).toBe(200);
+    expect(got.json<{ card: { address: string } }>().card.address).toBe(helper.address);
+    expect(await agent.ensureCard()).toBe("present");
+  });
+
   it("a buyer key (no account) pays and the helper seals it at once", async () => {
     const p = await publishProduct(
       { slug: "instant-report", kind: "report", delivery: "instant", agent: helper.address },

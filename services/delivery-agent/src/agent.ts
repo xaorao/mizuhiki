@@ -8,8 +8,8 @@
  * keys to the buyer. It never sees anything the seller did not choose to give it.
  */
 import { signSiwq } from "@qorechain/qoresign";
-import type { SealKeyPair } from "@qorechain/qoreseal";
-import { DeliveryRefused, pqKeyViaEvm, prepareDelivery } from "@mizuhiki/chain";
+import { signRecipientCard, type SealKeyPair } from "@qorechain/qoreseal";
+import { DeliveryRefused, NETWORK, pqKeyViaEvm, prepareDelivery } from "@mizuhiki/chain";
 import {
   ProductDefSchema,
   Purpose,
@@ -45,6 +45,8 @@ export interface AgentConfig {
 export class DeliveryAgent {
   readonly keys: AccountKeys;
   private token: string | null = null;
+  /** Whether this helper's sealing card is known to be on the server (checked once per run). */
+  private cardOnServer = false;
   private readonly api: string;
   private readonly log: (line: string) => void;
   /** Orders this helper refused, with why, so the same refusal is not retried every pass. */
@@ -142,8 +144,34 @@ export class DeliveryAgent {
   }
 
   /** One pass: deliver every paid order this helper is allowed to. Returns refs delivered. */
+  /**
+   * Sellers seal product keys to this helper's card, read from the server. A new or rebuilt database has no card for
+   * it, and Instant delivery would then fail for every seller; so the helper publishes its own signed card when it is
+   * missing. Its keys are already on QoreChain (provision registers them); the server checks the card against them.
+   */
+  async ensureCard(): Promise<"present" | "published"> {
+    const r = await fetch(`${this.api}/cards/${this.address}`);
+    if (r.ok) return "present";
+    if (r.status !== 404) throw new Error(`/cards answered ${r.status}`);
+    const card = signRecipientCard({
+      chainId: NETWORK.chainId,
+      address: this.address,
+      keys: this.keys.seal,
+      classicalKey: this.keys.classical,
+      pqKey: this.keys.pq,
+    });
+    if (!this.token) await this.signIn();
+    await this.call("/cards", { method: "PUT", body: { card } });
+    this.log(`published the helper's sealing card for ${this.address}`);
+    return "published";
+  }
+
   async pass(): Promise<string[]> {
     if (!this.token) await this.signIn();
+    if (!this.cardOnServer) {
+      await this.ensureCard();
+      this.cardOnServer = true;
+    }
     const r = await this.call<{
       orders: AgentOrder[];
       products: { id: string; record: Signed<ProductDef>; agentEnvelope: string | null }[];

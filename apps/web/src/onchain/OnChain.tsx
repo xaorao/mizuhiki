@@ -302,14 +302,14 @@ function ActivityList({ attempt, retry }: { attempt: number; retry: () => void }
   );
 }
 
-/** The Q-Day Drill rehearsal (`pnpm --filter @mizuhiki/testnet drill`, 2026-11-21): the two calls that reached a contract. */
+/** The Q-Day Drill rehearsal (`pnpm --filter @mizuhiki/testnet drill`, last run 2026-11-24 against the current contracts): the two calls that reached a contract. */
 const DRILL_CALLS: { hash: `0x${string}`; what: string }[] = [
   {
-    hash: "0x4cc25cdfe5961dd8d81aab415262cb9b7933932548f1fd7045ee4dde82669611",
+    hash: "0x28788dff2251fe906bdc004774155190eb7511ab67d9b4146f7067dd0e2afd0c",
     what: "Release the owner's page name, signed with a key that is not the owner's",
   },
   {
-    hash: "0x73b2ce344a6c4aaa545b97e851ad3c2bc7d8ca96284a688287df6e10543c7054",
+    hash: "0x60e76d9b0ffc11cffe58c105a9025bf92e0fefc07bcd1b4fd59827e75b48d0fd",
     what: "Record a fingerprint in the owner's name, with the same forged signature",
   },
 ];

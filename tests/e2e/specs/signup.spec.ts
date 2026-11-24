@@ -111,6 +111,10 @@ test("sign up: name, goal, look, blocks, profile, key, setup on chain, live page
   expect(send.memo).toBe("mzk:starter-grant");
   expect(send.messages[0]?.to_address).toBe(account.address.bech32);
   expect(send.messages[0]?.amount).toEqual([{ denom: DENOMS.QOR.denom, amount: "200000" }]);
+  // Once the coins are in, the step stops waiting but keeps the receipt: where the test QOR came from stays visible.
+  await expect(page.getByText(/This screen moves on by itself/)).toHaveCount(0, { timeout: 120_000 });
+  await expect(sent).toBeVisible();
+  await page.screenshot({ path: info.outputPath("s9b-funded.png") });
 
   await expect(page.getByRole("heading", { name: "Your page is live" })).toBeVisible({ timeout: 300_000 });
   await page.screenshot({ path: info.outputPath("done.png") });
