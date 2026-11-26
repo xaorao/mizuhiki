@@ -228,10 +228,39 @@ export class PayFailure extends Error {
   }
 }
 
-function asFailure(e: unknown): PayFailure {
+const NETWORK_NAMES: Record<string, string> = { "qorechain-vladi": "mainnet", "qorechain-diana": "testnet" };
+
+/**
+ * QoreX signs only on the network selected in the wallet, and a page cannot switch it ("QoreX: chain
+ * qorechain-diana does not match the active network qorechain-vladi"). Say what to do, in the wallet's terms. QoreX
+ * 0.4.2 keeps its testnet switch in Developer mode, which opens after seven taps on the version number at the bottom
+ * of the wallet (checked in the shipped extension).
+ */
+export function qorexNetworkMismatch(message: string, then = "pay again. No money moved."): string | null {
+  const m = /does not match the active network ([\w-]+)/i.exec(message);
+  if (!m) return null;
+  const active = NETWORK_NAMES[m[1] ?? ""] ?? m[1] ?? "another network";
+  const wanted = NETWORK_NAMES[NETWORK.chainId] ?? NETWORK.chainId;
+  const how =
+    wanted === "testnet"
+      ? "In QoreX, tap the version number at the bottom 7 times, choose “Switch to testnet (diana)”,"
+      : `Switch QoreX to ${wanted},`;
+  return `QoreX is on QoreChain ${active}, and this page uses ${wanted}. ${how} then ${then}`;
+}
+
+export function asFailure(e: unknown): PayFailure {
   if (e instanceof PayFailure) return e;
   if (e instanceof ChainError) return new PayFailure(e.message, e.moved, e.txHash);
   const msg = (e as Error).message;
+  const network = qorexNetworkMismatch(msg);
+  if (network) return new PayFailure(network, "no");
+  // QoreX takes one request per site at a time. An earlier one may still be paid if it is approved, so this says
+  // only that this attempt sent nothing.
+  if (/already waiting for your answer/i.test(msg))
+    return new PayFailure(
+      "QoreX still has an earlier request from this page. Open QoreX and answer it first (reject it if you did not mean it), then pay again. This attempt sent nothing.",
+      "no",
+    );
   if (/reject|denied|cancel/i.test(msg)) return new PayFailure("You cancelled in the wallet. No money moved.", "no");
   return new PayFailure(msg.startsWith("QoreX") ? msg : PAY_UNKNOWN_TEXT, "unknown");
 }

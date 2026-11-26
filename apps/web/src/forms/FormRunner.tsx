@@ -23,7 +23,7 @@ import {
   type RecipientCard,
 } from "@mizuhiki/core";
 import { mediaUrl } from "@/lib/api";
-import { qorex } from "@/lib/pay";
+import { qorex, qorexNetworkMismatch } from "@/lib/pay";
 import { NETWORK } from "@mizuhiki/chain";
 import { SUBMIT_LABEL, formEvent, submitAnswers, type SubmitStep } from "./submit";
 import { SignaturePad } from "./SignaturePad";
@@ -517,6 +517,7 @@ function QuestionView({
   onOther: (t: string) => void;
 }) {
   const [fileErr, setFileErr] = useState<string | null>(null);
+  const [walletErr, setWalletErr] = useState<string | null>(null);
   const order = useMemo(() => {
     if (!("choices" in q)) return [];
     const c = [...q.choices];
@@ -593,17 +594,31 @@ function QuestionView({
               onClick={() => {
                 const w = qorex();
                 if (!w) return;
+                setWalletErr(null);
                 void w
                   .enable(NETWORK.chainId)
                   .then(() => w.getKey(NETWORK.chainId))
                   .then(
                     (k) => onChange(k.bech32Address),
-                    () => undefined,
+                    (e: unknown) => {
+                      const msg = e instanceof Error ? e.message : String(e);
+                      setWalletErr(
+                        qorexNetworkMismatch(msg, "tap again.") ??
+                          (/reject|denied|cancel/i.test(msg)
+                            ? "You cancelled in QoreX. Type the address instead, or tap again."
+                            : "QoreX did not share an address. Type it instead, or tap again."),
+                      );
+                    },
                   );
               }}
             >
               <Icon name="wallet" size={15} /> Use my QoreX address
             </button>
+          ) : null}
+          {walletErr ? (
+            <p className={s.err} role="alert">
+              <Icon name="alert" size={14} /> {walletErr}
+            </p>
           ) : null}
         </>
       ) : null}

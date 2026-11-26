@@ -153,6 +153,51 @@ test("pay: Mizuhiki wallet from a deep link, fUSD, sealed note for both; owner s
   await octx.close();
 });
 
+test("pay: QoreX left on mainnet is refused with how to switch; after switching, the same payment goes through", async ({
+  browser,
+}, info) => {
+  test.skip(info.project.name !== "desktop", "on-chain flow runs once");
+  test.setTimeout(420_000);
+  await ensureOwner("e2e-editor", OWNER);
+  // QoreX starts on mainnet; the mock refuses with the same text as the real extension (QoreX 0.4.2, checked by hand).
+  const mock = createQorexMock({
+    mnemonic: personaPhrase("e2e-qorex"),
+    rest: `${API}/chain`,
+    chainId: "qorechain-vladi",
+  });
+  await topUp(mock.addresses().native, DENOMS.QOR.denom, 3_000_000n, "e2e-qorex");
+  const ctx = await browser.newContext();
+  await ctx.addInitScript({ content: mock.initScript() });
+  const p = await ctx.newPage();
+  await p.goto(`/@${OWNER}`);
+  await p.getByRole("button", { name: /Pay Kinari/ }).click();
+  const sheet = p.getByRole("dialog", { name: "Pay Kinari" });
+  await sheet.getByLabel("Amount").fill("0.1");
+  await sheet.getByRole("button", { name: "QOR (test)" }).click();
+  await sheet.getByRole("button", { name: /Continue · 0\.1 QOR/ }).click();
+  await sheet.getByRole("radio", { name: /Pay with QoreX/ }).click();
+  await p.getByRole("dialog", { name: "Review" }).getByRole("button", { name: "Pay 0.1 QOR" }).click();
+  await expect(p.getByText(/Not paid$/)).toBeVisible({ timeout: 60_000 });
+  await expect(
+    p.getByText(
+      "QoreX is on QoreChain mainnet, and this page uses testnet. In QoreX, tap the version number at the bottom 7 times, choose \u201cSwitch to testnet (diana)\u201d, then pay again. No money moved.",
+    ),
+  ).toBeVisible();
+  await p.screenshot({ path: info.outputPath("qorex-wrong-network.png") });
+  // The person switches QoreX to testnet and pays again from the same sheet.
+  await p.evaluate(() =>
+    (window as unknown as { __qorexMock: { switchNetwork(c: string): void } }).__qorexMock.switchNetwork(
+      "qorechain-diana",
+    ),
+  );
+  await p.getByRole("button", { name: "Back to review" }).click();
+  await p.getByRole("dialog", { name: "Review" }).getByRole("button", { name: "Pay 0.1 QOR" }).click();
+  const done = p.getByRole("dialog", { name: "Paid Kinari" });
+  await expect(done.getByText("Paid Kinari 0.1 QOR.")).toBeVisible({ timeout: 180_000 });
+  expect((await getTx(txOf(await done.innerText())))?.code).toBe(0);
+  await ctx.close();
+});
+
 test("pay: QoreX (wallet mock, real signing) pays QOR; a rejection moves nothing", async ({ browser }, info) => {
   test.skip(info.project.name !== "desktop", "on-chain flow runs once");
   test.setTimeout(420_000);

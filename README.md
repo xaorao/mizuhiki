@@ -29,6 +29,9 @@ so this guide cannot drift from the product.
 5. **Message yourself from a private window** (step 2 on your own `/@name`), then open it in your **Inbox**. It opens
    on your device only: our server holds sealed bytes it cannot read.
 
+Paying with the QoreX extension: QoreX starts on mainnet. To use it here, tap the version number at the bottom of QoreX
+seven times, then choose **Switch to testnet (diana)**. If you forget, the payment screen says so and nothing is sent.
+
 ## Encrypted Apps requirements, and where each is met
 
 | Requirement                           | How Mizuhiki meets it                                                                                                                                                                             | Evidence                                                                                                                                                                  |
