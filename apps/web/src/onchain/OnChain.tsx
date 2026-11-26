@@ -380,6 +380,7 @@ export function OnChain() {
       <header className={s.bar}>
         <Wordmark size={20} href="/" />
         <nav aria-label="Proof">
+          <Link href="/tour">Product tour</Link>
           <Link href="/proof">Check a document</Link>
           <Link href="/legal/privacy">Privacy</Link>
         </nav>

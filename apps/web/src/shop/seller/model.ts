@@ -222,11 +222,28 @@ export function orderStatus(o: Pick<OrderView, "status" | "delivery">): { label:
 export const shortAddr = (a: string) => (a.length > 16 ? `${a.slice(0, 9)}…${a.slice(-5)}` : a);
 
 /** Who bought it, as the seller should read it. */
-export function buyerLabel(o: Pick<OrderView, "payer" | "request">): string {
+/**
+ * Who an order is from, for the seller: the buyer's @name when they have one (looked up from QoreChain names by
+ * the caller), otherwise their shortened address.
+ */
+export function buyerLabel(
+  o: Pick<OrderView, "payer" | "request">,
+  names: Readonly<Record<string, string | null | undefined>> = {},
+): string {
+  const who = (a: string) => (names[a] ? `@${names[a]}` : shortAddr(a));
   const r = o.request.recipient;
-  if (o.request.gift && r.kind === "account") return `Gift to ${shortAddr(r.address)}`;
-  if (o.payer) return shortAddr(o.payer);
-  return r.kind === "account" ? shortAddr(r.address) : "A buyer key (not paid yet)";
+  if (o.request.gift && r.kind === "account") return `Gift to ${who(r.address)}`;
+  if (o.payer) return who(o.payer);
+  return r.kind === "account" ? who(r.address) : "A buyer key (not paid yet)";
+}
+
+/** Every account an order list names: payers and account recipients. */
+export function orderAccounts(os: readonly Pick<OrderView, "payer" | "request">[]): string[] {
+  const all = os.flatMap((o) => [
+    ...(o.payer ? [o.payer] : []),
+    ...(o.request.recipient.kind === "account" ? [o.request.recipient.address] : []),
+  ]);
+  return [...new Set(all)];
 }
 
 export interface OrderLineView {

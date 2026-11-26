@@ -32,6 +32,7 @@ import { PageView } from "@/page/PageView";
 import { pageUrl } from "@/lib/site";
 import { downloadBytes } from "@/lib/download";
 import { buildSpareKeySheet } from "@/lib/pdfs";
+import { markSheet } from "@/recovery/engine";
 import { AddSheet } from "./AddSheet";
 import { BlockCard } from "./BlockCard";
 import { mapBlocks, moveBlock, updateBlock } from "./blocks";
@@ -493,6 +494,11 @@ function ChecklistAction({ id, onAddBlock, onShare }: { id: string; onAddBlock: 
               .then((bytes) => {
                 downloadBytes(bytes, `mizuhiki-spare-key-${d.manifest.name}.pdf`);
                 o.edit((x) => markChecklist(x, "spareKey", "done"));
+                // The Spare key page shows the same fact; a failed note there does not undo the download.
+                void o
+                  .token()
+                  .then((token) => markSheet({ ...o.account, token }, "sheet"))
+                  .catch(() => undefined);
                 toast.show("Spare-key sheet saved. Keep it offline.");
               })
               .catch(() => toast.show("Could not build the sheet.", { tone: "error" }))

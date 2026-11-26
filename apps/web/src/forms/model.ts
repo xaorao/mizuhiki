@@ -272,6 +272,9 @@ type Tpl = {
   description: string;
   blocks: [KindInfo["kind"], string, Partial<Question>?][];
 };
+/** Answer choices for a template question, so a form made from a template is ready to send as it is. */
+const options = (...labels: string[]) => ({ choices: labels.map((label) => ({ id: `c${newId(5)}`, label })) });
+
 export const TEMPLATES: Tpl[] = [
   {
     key: "contact",
@@ -290,8 +293,16 @@ export const TEMPLATES: Tpl[] = [
     blocks: [
       ["short", "What's your name?"],
       ["short", "Company", { required: false }],
-      ["checkboxes", "Which services do you need?"],
-      ["choice", "What's your budget?"],
+      [
+        "checkboxes",
+        "Which services do you need?",
+        options("Brand identity", "Packaging", "Website", "Print and signage"),
+      ],
+      [
+        "choice",
+        "What's your budget?",
+        options("Under $2,000", "$2,000 to $5,000", "$5,000 to $15,000", "Over $15,000"),
+      ],
       ["date", "When should it be ready?"],
       ["file", "Upload a brief", { required: false }],
       ["email", "Your email"],
@@ -328,7 +339,11 @@ export const TEMPLATES: Tpl[] = [
       ["short", "Your name"],
       ["yesno", "Will you come?"],
       ["number", "How many guests with you?", { required: false }],
-      ["dropdown", "Meal preference", { required: false }],
+      [
+        "dropdown",
+        "Meal preference",
+        { required: false, ...options("No preference", "Vegetarian", "Vegan", "Gluten free") },
+      ],
     ],
   },
 ];

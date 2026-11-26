@@ -196,6 +196,8 @@ describe("orders", () => {
     const gift = order();
     gift.request = { ...gift.request, gift: true };
     expect(buyerLabel(gift)).toMatch(/^Gift to qor1/);
+    // With the buyer's QoreChain name known, the seller sees the @name instead of the address.
+    expect(buyerLabel(order(), { [order().payer ?? ""]: "leaf.kettle" })).toBe("@leaf.kettle");
   });
   it("offers only the actions that make sense", () => {
     expect(canDeliver(order())).toBe(true);

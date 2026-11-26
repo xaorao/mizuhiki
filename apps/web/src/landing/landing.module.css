@@ -2081,7 +2081,10 @@
 
 .proofMore {
   margin: 24px 0 0;
-  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 28px;
 }
 .proofMore a {
   display: inline-flex;

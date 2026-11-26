@@ -10,6 +10,53 @@ Freelancers, lawyers, clinics and families give out one link. Through it people 
 
 Runs on the **QoreChain test network** (`qorechain-diana`, EVM chain id 9800). Category: **Encrypted Apps**.
 
+**Product tour:** 46 screens of the product at work, captured from the running app on testnet, are on the `/tour` page and in [`apps/web/src/tour/shots`](apps/web/src/tour/shots). **Proof page:** `/onchain` reads our contracts, keys and signatures from the chain in your browser.
+
+## Why it exists
+
+- **The link in your bio sees everything.** Contact forms, DMs, file drops and payment notes pass through platforms that can read them, and a breach of any of them exposes everything ever sent.
+- **Encrypted today is not encrypted forever.** Traffic recorded now can be decrypted once quantum computers break today's key exchange. Mizuhiki seals with ML-KEM-1024 and signs with ML-DSA-87, so what is sent today stays sealed.
+- **Keys you can check, not keys you trust.** A sender's browser reads the owner's keys from QoreChain, not from our server, so we could not swap them even if we wanted to.
+
+## See it
+
+<table>
+  <tr>
+    <td width="50%"><img src="apps/web/src/tour/shots/message-1-write.webp" alt="A visitor writes to Aria and attaches a file"></td>
+    <td width="50%"><img src="apps/web/src/tour/shots/message-3-sealed.webp" alt="The seal receipt"></td>
+  </tr>
+  <tr>
+    <td>A visitor with no account writes to Aria and attaches a file.</td>
+    <td>Sealed in their browser to her ML-KEM-1024 key. Nothing readable goes on chain.</td>
+  </tr>
+  <tr>
+    <td><img src="apps/web/src/tour/shots/message-4-opened.webp" alt="Aria's inbox with the message opened"></td>
+    <td><img src="apps/web/src/tour/shots/shop-5-sales.webp" alt="Aria's sales list"></td>
+  </tr>
+  <tr>
+    <td>It opens on Aria's device only. Our server held ciphertext.</td>
+    <td>Her own device seals each purchase to the buyer once the payment is on chain.</td>
+  </tr>
+  <tr>
+    <td><img src="apps/web/src/tour/shots/invoice-5-paid.webp" alt="Invoices marked paid"></td>
+    <td><img src="apps/web/src/tour/shots/chain-4-drill.webp" alt="Q-Day Drill rehearsal results"></td>
+  </tr>
+  <tr>
+    <td>Invoices turn paid from the chain, not from anyone's say-so.</td>
+    <td>An attacker with a stolen classical key tried 16 attacks. All 16 were refused.</td>
+  </tr>
+</table>
+
+## Proof, in numbers
+
+| What                     | Result                                                                                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Q-Day Drill rehearsal    | 16 of 16 attacks with only the classical key refused by the chain or the contracts (`pnpm --filter @mizuhiki/testnet drill`)                                 |
+| Contracts                | 3 on testnet, no funds, no admin key; 41 Foundry tests; Slither on all three, the QoreChain Dashboard auditor on the registry ([review](SECURITY_REVIEW.md)) |
+| Tests                    | 160 unit, 93 integration and 100 end-to-end runs in Chrome, Firefox, Safari and a phone, all against the live testnet                                        |
+| Real wallet              | Every QoreX payment path driven through the shipped QoreX extension, each payment read back from the chain                                                   |
+| QoreChain kits, verified | QoreChain SDK, QoreSign, QoreSeal and QoreX integrations, marked verified on the [fest project page](https://build.qorechain.io/p/mizuhiki)                  |
+
 ## Try it in two minutes
 
 On a running Mizuhiki that has the demo pages. Every step below is also an end-to-end test against the real testnet
@@ -61,8 +108,8 @@ Twelve blocks can go on a page; each one that takes something in seals it before
 | ------------------ | ------------------------------------------------------------------------------------------------ |
 | Pay me             | Any amount in test QOR or test dollars, with a note only you (and the payer) can read            |
 | Invoices           | Line items sealed to you, your client and your accountant; paid status read from the chain       |
-| Messages and files | Notes and files up to 2 GB, sealed before upload; no account needed to send                      |
-| File requests      | A checklist of documents to ask for, sealed on the way in                                        |
+| Messages and files | Notes and files (500 MB each by default, up to 2 GB), sealed before upload; no account to send   |
+| File requests      | Ask for documents (up to 2 GB each), sealed on the way in                                        |
 | Forms              | Intake, applications, feedback; answers sealed in the respondent's browser                       |
 | Shop               | Files, calls, commissions and tips; each buyer gets their own sealed copy                        |
 | Rooms              | Group chats and files; removing someone gives the room a new key                                 |
@@ -94,6 +141,15 @@ Network `qorechain-diana`, EVM chain id 9800. Source in [`contracts/src`](contra
 Explorer: <https://explore.qore.network>. The `/onchain` page shows each one's code size and deploy receipt, read live.
 The registry was redeployed with the fix for [security review finding 1](SECURITY_REVIEW.md#findings); the first one,
 `0x302942b02c5e6746e92acf64c95e3ef42bdd64ea`, is still read for proof anchors made before AnchorBook existed.
+
+## Documents
+
+| Document                                 | What is in it                                                                                |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------- |
+| [ARCHITECTURE.md](ARCHITECTURE.md)       | How the pieces fit: keys, sealing, records, contracts, indexer, and every protocol in detail |
+| [THREAT_MODEL.md](THREAT_MODEL.md)       | Every party we defend against, what each can and cannot do, and the test that covers it      |
+| [SECURITY_REVIEW.md](SECURITY_REVIEW.md) | The contract review: Slither, a manual review, the auditor's findings and the attacker tests |
+| [AI_USAGE.md](AI_USAGE.md)               | How the product was built with an AI agent: who decided what, how the work was checked       |
 
 ## Repository
 
@@ -168,6 +224,8 @@ pnpm test:integration   # API, indexer and chain reads against the real testnet
 pnpm test:e2e           # Playwright against the dev server
 pnpm test:e2e:prod      # the whole suite against a production build (stop the dev web server first)
 ```
+
+The product tour's screens are made by a script too: `pnpm --filter @mizuhiki/e2e demo:tour` drives every feature on the demo accounts against testnet, then `node tools/tour-images.mjs` turns the screenshots into the `/tour` page's images.
 
 The integration and end-to-end suites make real testnet transactions. They fund disposable accounts from a testnet-only wallet read from `~/.secrets/qorechain/testnet-wallet.env` (one `QORE_MNEMONIC` line holding a testnet phrase); persona phrases are kept in `var/personas.json`, both outside version control. The end-to-end suites run on desktop and phone viewports, with Firefox, WebKit and an iPhone profile for the core journey, and fail on any console error, page error or failed request.
 

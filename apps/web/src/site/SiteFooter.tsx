@@ -7,6 +7,7 @@ export function SiteFooter() {
     <footer className={s.foot}>
       <nav aria-label="Mizuhiki">
         <Link href="/">Home</Link>
+        <Link href="/tour">Product tour</Link>
         <Link href="/onchain">Proof on QoreChain</Link>
         <Link href="/proof">Check a document</Link>
         <Link href="/legal/privacy">Privacy</Link>

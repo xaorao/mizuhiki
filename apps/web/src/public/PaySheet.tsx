@@ -533,7 +533,7 @@ export function PaySheet({
               <dd>
                 {prepared.note
                   ? `Sealed · ${prepared.note.readers > 1 ? `${first} and you` : `only ${first}`}`
-                  : "None"}
+                  : "No note"}
               </dd>
             </div>
           </dl>
@@ -637,7 +637,7 @@ export function PaySheet({
                     ? result.noteDelivered === false
                       ? "Sealed, not stored yet"
                       : `Sealed and stored for ${first}`
-                    : "None",
+                    : "No note",
                 },
                 { term: "On chain", value: `Block ${result.height}` },
               ]}

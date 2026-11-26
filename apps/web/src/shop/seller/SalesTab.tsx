@@ -24,11 +24,13 @@ import { formatAmount, parseAmount } from "@mizuhiki/core";
 import { ChainError, explorerAddress, explorerTx } from "@mizuhiki/chain";
 import { useOwnerSession } from "@/owner/OwnerProvider";
 import { useDebounced, useRoomEvents } from "@/rooms/useRoom";
+import { nameOf } from "@/rooms/engine";
 import { listSales, refund, requestBalance, withToken, type OrderView } from "../engine";
 import { deliverNow, useDelivering, useOutcomes } from "./delivery";
 import {
   amountInput,
   buyerLabel,
+  orderAccounts,
   canAskRest,
   canDeliver,
   canRefund,
@@ -48,6 +50,7 @@ export function SalesTab({ onWaiting }: { onWaiting?: (n: number) => void }) {
   const outcomes = useOutcomes();
   const delivering = useDelivering();
   const [orders, setOrders] = useState<OrderView[] | null>(null);
+  const [names, setNames] = useState<Record<string, string | null>>({});
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [busy, setBusy] = useState<string | null>(null);
@@ -91,6 +94,18 @@ export function SalesTab({ onWaiting }: { onWaiting?: (n: number) => void }) {
   useEffect(() => {
     onWaiting?.(orders?.filter(canDeliver).length ?? 0);
   }, [orders, onWaiting]);
+  // Buyers by their @name where they have one; looked up once per address.
+  useEffect(() => {
+    const missing = orderAccounts(orders ?? []).filter((a) => !(a in names));
+    if (!missing.length) return;
+    let live = true;
+    void Promise.all(missing.map(async (a) => [a, await nameOf(a).catch(() => null)] as const)).then((pairs) => {
+      if (live) setNames((n) => ({ ...n, ...Object.fromEntries(pairs) }));
+    });
+    return () => {
+      live = false;
+    };
+  }, [orders, names]);
 
   const deliverOne = async (o: OrderView) => {
     setBusy(o.ref);
@@ -211,7 +226,7 @@ export function SalesTab({ onWaiting }: { onWaiting?: (n: number) => void }) {
               <li key={o.ref} className={s.order}>
                 <div className={s.orderHead}>
                   <div className={s.orderWho}>
-                    <b>{buyerLabel(o)}</b>
+                    <b>{buyerLabel(o, names)}</b>
                     <small>
                       {when(o.createdAt)} · Order <code className={s.mono}>{o.ref.slice(0, 10)}</code>
                     </small>

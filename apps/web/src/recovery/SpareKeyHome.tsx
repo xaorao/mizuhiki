@@ -31,6 +31,7 @@ import {
 import { unlockWithPassphrase } from "@mizuhiki/core";
 import { useAccount } from "@/account/AccountProvider";
 import { useOwner } from "@/owner/OwnerProvider";
+import { markChecklist } from "@/editor/checklist";
 import { SITE_URL } from "@/lib/site";
 import { downloadBytes } from "@/lib/download";
 import { buildSpareKeySheet } from "@/lib/pdfs";
@@ -329,6 +330,8 @@ function SheetPanel({ m, tokened, reload }: { m: Mine; tokened: () => Promise<To
       });
       downloadBytes(bytes, `mizuhiki-spare-key-${name}.pdf`);
       await markSheet(await tokened(), "sheet");
+      // The same sheet ticks the setup checklist on the editor.
+      owner.edit((x) => markChecklist(x, "spareKey", "done"));
       toast.show("Sheet saved. Print it, or keep it somewhere offline.");
       setAsking(false);
       setPass("");

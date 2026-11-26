@@ -46,6 +46,7 @@ const NAV: [string, string][] = [
   ["#templates", "Templates"],
   ["#security", "Security"],
   ["#faq", "Questions"],
+  ["/tour", "Tour"],
 ];
 
 const MARQUEE: [string, string][] = [
@@ -772,6 +773,9 @@ export function Landing() {
               <Link href="/onchain">
                 See every contract, key and signature, checked live <Icon name="arrow" size={14} />
               </Link>
+              <Link href="/tour">
+                Or every feature, screen by screen <Icon name="arrow" size={14} />
+              </Link>
             </p>
           </div>
         </section>
@@ -1111,6 +1115,7 @@ export function Landing() {
               <a href="#features">Features</a>
               <a href="#templates">Templates</a>
               <a href="/@aria">Example page</a>
+              <Link href="/tour">Product tour</Link>
               <Link href={hasAccount ? "/app" : "/login"}>Owner app</Link>
             </nav>
             <nav aria-label="Pages for">

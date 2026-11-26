@@ -160,7 +160,7 @@ export function SealTo({
             <Icon name="lock" size={16} /> Sealed to
           </span>
           {choice.recipient.kind === "account" ? (
-            <CopyValue value={choice.recipient.address} label="the address it is sealed to" />
+            <CopyValue value={choice.recipient.address} label="the address it is sealed to" short />
           ) : (
             <code className={s.fp}>{fingerprint(picked?.hash ?? "", 32)}</code>
           )}

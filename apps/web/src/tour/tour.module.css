@@ -1,0 +1,258 @@
+.shell {
+  min-height: 100dvh;
+  background: var(--cream);
+  padding: 20px 16px 0;
+}
+.bar {
+  max-width: 1120px;
+  margin: 0 auto 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.bar nav {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.bar nav a {
+  color: var(--ink-muted);
+  font-weight: 700;
+  text-decoration: none;
+}
+.bar nav a:hover {
+  color: var(--ink);
+}
+.main {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: grid;
+  gap: 72px;
+  padding-bottom: 96px;
+}
+.hero {
+  display: grid;
+  gap: 12px;
+  max-width: 720px;
+}
+.heroMm {
+  justify-self: start;
+}
+.hero h1 {
+  margin: 0;
+  font-family: var(--font-round);
+  font-weight: 900;
+  font-size: clamp(34px, 5.4vw, 54px);
+  line-height: 1.06;
+}
+.lead {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 17px;
+  line-height: 1.55;
+  max-width: 720px;
+}
+
+/* Chapter list: a compact index that wraps */
+.toc {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 24px;
+  padding: 20px 24px;
+  background: var(--paper);
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: var(--drop);
+}
+.toc a {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 6px 0;
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+.toc a span {
+  color: var(--cord-text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.toc a:hover {
+  text-decoration: underline;
+}
+
+.chapter {
+  display: grid;
+  gap: 24px;
+  scroll-margin-top: 24px;
+}
+.chapterHead {
+  display: grid;
+  gap: 10px;
+}
+.chapterHead h2 {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  font-family: var(--font-round);
+  font-weight: 900;
+  font-size: clamp(26px, 3.6vw, 34px);
+  line-height: 1.15;
+}
+.num {
+  color: var(--cord-text);
+  font-family: var(--font-mono);
+  font-size: 0.55em;
+  font-weight: 700;
+}
+
+.shots {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 40px 28px;
+  align-items: start;
+}
+.wide {
+  grid-column: span 6;
+}
+.half {
+  grid-column: span 3;
+}
+.dialog,
+.phone {
+  grid-column: span 2;
+}
+.shots figure {
+  margin: 0;
+  display: grid;
+  gap: 14px;
+}
+.frame {
+  display: block;
+  overflow: hidden;
+  background: var(--white);
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-md);
+  box-shadow: var(--drop);
+  transition:
+    transform var(--t-toggle) var(--ease-out),
+    box-shadow var(--t-toggle) var(--ease-out);
+}
+.frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.frame:hover {
+  transform: translateY(-2px);
+}
+.frame:focus-visible {
+  outline: 3px solid var(--cord);
+  outline-offset: 3px;
+}
+.phone .frame {
+  border-radius: 28px;
+}
+.wide figcaption {
+  max-width: 760px;
+}
+.shots figcaption {
+  display: grid;
+  gap: 4px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+.shots figcaption b {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font-family: var(--font-round);
+  font-weight: 800;
+  font-size: 17px;
+}
+.step {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--sakura);
+  border: 2px solid var(--ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+.proof {
+  justify-self: start;
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border: 2px solid var(--ok);
+  border-radius: 999px;
+  background: var(--ok-soft);
+  color: var(--ok);
+  font-family: var(--font-round);
+  font-weight: 800;
+  font-size: 13px;
+  text-decoration: none;
+}
+.proof:hover {
+  text-decoration: underline;
+}
+
+.end {
+  display: grid;
+  gap: 14px;
+  padding: 32px;
+  background: var(--sakura-soft);
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: var(--drop);
+}
+.end h2 {
+  margin: 0;
+  font-family: var(--font-round);
+  font-weight: 900;
+  font-size: clamp(24px, 3.4vw, 30px);
+}
+.endLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .toc,
+  .shots {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wide,
+  .half,
+  .dialog,
+  .phone {
+    grid-column: auto;
+  }
+  .main {
+    gap: 56px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .frame {
+    transition: none;
+  }
+  .frame:hover {
+    transform: none;
+  }
+}
