@@ -6,7 +6,7 @@ rules and the quality bar, and made every decision that was his to make. The age
 tests and documents, ran them against the QoreChain testnet, and reported back with proof. This file covers the
 workflow, the tools the agent used, what it produced, how its work was checked, and where it went wrong.
 
-**In numbers:** about 126,000 lines of TypeScript, Solidity and CSS; 149 unit, 92 integration and 41 contract tests,
+**In numbers:** about 126,000 lines of TypeScript, Solidity and CSS; 160 unit, 93 integration and 41 contract tests,
 plus about 100 end-to-end runs in real browsers against the live testnet; 30 product videos and 1,736 frames studied
 before a screen was drawn; 16 of 16 Q-Day Drill attacks refused in rehearsal.
 
@@ -95,7 +95,7 @@ official mock, which signs with real hybrid keys, for wallet-path tests.
 - **Server**: the API, indexer and delivery helper (TypeScript, Fastify, PostgreSQL), including the starter grant
   that funds a new account with test QOR after a proof of control and a proof of work.
 - **Web app**: Next.js, where all sealing, signing and key handling happens in the user's browser.
-- **Tests**: 149 unit, 92 integration and 41 contract tests; about 100 end-to-end runs that drive Chrome, Firefox,
+- **Tests**: 160 unit, 93 integration and 41 contract tests; about 100 end-to-end runs that drive Chrome, Firefox,
   Safari and phone profiles through real testnet transactions, including a two-minute judge path taken straight from
   the README; and a live Q-Day Drill rehearsal.
 - **Documents**: [README](README.md), [ARCHITECTURE](ARCHITECTURE.md), [THREAT_MODEL](THREAT_MODEL.md),
@@ -112,6 +112,10 @@ AI output is checked like anyone else's, by things that do not take its word for
 - **Attacks, not only happy paths.** Forged, replayed, cross-contract and cross-chain signatures; a rehearsal of the
   Q-Day Drill where an attacker holds an account's classical key (16 of 16 attacks refused); Slither and QCAIA over the
   contracts.
+- **The real wallet, not only its test double.** Every QoreX payment path was also driven through the shipped QoreX
+  extension on testnet: payments in QOR and fUSD, a rejection, a shop purchase, a gift, a commission in two payments,
+  an invoice and a form's wallet field, each read back from the chain. The person set the throwaway wallet's password;
+  the agent did the rest.
 - **Looking at it.** Every screen and state was photographed on desktop and phone and read by eye, light and
   high-contrast themes, not only asserted. Zero console errors is part of every page's pass.
 - **The gates.** Nothing is committed until the repository audit, formatter, linter, type checker and tests pass. One
@@ -131,6 +135,12 @@ Some of the mistakes the checks above caught, kept here because they show the ch
   files were restored byte for byte.
 - Several "bugs" it first reported were screenshots taken mid-animation; each was re-checked on a fresh load before
   anything was changed.
+- The official QoreX test wallet passed every payment test, but the real extension starts on mainnet, hides its
+  testnet switch and takes one request at a time; the payer saw QoreX's raw error under "Not confirmed yet" although
+  nothing had moved. Caught by driving the real extension; fixed with plain instructions and a new end-to-end test.
+- Re-testing after the registry redeploy found four more: a lagging RPC node's "header not found" was not retried, an
+  fUSD shortfall was blamed on the QOR fee, a rebuilt database left Instant delivery without its helper's card, and a
+  race hid the starter-grant receipt in sign-up. Each was fixed with a test.
 - QCAIA reported a high-severity role escalation in the registry. The agent did not accept or dismiss it on reading
   alone: it traced the checks in the code and pointed to the test that proves an admin cannot grant admin.
 
