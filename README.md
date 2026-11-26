@@ -1,5 +1,7 @@
 # Mizuhiki 水引
 
+[![Built on QoreChain](https://build.qorechain.io/badge/mizuhiki.svg)](https://build.qorechain.io/p/mizuhiki)
+
 ![Mizuhiki: one link for everything private. Aria's page on a phone and the sealed inbox.](docs/mizuhiki.jpg)
 
 **A private link-in-bio page. Everything people send you is sealed in their browser with post-quantum encryption, so only you can open it.**
