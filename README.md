@@ -8,9 +8,13 @@ Runs on the **QoreChain test network** (`qorechain-diana`, EVM chain id 9800). C
 
 ## Try it in two minutes
 
-On a running Mizuhiki (locally: [Run it locally](#run-it-locally), then <http://localhost:3000>). Every step below is
-also an end-to-end test against the real testnet ([`tests/e2e/specs/judge.spec.ts`](tests/e2e/specs/judge.spec.ts)),
-so this guide cannot drift from the product.
+On a running Mizuhiki that has the demo pages. Every step below is also an end-to-end test against the real testnet
+([`tests/e2e/specs/judge.spec.ts`](tests/e2e/specs/judge.spec.ts)), so this guide cannot drift from the product.
+
+Running it yourself ([Run it locally](#run-it-locally))? A new database has no `@aria`: her name and keys are on
+QoreChain, but her page lives in the database of the instance she published to. Do step 3 first (it reads only the
+chain), then step 4 to make your own page, then steps 1, 2 and 5 on your own `/@name`. Locally, step 4 shows the
+QoreChain faucet for the first test QOR unless you provision the starter sponsor.
 
 1. **Open `/@aria`.** Before showing anything, your browser asks QoreChain who holds the name `aria` and which keys it
    has, and checks the page's signature: the footer says _"This page really is @aria's, checked on QoreChain just
@@ -110,7 +114,7 @@ Requirements: Node 24 or newer, pnpm 10.34, PostgreSQL 17, and Foundry for the c
 
 ```sh
 pnpm install
-pnpm setup                       # contract test library
+pnpm run setup                   # contract test library (not `pnpm setup`, which is pnpm's own command)
 
 # PostgreSQL: a local role and two databases (dev and integration tests)
 createuser mizuhiki --pwprompt   # password: mizuhiki-local-dev (local default; change it with DATABASE_URL)
