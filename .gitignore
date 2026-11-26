@@ -16,3 +16,7 @@ contracts/cache/
 contracts/broadcast/
 .DS_Store
 contracts/lib/
+
+# Vercel CLI link (local)
+.vercel
+.env*

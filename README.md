@@ -8,9 +8,11 @@
 
 Freelancers, lawyers, clinics and families give out one link. Through it people pay, send messages and files, fill in forms, buy from a shop, join a group room or leave a time capsule. Before anything leaves the sender's device it is sealed with ML-KEM-1024 to the owner's key, which the sender's browser reads from QoreChain. Our server stores sealed bytes it cannot open, so a breach of the server reveals nothing that was sent.
 
+**Live: <https://mizuhiki-app.vercel.app>** · Aria's page: <https://mizuhiki-app.vercel.app/@aria> · Product tour: <https://mizuhiki-app.vercel.app/tour> · Proof: <https://mizuhiki-app.vercel.app/onchain>
+
 Runs on the **QoreChain test network** (`qorechain-diana`, EVM chain id 9800). Category: **Encrypted Apps**.
 
-**Product tour:** 46 screens of the product at work, captured from the running app on testnet, are on the `/tour` page and in [`apps/web/src/tour/shots`](apps/web/src/tour/shots). **Proof page:** `/onchain` reads our contracts, keys and signatures from the chain in your browser.
+**Product tour:** 46 screens of the product at work, captured from the running app on testnet, on [`/tour`](https://mizuhiki-app.vercel.app/tour) and in [`apps/web/src/tour/shots`](apps/web/src/tour/shots). **Proof page:** [`/onchain`](https://mizuhiki-app.vercel.app/onchain) reads our contracts, keys and signatures from the chain in your browser.
 
 ## Why it exists
 
@@ -59,7 +61,7 @@ Runs on the **QoreChain test network** (`qorechain-diana`, EVM chain id 9800). C
 
 ## Try it in two minutes
 
-On a running Mizuhiki that has the demo pages. Every step below is also an end-to-end test against the real testnet
+On the live site, <https://mizuhiki-app.vercel.app>, which has the demo pages. Every step below is also an end-to-end test against the real testnet
 ([`tests/e2e/specs/judge.spec.ts`](tests/e2e/specs/judge.spec.ts)), so this guide cannot drift from the product.
 
 Running it yourself ([Run it locally](#run-it-locally))? A new database has no `@aria`: her name and keys are on
@@ -197,7 +199,7 @@ The API reads these from the environment, or from `services/api/.env.local` (git
 | `API_PORT`, `API_HOST`                                                                                            | `4000`, `127.0.0.1`                                              | Where the API listens                                                                                                                                                       |
 | `DATABASE_URL`                                                                                                    | `postgres://mizuhiki:mizuhiki-local-dev@127.0.0.1:5432/mizuhiki` | PostgreSQL connection (API, indexer, migrations)                                                                                                                            |
 | `BLOB_DIR`                                                                                                        | `var/blobs`                                                      | Where sealed bytes are stored                                                                                                                                               |
-| `WEB_ORIGIN`                                                                                                      | `http://localhost:3000`                                          | The web app's origin: CORS, and the domain in Sign In With QoreChain                                                                                                        |
+| `WEB_ORIGIN`                                                                                                      | `http://localhost:3000`                                          | The web app's origin: CORS, and the domain in Sign In With QoreChain. A comma-separated list lets one API serve several sites                                               |
 | `MAX_BLOB_BYTES`                                                                                                  | 4 MiB + 64 KiB                                                   | Largest sealed object in one request (files arrive as 4 MiB pieces)                                                                                                         |
 | `POW_BITS`                                                                                                        | `16`                                                             | Proof-of-work bits required on anonymous drops                                                                                                                              |
 | `DROP_RETENTION_DAYS`                                                                                             | `30`                                                             | Days a dropped sealed item is kept                                                                                                                                          |

@@ -13,6 +13,7 @@ import { createHmac } from "node:crypto";
 import { checkPow, deriveAccount, sha256Hex, utf8 } from "@mizuhiki/core";
 import { authNonces, starterGrants } from "@mizuhiki/db";
 import type { Ctx } from "../server";
+import { webOriginFor } from "../config";
 import { fail } from "../lib/http";
 
 /** Enough gas for one bank send, for the sponsor's balance check (the real fee comes from simulation). */
@@ -107,7 +108,7 @@ export const grantRoutes =
           verifySiwq({
             message: row.message,
             signature: b.data.signature,
-            domain: new URL(ctx.cfg.WEB_ORIGIN).host,
+            domain: new URL(webOriginFor(ctx.cfg, req.headers.origin)).host,
             nonce: row.nonce,
             chainId: NETWORK.chainId,
             requirePq: false,

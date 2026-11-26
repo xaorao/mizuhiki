@@ -22,13 +22,20 @@ test("tour: every chapter, every screen loaded, payments linked to the chain", a
 
   // Every screen really loaded (lazy images are scrolled into view first).
   for (let i = 0; i < count; i++) await figures.nth(i).scrollIntoViewIfNeeded();
-  const broken = await page
-    .locator("main figure img")
-    .evaluateAll(
-      (imgs) =>
-        imgs.filter((i) => !(i as HTMLImageElement).complete || (i as HTMLImageElement).naturalWidth === 0).length,
-    );
-  expect(broken).toBe(0);
+  // A hosted copy resizes each image on first request, so wait for every one rather than reading them once.
+  await expect
+    .poll(
+      () =>
+        page
+          .locator("main figure img")
+          .evaluateAll(
+            (imgs) =>
+              imgs.filter((i) => !(i as HTMLImageElement).complete || (i as HTMLImageElement).naturalWidth === 0)
+                .length,
+          ),
+      { timeout: 60_000 },
+    )
+    .toBe(0);
 
   // The settled payments point at their transactions on the explorer.
   const proofs = page.locator("main figcaption a[href*='/tx/']");

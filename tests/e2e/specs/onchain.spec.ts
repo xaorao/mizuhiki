@@ -7,7 +7,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { test, expect } from "./fixtures";
 
-const CHAIN = /qore\.host|127\.0\.0\.1:4000\/chain/;
+// QoreChain itself, and our API's chain relay wherever the API runs (local or hosted).
+const CHAIN = /qore\.host|:\/\/[^/]+\/chain(\/|\?|$)/;
 test.use({ allowFailedUrls: CHAIN });
 
 test("proof page: contracts, keys, a signature verified here, and live activity", async ({ page }, info) => {

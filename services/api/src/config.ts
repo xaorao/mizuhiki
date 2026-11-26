@@ -6,7 +6,10 @@ const Env = z.object({
   API_HOST: z.string().default("127.0.0.1"),
   DATABASE_URL: z.string().default("postgres://mizuhiki:mizuhiki-local-dev@127.0.0.1:5432/mizuhiki"),
   BLOB_DIR: z.string().default("var/blobs"),
-  /** The web app's origin: CORS, and the SIWQ domain and uri. */
+  /**
+   * The web app's origin: CORS, and the SIWQ domain and uri. A comma-separated list serves one API to several sites
+   * (a local copy and a hosted one); the first is the default.
+   */
   WEB_ORIGIN: z.string().default("http://localhost:3000"),
   /** Largest sealed object accepted in one request. Files arrive as 4 MiB chunks plus overhead. */
   MAX_BLOB_BYTES: z.coerce
@@ -51,5 +54,25 @@ const Env = z.object({
 
 export type Config = z.infer<typeof Env>;
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  return Env.parse(env);
+  const cfg = Env.parse(env);
+  for (const o of webOrigins(cfg))
+    if (new URL(o).origin !== o)
+      throw new Error(`WEB_ORIGIN must list bare origins like https://example.com, not ${o}`);
+  return cfg;
+}
+
+/** Every web origin this API serves, in the order given. */
+export function webOrigins(cfg: Pick<Config, "WEB_ORIGIN">): string[] {
+  return cfg.WEB_ORIGIN.split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+}
+
+/**
+ * The origin a sign-in message is bound to: the requesting site when it is one we serve, otherwise the first. A
+ * message is only ever bound to a listed origin, so a site not on the list cannot get one naming itself.
+ */
+export function webOriginFor(cfg: Pick<Config, "WEB_ORIGIN">, requestOrigin: string | undefined): string {
+  const list = webOrigins(cfg);
+  return requestOrigin && list.includes(requestOrigin) ? requestOrigin : (list[0] ?? "http://localhost:3000");
 }

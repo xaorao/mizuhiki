@@ -1,0 +1,29 @@
+# Vercel uploads only what the repository tracks: the same rules as .gitignore, plus local-only folders.
+node_modules/
+dist/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+.turbo/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+var/
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+.DS_Store
+contracts/lib/
+
+# Vercel CLI link (local)
+.vercel
+.env*
+
+qa-evidence
+contracts/lib
+contracts/out
+contracts/cache
+tests/e2e/test-results

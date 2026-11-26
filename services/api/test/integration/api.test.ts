@@ -88,6 +88,7 @@ beforeAll(async () => {
     NODE_ENV: "test",
     DATABASE_URL: DB,
     BLOB_DIR: mkdtempSync(join(tmpdir(), "mzk-blobs-")),
+    WEB_ORIGIN: "http://localhost:3000,https://mizuhiki.example",
   });
   ({ app, close } = await buildServer(cfg));
   owner = await ensurePersona("api-owner", { name: "mzk-api-owner" });
@@ -161,6 +162,45 @@ describe("sign in with QoreChain", () => {
     expect(
       (await app.inject({ method: "POST", url: "/auth/verify", payload: { nonce: c.nonce, signature } })).statusCode,
     ).toBe(401);
+  });
+  it("binds the sign-in to the requesting site when it is one we serve, and never to another", async () => {
+    const asked = async (origin: string) =>
+      (
+        await app.inject({
+          method: "POST",
+          url: "/auth/challenge",
+          headers: { origin },
+          payload: { address: owner.address },
+        })
+      ).json<{ message: string; nonce: string }>();
+    const hosted = await asked("https://mizuhiki.example");
+    expect(hosted.message.split("\n")[0]).toMatch(/^https:\/\/mizuhiki\.example wants you to sign in/);
+    const signature = signSiwq({ message: hosted.message, classicalKey: owner.classical, pqKey: owner.pq });
+    // Verified from the same site: accepted. Presented from a different listed site: refused.
+    const crossSite = await asked("https://mizuhiki.example");
+    const crossSig = signSiwq({ message: crossSite.message, classicalKey: owner.classical, pqKey: owner.pq });
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: "/auth/verify",
+          headers: { origin: "http://localhost:3000" },
+          payload: { nonce: crossSite.nonce, signature: crossSig },
+        })
+      ).statusCode,
+    ).toBe(401);
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: "/auth/verify",
+          headers: { origin: "https://mizuhiki.example" },
+          payload: { nonce: hosted.nonce, signature },
+        })
+      ).statusCode,
+    ).toBe(200);
+    // A site we do not serve gets a message naming the default site, not itself.
+    expect((await asked("https://evil.example")).message.split("\n")[0]).toMatch(/^http:\/\/localhost:3000 wants you/);
   });
   it("ends a session on logout", async () => {
     const t = await signIn(owner);

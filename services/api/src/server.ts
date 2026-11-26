@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { sessionAddress } from "./lib/auth";
 import { isChainUnreachable } from "./lib/errors";
 import websocket from "@fastify/websocket";
-import type { Config } from "./config";
+import { webOrigins, type Config } from "./config";
 import { makeDb, type Db } from "@mizuhiki/db";
 import { FsBlobStore, type BlobStore } from "./lib/blobstore";
 import { EventHub } from "./lib/events";
@@ -62,7 +62,7 @@ export async function buildServer(
     trustProxy: (_address: string, hop: number) => hop < cfg.TRUST_PROXY_HOPS,
   });
   await app.register(cors, {
-    origin: [cfg.WEB_ORIGIN],
+    origin: webOrigins(cfg),
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["content-type", "authorization", "x-pow", "x-recovery-secret"],
   });

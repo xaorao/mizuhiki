@@ -2,6 +2,7 @@ import type { FastifyPluginCallback } from "fastify";
 import { z } from "zod";
 import type { Ctx } from "../server";
 import { AuthError, completeSignIn, endSession, issueChallenge, sessionAddress } from "../lib/auth";
+import { webOriginFor } from "../config";
 import { fail, isAddress } from "../lib/http";
 
 const Sig = z.object({
@@ -30,7 +31,7 @@ export const authRoutes =
       async (req, reply) => {
         const address = (req.body as { address?: unknown } | undefined)?.address;
         if (!isAddress(address)) return fail(reply, 400, "BAD_ADDRESS", "That is not a QoreChain address.");
-        return issueChallenge(ctx.db, address, ctx.cfg.WEB_ORIGIN);
+        return issueChallenge(ctx.db, address, webOriginFor(ctx.cfg, req.headers.origin));
       },
     );
     app.post(
@@ -48,7 +49,7 @@ export const authRoutes =
               classical: signature.classical,
               ...(signature.pq ? { pq: signature.pq } : {}),
             },
-            origin: ctx.cfg.WEB_ORIGIN,
+            origin: webOriginFor(ctx.cfg, req.headers.origin),
             sessionHours: ctx.cfg.SESSION_HOURS,
           });
           return { token: s.token, address: s.address, expiresAt: s.expiresAt.toISOString() };
