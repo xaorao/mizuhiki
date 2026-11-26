@@ -1,5 +1,7 @@
 # Mizuhiki 水引
 
+![Mizuhiki: one link for everything private. Aria's page on a phone and the sealed inbox.](docs/mizuhiki.jpg)
+
 **A private link-in-bio page. Everything people send you is sealed in their browser with post-quantum encryption, so only you can open it.**
 
 Freelancers, lawyers, clinics and families give out one link. Through it people pay, send messages and files, fill in forms, buy from a shop, join a group room or leave a time capsule. Before anything leaves the sender's device it is sealed with ML-KEM-1024 to the owner's key, which the sender's browser reads from QoreChain. Our server stores sealed bytes it cannot open, so a breach of the server reveals nothing that was sent.
