@@ -1,4 +1,4 @@
-// Runs the whole product locally against QoreChain testnet: database migrations,
+// Runs the whole product locally (pnpm dev; pnpm dev --backend for the API, indexer and helper only) against QoreChain testnet: database migrations,
 // then the API, the indexer and the web app, with prefixed output.
 import { spawn, execSync } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -27,14 +27,16 @@ execSync("pnpm --filter @mizuhiki/db migrate", { stdio: "inherit", env });
 const procs = [
   ["api", "pnpm", ["--filter", "@mizuhiki/api", "dev"], "\x1b[35m"],
   ["indexer", "pnpm", ["--filter", "@mizuhiki/indexer", "dev"], "\x1b[36m"],
-  ["web", "pnpm", ["--filter", "@mizuhiki/web", "dev"], "\x1b[33m"],
+  // --backend leaves the web app out, for a machine that only serves a hosted site's API.
+  ...(process.argv.includes("--backend") ? [] : [["web", "pnpm", ["--filter", "@mizuhiki/web", "dev"], "\x1b[33m"]]),
   // The opt-in Instant delivery helper, once provisioned (pnpm --filter @mizuhiki/delivery-agent provision).
   ...(existsSync(new URL("../services/delivery-agent/.env.local", import.meta.url))
     ? [["helper", "pnpm", ["--filter", "@mizuhiki/delivery-agent", "start"], "\x1b[32m"]]
     : []),
 ];
 const children = procs.map(([name, cmd, args, color]) => {
-  const c = spawn(cmd, args, { env, stdio: ["ignore", "pipe", "pipe"] });
+  // On Windows pnpm is a .cmd script, which only starts through a shell.
+  const c = spawn(cmd, args, { env, stdio: ["ignore", "pipe", "pipe"], shell: process.platform === "win32" });
   const out = (d) =>
     d
       .toString()
