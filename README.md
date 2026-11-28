@@ -55,7 +55,7 @@ Runs on the **QoreChain test network** (`qorechain-diana`, EVM chain id 9800). C
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Q-Day Drill rehearsal    | 16 of 16 attacks with only the classical key refused by the chain or the contracts (`pnpm --filter @mizuhiki/testnet drill`)                                 |
 | Contracts                | 3 on testnet, no funds, no admin key; 41 Foundry tests; Slither on all three, the QoreChain Dashboard auditor on the registry ([review](SECURITY_REVIEW.md)) |
-| Tests                    | 160 unit, 93 integration and 100 end-to-end runs in Chrome, Firefox, Safari and a phone, all against the live testnet                                        |
+| Tests                    | 167 unit; 96 integration and 102 end-to-end runs (Chrome, Firefox, Safari, a phone) against the live testnet                                                 |
 | Real wallet              | Every QoreX payment path driven through the shipped QoreX extension, each payment read back from the chain                                                   |
 | QoreChain kits, verified | QoreChain SDK, QoreSign, QoreSeal and QoreX integrations, marked verified on the [fest project page](https://build.qorechain.io/p/mizuhiki)                  |
 

@@ -5,7 +5,7 @@
  * dashboard does the same in the background). Row actions: deliver now, ask
  * for the rest of a commission, refund (the seller's own transfer back).
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   EmptyState,
@@ -43,6 +43,9 @@ import s from "./seller.module.css";
 import { failureText } from "@/lib/failure";
 
 type Filter = "all" | "waiting" | "delivered" | "awaiting" | "refunded";
+
+/** A failed @name lookup is tried again after this long. */
+const NAME_RETRY_MS = 30_000;
 
 export function SalesTab({ onWaiting }: { onWaiting?: (n: number) => void }) {
   const owner = useOwnerSession();
@@ -94,17 +97,30 @@ export function SalesTab({ onWaiting }: { onWaiting?: (n: number) => void }) {
   useEffect(() => {
     onWaiting?.(orders?.filter(canDeliver).length ?? 0);
   }, [orders, onWaiting]);
-  // Buyers by their @name where they have one; looked up once per address.
+  // Buyers by their @name where they have one. An address without a known name yet is asked again at most every
+  // NAME_RETRY_MS, and a new list of orders never cancels a lookup already on its way.
+  const asked = useRef(new Map<string, number>());
+  const mounted = useRef(true);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    [],
+  );
   useEffect(() => {
-    const missing = orderAccounts(orders ?? []).filter((a) => !(a in names));
-    if (!missing.length) return;
-    let live = true;
-    void Promise.all(missing.map(async (a) => [a, await nameOf(a).catch(() => null)] as const)).then((pairs) => {
-      if (live) setNames((n) => ({ ...n, ...Object.fromEntries(pairs) }));
-    });
-    return () => {
-      live = false;
-    };
+    const now = Date.now();
+    const due = orderAccounts(orders ?? []).filter(
+      (a) => !(a in names) && now - (asked.current.get(a) ?? -Infinity) > NAME_RETRY_MS,
+    );
+    for (const a of due) {
+      asked.current.set(a, now);
+      void nameOf(a)
+        .then((name) => {
+          // nameOf answers null both for "no name" (cached, free to ask again) and for a failed lookup.
+          if (mounted.current && name) setNames((n) => ({ ...n, [a]: name }));
+        })
+        .catch(() => undefined);
+    }
   }, [orders, names]);
 
   const deliverOne = async (o: OrderView) => {

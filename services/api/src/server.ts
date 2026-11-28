@@ -1,7 +1,7 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
-import { createHash } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { sessionAddress } from "./lib/auth";
 import { isChainUnreachable } from "./lib/errors";
 import websocket from "@fastify/websocket";
@@ -56,7 +56,10 @@ export async function buildServer(
     void push.fromEvent(kind, owner).catch(() => undefined);
   });
   const app = Fastify({
-    logger: cfg.NODE_ENV === "test" ? false : { level: "info", redact: ["req.headers.authorization"] },
+    logger:
+      cfg.NODE_ENV === "test"
+        ? false
+        : { level: "info", redact: ["req.headers.authorization", 'req.headers["x-mzk-internal"]'] },
     bodyLimit: cfg.MAX_BLOB_BYTES,
     // Trust X-Forwarded-For only through the configured number of proxies (0: none).
     trustProxy: (_address: string, hop: number) => hop < cfg.TRUST_PROXY_HOPS,
@@ -70,13 +73,19 @@ export async function buildServer(
   // (an office, a family's Wi-Fi) must not share one budget. Only a real, unexpired session counts as
   // signed in, so a made-up token falls back to the IP. Sign-in itself is limited per account (auth.ts).
   const accountOf = new Map<string, { address: string | undefined; at: number }>();
+  const internalKey = cfg.INTERNAL_READ_KEY ? createHash("sha256").update(cfg.INTERNAL_READ_KEY).digest() : null;
+  const internalRead = (h: string | string[] | undefined) =>
+    !!internalKey && typeof h === "string" && timingSafeEqual(createHash("sha256").update(h).digest(), internalKey);
   await app.register(rateLimit, {
     global: true,
     // A signed-in account's open dashboards (live rooms, capsule and recovery watchers, several tabs) share one
     // budget, so it is larger than an anonymous network's.
-    max: (_req, key) => (key.startsWith("a:") ? 900 : 300),
+    // The hosted web app's own server renders pages for every visitor from one address; with the shared key its
+    // public reads get one larger budget of their own instead of sharing an ordinary network's.
+    max: (_req, key) => (key === "srv" ? 6000 : key.startsWith("a:") ? 900 : 300),
     timeWindow: "1 minute",
     keyGenerator: async (req) => {
+      if (internalRead(req.headers["x-mzk-internal"])) return "srv";
       const auth = req.headers.authorization;
       if (!auth?.startsWith("Bearer ")) return `ip:${req.ip}`;
       const k = createHash("sha256").update(auth).digest("hex");

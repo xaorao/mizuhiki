@@ -170,7 +170,9 @@ export function OwnerProvider({ account, children }: { account: Account; childre
       const now = Date.now();
       const c = opts?.coalesce;
       const merge = c && lastCoalesce.current?.key === c && now - lastCoalesce.current.at < 1200;
-      if (!merge) {
+      // Setup progress (the checklist) is a record of what was done, not an edit to the page: it takes no undo step.
+      const progressOnly = next.manifest === cur.manifest && next.pending === cur.pending;
+      if (!merge && !progressOnly) {
         past.current = [...past.current.slice(-HISTORY + 1), cur];
         future.current = [];
       }
@@ -189,8 +191,10 @@ export function OwnerProvider({ account, children }: { account: Account; childre
     past.current = past.current.slice(0, -1);
     future.current = [latest.current, ...future.current];
     lastCoalesce.current = null;
-    latest.current = prev;
-    setDraft(prev);
+    // Undo changes the page, never the setup progress already made.
+    const restored = { ...prev, checklist: latest.current.checklist };
+    latest.current = restored;
+    setDraft(restored);
     bump((x) => x + 1);
     persist();
   }, [persist]);
@@ -201,8 +205,9 @@ export function OwnerProvider({ account, children }: { account: Account; childre
     future.current = future.current.slice(1);
     past.current = [...past.current, latest.current];
     lastCoalesce.current = null;
-    latest.current = nxt;
-    setDraft(nxt);
+    const restored = { ...nxt, checklist: latest.current.checklist };
+    latest.current = restored;
+    setDraft(restored);
     bump((x) => x + 1);
     persist();
   }, [persist]);

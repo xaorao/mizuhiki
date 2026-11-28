@@ -37,6 +37,11 @@ const Env = z.object({
    */
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
   /**
+   * A shared secret the hosted web app's server sends with its own public reads (page, form, product lookups), so
+   * every visitor's page load is not counted against the hosting provider's one address. Unset: no such allowance.
+   */
+  INTERNAL_READ_KEY: z.string().min(32).optional(),
+  /**
    * Starter grants (ARCHITECTURE 8h): the testnet sponsor account's 24 words. Unset, grants are off and sign-up shows
    * the faucet. Testnet only; never a phrase that holds real value.
    */
@@ -55,6 +60,7 @@ const Env = z.object({
 export type Config = z.infer<typeof Env>;
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const cfg = Env.parse(env);
+  if (webOrigins(cfg).length === 0) throw new Error("WEB_ORIGIN must name at least one origin");
   for (const o of webOrigins(cfg))
     if (new URL(o).origin !== o)
       throw new Error(`WEB_ORIGIN must list bare origins like https://example.com, not ${o}`);

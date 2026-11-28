@@ -4,6 +4,10 @@ import { cache } from "react";
 import type { Manifest, RecipientCard, Signed } from "@mizuhiki/core";
 
 const BASE = process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4000";
+// When the web app is hosted apart from the API, its server's reads carry a shared key so the API gives them their own
+// rate budget rather than one network's (services/api INTERNAL_READ_KEY). Never sent from a browser.
+const KEY = process.env.INTERNAL_READ_KEY;
+const headers: Record<string, string> = KEY ? { "x-mzk-internal": KEY } : {};
 
 export type PageLookup =
   | { state: "ok"; record: Signed<Manifest>; card: RecipientCard | null; registry: { owner: string; cardHash: string } }
@@ -13,6 +17,7 @@ async function lookupPageOnce(name: string): Promise<PageLookup> {
   let res: Response;
   try {
     res = await fetch(`${BASE}/pages/${encodeURIComponent(name)}`, {
+      headers,
       cache: "no-store",
       signal: AbortSignal.timeout(8000),
     });
@@ -37,6 +42,7 @@ export type FormLookup =
 async function lookupFormOnce(name: string, slug: string): Promise<FormLookup> {
   try {
     const res = await fetch(`${BASE}/forms/${encodeURIComponent(name)}/${encodeURIComponent(slug)}`, {
+      headers,
       cache: "no-store",
       signal: AbortSignal.timeout(8000),
     });
@@ -59,6 +65,7 @@ export type ProductLookup =
 async function lookupProductOnce(name: string, slug: string): Promise<ProductLookup> {
   try {
     const res = await fetch(`${BASE}/products/${encodeURIComponent(name)}/${encodeURIComponent(slug)}`, {
+      headers,
       cache: "no-store",
       signal: AbortSignal.timeout(8000),
     });
@@ -82,6 +89,7 @@ export type FileRequestLookup =
 async function lookupFileRequestOnce(id: string): Promise<FileRequestLookup> {
   try {
     const res = await fetch(`${BASE}/file-requests/${encodeURIComponent(id)}`, {
+      headers,
       cache: "no-store",
       signal: AbortSignal.timeout(8000),
     });

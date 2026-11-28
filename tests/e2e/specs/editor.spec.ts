@@ -3,6 +3,7 @@
  * against the local API and QoreChain testnet. The published page is read back
  * from the API (and its signature checked) after Publish.
  */
+import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { deflateSync } from "node:zlib";
 import type { Page } from "@playwright/test";
@@ -10,6 +11,9 @@ import { test, expect } from "./fixtures";
 import { verifyRecord, type Manifest, type Signed } from "@mizuhiki/core";
 import { pqKeyViaEvm } from "@mizuhiki/chain";
 import { API, ensureOwner, restoreInBrowser } from "./owner";
+import { PSQL } from "./pg";
+
+const DEV_DB = process.env.DATABASE_URL ?? "postgres://mizuhiki:mizuhiki-local-dev@127.0.0.1:5432/mizuhiki";
 
 test.describe.configure({ mode: "serial" });
 const NAME = "mzk-e2e-editor";
@@ -272,6 +276,12 @@ test("setup checklist: photo, design, spare-key sheet, share and a block, each t
   test.skip(info.project.name !== "desktop", "once");
   test.setTimeout(300_000);
   const owner = await ensureOwner("e2e-checklist", "mzk-e2e-checklist");
+  // This account is reused across runs: start with no sheet on the server's record, so the checklist asks for one.
+  execFileSync(PSQL, [
+    DEV_DB,
+    "-c",
+    `update recovery_settings set sheet_saved_at = null where owner = '${owner.address}'`,
+  ]);
   const ctx = await browser.newContext({ acceptDownloads: true });
   await ctx.grantPermissions(["clipboard-read", "clipboard-write"]);
   const page = await ctx.newPage();
@@ -309,6 +319,21 @@ test("setup checklist: photo, design, spare-key sheet, share and a block, each t
   expect(download.suggestedFilename()).toBe("mizuhiki-spare-key-mzk-e2e-checklist.pdf");
   const sheet = await readFile(await download.path());
   expect(sheet.subarray(0, 5).toString()).toBe("%PDF-");
+  // Source of truth: the server now records the sheet, which the Spare key page reads too.
+  await expect
+    .poll(() =>
+      execFileSync(
+        PSQL,
+        [
+          DEV_DB,
+          "-At",
+          "-c",
+          `select sheet_saved_at is not null from recovery_settings where owner = '${owner.address}'`,
+        ],
+        { encoding: "utf8" },
+      ).trim(),
+    )
+    .toBe("t");
   // Share copies the page link.
   await row("Share your page").getByRole("button", { name: "Share" }).click();
   await expect(page.getByText("Link copied")).toBeVisible();
@@ -328,6 +353,11 @@ test("setup checklist: photo, design, spare-key sheet, share and a block, each t
     "Share your page",
   ])
     await expect(row(t).getByRole("button", { name: "Skip" })).toHaveCount(0);
+  // Undo takes the block back off the page, but never the progress already made.
+  await page.getByRole("button", { name: "Undo" }).first().click();
+  await expect(row("Create your spare-key sheet").getByRole("button", { name: "Skip" })).toHaveCount(0);
+  await expect(row("Add a block").getByRole("button", { name: "Skip" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Redo" }).first().click();
   await page.getByRole("button", { name: "Publish" }).click();
   await expect(page.getByText(/Published to/)).toBeVisible({ timeout: 60_000 });
   // Source of truth: the published page carries the photo and the chosen theme.

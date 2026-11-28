@@ -4,7 +4,7 @@
  * View and Publish; content-blind stats; the setup checklist; the block list
  * with drag to reorder; the archive; and the live phone preview.
  */
-import { useCallback, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import {
   Button,
   ButtonLink,
@@ -32,7 +32,7 @@ import { PageView } from "@/page/PageView";
 import { pageUrl } from "@/lib/site";
 import { downloadBytes } from "@/lib/download";
 import { buildSpareKeySheet } from "@/lib/pdfs";
-import { markSheet } from "@/recovery/engine";
+import { loadMine, markSheet } from "@/recovery/engine";
 import { AddSheet } from "./AddSheet";
 import { BlockCard } from "./BlockCard";
 import { mapBlocks, moveBlock, updateBlock } from "./blocks";
@@ -57,6 +57,28 @@ export function MyPage() {
   const archived = useMemo(() => (d ? d.manifest.blocks.filter((b) => b.archived) : []), [d]);
   const collections = live.filter((b) => b.type === "collection");
   const firstName = d ? ((d.manifest.displayName || d.manifest.name).split(" ")[0] ?? d.manifest.name) : "";
+
+  // The server's record of the spare-key sheet is the truth: a sheet saved from the Spare key page, or on another
+  // device, ticks the checklist here too.
+  const loaded = !!d;
+  const sheetTicked = !!d?.checklist.done.includes("spareKey");
+  const owner = useRef(o);
+  owner.current = o;
+  useEffect(() => {
+    if (!loaded || sheetTicked) return;
+    let live = true;
+    const cur = owner.current;
+    void cur
+      .token()
+      .then((token) => loadMine({ ...cur.account, token }))
+      .then((m) => {
+        if (live && m.settings.sheetSavedAt) owner.current.edit((x) => markChecklist(x, "spareKey", "done"));
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [loaded, sheetTicked, o.account.owner.address]);
 
   const share = useCallback(async () => {
     if (!d) return;
@@ -494,12 +516,19 @@ function ChecklistAction({ id, onAddBlock, onShare }: { id: string; onAddBlock: 
               .then((bytes) => {
                 downloadBytes(bytes, `mizuhiki-spare-key-${d.manifest.name}.pdf`);
                 o.edit((x) => markChecklist(x, "spareKey", "done"));
-                // The Spare key page shows the same fact; a failed note there does not undo the download.
+                toast.show("Spare-key sheet saved. Keep it offline.");
+                // The Spare key page shows the same fact. A failed note there does not undo the download, but it is said.
                 void o
                   .token()
                   .then((token) => markSheet({ ...o.account, token }, "sheet"))
-                  .catch(() => undefined);
-                toast.show("Spare-key sheet saved. Keep it offline.");
+                  .catch(() =>
+                    toast.show(
+                      "The sheet is saved, but the Spare key page could not record it. Download it there once more to record it.",
+                      {
+                        tone: "error",
+                      },
+                    ),
+                  );
               })
               .catch(() => toast.show("Could not build the sheet.", { tone: "error" }))
               .finally(() => setBusy(false));

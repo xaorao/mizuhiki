@@ -221,7 +221,6 @@ export function orderStatus(o: Pick<OrderView, "status" | "delivery">): { label:
 
 export const shortAddr = (a: string) => (a.length > 16 ? `${a.slice(0, 9)}…${a.slice(-5)}` : a);
 
-/** Who bought it, as the seller should read it. */
 /**
  * Who an order is from, for the seller: the buyer's @name when they have one (looked up from QoreChain names by
  * the caller), otherwise their shortened address.

@@ -187,8 +187,8 @@ describe("sign in with QoreChain", () => {
           headers: { origin: "http://localhost:3000" },
           payload: { nonce: crossSite.nonce, signature: crossSig },
         })
-      ).statusCode,
-    ).toBe(401);
+      ).json<{ error: { message: string } }>().error.message,
+    ).toMatch(/started on a different Mizuhiki site/);
     expect(
       (
         await app.inject({

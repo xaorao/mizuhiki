@@ -14,6 +14,7 @@ import { checkPow, deriveAccount, sha256Hex, utf8 } from "@mizuhiki/core";
 import { authNonces, starterGrants } from "@mizuhiki/db";
 import type { Ctx } from "../server";
 import { webOriginFor } from "../config";
+import { networkOf } from "../lib/network";
 import { fail } from "../lib/http";
 
 /** Enough gas for one bank send, for the sponsor's balance check (the real fee comes from simulation). */
@@ -77,7 +78,7 @@ export const grantRoutes =
           rateLimit: {
             max: ctx.cfg.STARTER_REQUESTS_PER_10MIN,
             timeWindow: "10 minutes",
-            keyGenerator: (req) => req.ip,
+            keyGenerator: (req) => networkOf(req.ip),
             hook: "preHandler",
           },
         },
@@ -142,8 +143,9 @@ export const grantRoutes =
             "nothing-changed",
           );
 
-        // Keyed with a secret only this server holds, so a stored hash cannot be brute-forced back to an address.
-        const ipHash = createHmac("sha256", ipKey).update(req.ip).digest("hex");
+        // Per network (an IPv6 /64 counts once), keyed with a secret only this server holds, so a stored hash cannot be
+        // brute-forced back to an address.
+        const ipHash = createHmac("sha256", ipKey).update(networkOf(req.ip)).digest("hex");
         const [all] = await ctx.db
           .select({ n: count() })
           .from(starterGrants)

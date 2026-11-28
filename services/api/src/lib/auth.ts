@@ -5,7 +5,7 @@
  * Only the token's SHA-256 is stored.
  */
 import { createHash, randomBytes } from "node:crypto";
-import { createSiwqMessage, verifySiwq, type SiwqSignature } from "@qorechain/qoresign";
+import { createSiwqMessage, parseSiwqMessage, verifySiwq, type SiwqSignature } from "@qorechain/qoresign";
 import { NETWORK } from "@mizuhiki/chain";
 import { and, eq, gt, lt } from "drizzle-orm";
 import type { FastifyRequest } from "fastify";
@@ -53,6 +53,9 @@ export async function completeSignIn(
   if (!row) throw new AuthError("This sign-in request expired. Please try again.");
   // One use only, whatever the outcome.
   await db.delete(authNonces).where(eq(authNonces.nonce, args.nonce));
+  // A challenge made on one of our sites and answered from another: say so, rather than blame the keys.
+  if (parseSiwqMessage(row.message).domain !== new URL(args.origin).host)
+    throw new AuthError("This sign-in was started on a different Mizuhiki site. Start again here.");
   const key = await pqKeyOf(row.address);
   if (!key.registered || !key.publicKey) throw new AuthError("This account has no post-quantum key on chain yet.");
   try {
